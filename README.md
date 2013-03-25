@@ -6,7 +6,7 @@ Php class to parse robots.txt rules according to Google & Yandex specifications.
 Example:
 ````
 <?php
-	// импорт библиотеки
+	// lib import
 	require_once('robotstxtparsermachine.php');
 	$parser = new robotstxtparsermachine(file_get_contents('http://google.com/robots.txt'), 'UTF-8');
 	var_dump($parser->isDisallowed('/someurl'));
