@@ -4,7 +4,7 @@ Robots.txt php parser class
 Php class to parse robots.txt rules according to Google & Yandex specifications.
 
 Example:
-````
+```php
 <?php
 	// lib import
 	require_once('robotstxtparsermachine.php');
@@ -13,4 +13,4 @@ Example:
 	var_dump($parser->isAllowed('/someotherurl.html'));
 	print_r($parser->rules);
 ?>
-````
+```
