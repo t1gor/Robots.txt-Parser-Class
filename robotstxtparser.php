@@ -171,7 +171,8 @@
 		 * @return void
 		 */
 		public function prepareRules() {
-			while ($this->char_index != mb_strlen($this->content)) {
+			$contentLength = mb_strlen($this->content);
+			while ($this->char_index <= $contentLength) {
 				$this->step();
 			}
 		}
@@ -188,6 +189,10 @@
 				case self::STATE_ZERO_POINT:
 					if ($this->allow() || $this->disallow() || $this->host() || $this->userAgent() || $this->sitemap()) {
 						$this->switchState(self::STATE_READ_DIRECTIVE);
+					} elseif ($this->newLine()) {
+						// неизвестная директива, пропускаем её
+						$this->current_word = "";
+						$this->increment();
 					} else {
 						$this->increment();
 					}
@@ -323,7 +328,7 @@
 			// если нет правила или группы паравил по user-agent
 			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule])) {
 				// проверяем категорию "*" - для всех
-				return ($userAgent != '*') ? $this->checkRule($rule, $value) : true;
+				return ($userAgent != '*') ? $this->checkRule($rule, $value) : false;
 			}
 			foreach ($this->rules[$userAgent][$rule] as $robotRule) {
 				if (preg_match('@'.$robotRule.'@', $value)) {
