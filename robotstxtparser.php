@@ -123,7 +123,8 @@
 		/**
 		 * Move to new line signal
 		 */
-		protected function newLine() {
+		protected function newLine() 
+		{
 			return ($this->current_char == "\n"
 				|| $this->current_word == "\r\n"
 				|| $this->current_word == "\n\r"
@@ -138,16 +139,16 @@
 		}
 
 		/**
-		 * Сигнал директивы User-agent
+		 * User-agent directive signal
 		 */
 		protected function userAgent() {
 			return ($this->current_word == self::DIRECTIVE_USERAGENT);
 		}
 
 		/**
-		 * Перейти в состояние
+		 * Change state
 		 *
-		 * @param string $stateTo - состояние, к которому надо перейти
+		 * @param string $stateTo - state that should be set
 		 *
 		 * @return void
 		 */
@@ -156,11 +157,12 @@
 		}
 
 		/**
-		 * Парсим правила
+		 * Parse rools
 		 *
 		 * @return void
 		 */
-		public function prepareRules() {
+		public function prepareRules() 
+		{
 			$contentLength = mb_strlen($this->content);
 			while ($this->char_index <= $contentLength) {
 				$this->step();
@@ -168,22 +170,29 @@
 		}
 
 		/**
-		 * Шаг автомата
+		 * Machine step
 		 *
 		 * @return void
 		 */
-		protected function step() {
-
-			switch ($this->state) {
-
+		protected function step() 
+		{
+			switch ($this->state) 
+			{
 				case self::STATE_ZERO_POINT:
-					if ($this->allow() || $this->disallow() || $this->host() || $this->userAgent() || $this->sitemap()) {
+					if ($this->allow() 
+						|| $this->disallow() 
+						|| $this->host() 
+						|| $this->userAgent() 
+						|| $this->sitemap()
+					) {
 						$this->switchState(self::STATE_READ_DIRECTIVE);
-					} elseif ($this->newLine()) {
+					} 
+					elseif ($this->newLine()) {
 						// неизвестная директива, пропускаем её
 						$this->current_word = "";
 						$this->increment();
-					} else {
+					} 
+					else {
 						$this->increment();
 					}
 				break;
@@ -195,10 +204,12 @@
 
 					$this->increment();
 
-					if ($this->lineSeparator()) {
+					if ($this->lineSeparator())
+					{
 						$this->current_word = "";
 						$this->switchState(self::STATE_READ_VALUE);
-					} else {
+					} 
+					else {
 						if ($this->space()) {
 							$this->switchState(self::STATE_SKIP_SPACE);
 						}
@@ -216,19 +227,25 @@
 				break;
 
 				case self::STATE_READ_VALUE:
-					if ($this->newLine()) {
-						if ($this->current_directive == self::DIRECTIVE_USERAGENT) {
+					if ($this->newLine()) 
+					{
+						if ($this->current_directive == self::DIRECTIVE_USERAGENT) 
+						{
 							$this->rules[$this->current_word] = array();
 							$this->userAgent = $this->current_word;
-						} else {
-							if ($this->current_directive == self::DIRECTIVE_ALLOW || $this->current_directive == self::DIRECTIVE_DISALLOW) {
+						} 
+						else {
+							if ($this->current_directive == self::DIRECTIVE_ALLOW 
+								|| $this->current_directive == self::DIRECTIVE_DISALLOW
+							) {
 								$this->current_word = "/".ltrim($this->current_word, '/');
 							}
 							$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
 						}
 						$this->current_word = "";
 						$this->switchState(self::STATE_ZERO_POINT);
-					} else {
+					} 
+					else {
 						$this->increment();
 					}
 				break;
@@ -236,29 +253,31 @@
 		}
 
 		/**
-		 * Преобразование robots.txt правила в php регулярку
+		 * Convert robots.txt rool to php regex
 		 *
 		 * @param string $value
 		 *
 		 * @return string
 		 */
-		protected static function prepareRegexRule($value) {
+		protected static function prepareRegexRule($value) 
+		{
 			$value = str_replace('*', '.*', str_replace('.', '\.', str_replace('?', '\?', str_replace('$', '\$', $value))));
 			if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '=') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '?') == (mb_strlen($value)-1)
-			){
+			) {
 				$value .= '.*';
 			}
 			return $value;
 		}
 
 		/**
-		 * Общая часть для большинства состояний - пропуск строки и пробела
+		 * Common part for the most of the states - skip line and space
 		 *
 		 * @return void
 		 */
-		protected function skip() {
+		protected function skip() 
+		{
 			if ($this->space()) {
 				$this->switchState(self::STATE_SKIP_SPACE);
 			}
@@ -269,11 +288,12 @@
 		}
 
 		/**
-		 * Переход к следующему шагу
+		 * Move to the following step
 		 *
 		 * @return void
 		 */
-		protected function increment() {
+		protected function increment() 
+		{
 			$this->current_char = mb_strtolower(mb_substr($this->content, $this->char_index, 1));
 			$this->current_word .= $this->current_char;
 			$this->current_word = trim($this->current_word);
@@ -281,50 +301,58 @@
 		}
 
 		/**
-		 * Обертка для проверки url
+		 * Check url wrapper
 		 *
-		 * @param string $url       - url для проверки
-		 * @param string $userAgent - для какого робота проверка
+		 * @param string $url       - url to check
+		 * @param string $userAgent - which robot to check for
 		 *
 		 * @return bool
 		 */
-		public function isAllowed($url, $userAgent = "*") {
-			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) && !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
+		public function isAllowed($url, $userAgent = "*") 
+		{
+			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) 
+				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
 		/**
-		 * Обертка для проверки url
+		 * Check url wrapper
 		 *
-		 * @param string $url       - url для проверки
-		 * @param string $userAgent - для какого робота проверка
+		 * @param string $url       - url to check
+		 * @param string $userAgent - which robot to check for
 		 *
 		 * @return bool
 		 */
-		public function isDisallowed($url, $userAgent = "*") {
+		public function isDisallowed($url, $userAgent = "*") 
+		{
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
 		/**
-		 * Обертка для проверки url
+		 * Check url rules
 		 *
-		 * @param string $rule      - какое правило проверяем
-		 * @param string $url       - url для проверки
-		 * @param string $userAgent - для какого робота проверка
+		 * @param string $rule      - which rule to check
+		 * @param string $url       - url to check
+		 * @param string $userAgent - which robot to check for
 		 *
 		 * @return bool
 		 */
-		public function checkRule($rule, $value = '/', $userAgent = '*') {
+		public function checkRule($rule, $value = '/', $userAgent = '*') 
+		{
 			$result = false;
-			// если нет правила или группы паравил по user-agent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule])) {
-				// проверяем категорию "*" - для всех
+			// if there is no rule or a set of rules for user-agent
+			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule])) 
+			{
+				// check 'For all' category - '*'
 				return ($userAgent != '*') ? $this->checkRule($rule, $value) : false;
 			}
-			foreach ($this->rules[$userAgent][$rule] as $robotRule) {
+
+			foreach ($this->rules[$userAgent][$rule] as $robotRule) 
+			{
 				if (preg_match('@'.$robotRule.'@', $value)) {
 					return true;
 				}
 			}
+
 			return $result;
 		}
 	}
