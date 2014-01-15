@@ -1,137 +1,127 @@
 <?php
 
 	/**
-	 * Класс для разбора правил файла robots.txt
+	 * Class for parsing robots.txt files
 	 *
 	 * @author Igor Timoshenkov (igor.timoshenkov@gmail.com)
 	 *
-	 * Граф-схема конечного автомата с описанием состояний и сигналов:
-	 * - https://docs.google.com/document/d/1_rNjxpnUUeJG13ap6cnXM6Sx9ZQtd1ngADXnW9SHJSE/edit
+	 * Logic schem and signals:
+	 * @link https://docs.google.com/document/d/1_rNjxpnUUeJG13ap6cnXM6Sx9ZQtd1ngADXnW9SHJSE/edit
 	 *
-	 * Дополнительные материалы и ссылки:
-	 * - https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
-	 * - http://help.yandex.com/webmaster/?id=1113851
-	 * - http://socoder.net/index.php?snippet=23824
-	 * - http://www.sphider.eu/forum/read.php?3,2740
-	 * - http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
+	 * Some useful links and materials:
+	 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
+	 * @link http://help.yandex.com/webmaster/?id=1113851
+	 * @link http://socoder.net/index.php?snippet=23824
+	 * @link http://www.sphider.eu/forum/read.php?3,2740
+	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
 
 	class robotstxtparser {
 
-		// кодировка файла по умолчаению
-		const DEFAULT_ENCODING 				= 'UTF-8';
+		// default encoding
+		const DEFAULT_ENCODING = 'UTF-8';
 
-		// состояния автомата
-		const STATE_ZERO_POINT 				= 'zero-point';
-		const STATE_READ_DIRECTIVE			= 'read-directive';
-		const STATE_SKIP_SPACE				= 'skip-space';
-		const STATE_SKIP_LINE				= 'skip-line';
-		const STATE_READ_VALUE				= 'read-value';
+		// states
+		const STATE_ZERO_POINT = 'zero-point';
+		const STATE_READ_DIRECTIVE = 'read-directive';
+		const STATE_SKIP_SPACE = 'skip-space';
+		const STATE_SKIP_LINE = 'skip-line';
+		const STATE_READ_VALUE = 'read-value';
 
-		// директивы
-		const DIRECTIVE_ALLOW 				= 'allow';
-		const DIRECTIVE_DISALLOW 			= 'disallow';
-		const DIRECTIVE_HOST 				= 'host';
-		const DIRECTIVE_SITEMAP 			= 'sitemap';
-		const DIRECTIVE_USERAGENT 			= 'user-agent';
+		// directives
+		const DIRECTIVE_ALLOW = 'allow';
+		const DIRECTIVE_DISALLOW = 'disallow';
+		const DIRECTIVE_HOST = 'host';
+		const DIRECTIVE_SITEMAP = 'sitemap';
+		const DIRECTIVE_USERAGENT = 'user-agent';
 
-		// внутренние переменные
+		// internal logs
 		public $log_enabled = true;
-
-		// текущее слово
-		protected $current_word = "";
-
-		// текущий проверяемый символ
-		protected $current_char = "";
-
-		// номер текущего сивола
-		protected $char_index = 0;
-
-		// текущая и предыдущая директива
-		protected $current_directive = "";
-		protected $previous_directive = "";
-
-		// User-Agent
-		protected $userAgent = "*";
-
-		// текущее состояние
+		
+		// current state
 		public $state = "";
 
-		// содержимое файла robots.txt
+		// robots.txt file content
 		public $content = "";
 
-		// наборы правил
+		// rules set
 		public $rules = array();
+		
+		protected $current_word = "";
+		protected $current_char = "";
+		protected $char_index = 0;
+		protected $current_directive = "";
+		protected $previous_directive = "";
+		protected $userAgent = "*";
 
 		/**
-		 * Конструктор
-		 *
-		 * @param string $content  - само содержимое файла
-		 * @param string $encoding - кодировка файла
+		 * @param string $content  - file content
+		 * @param string $encoding - encoding
 		 *
 		 * @return void
 		 */
-		public function __construct($content, $encoding = self::DEFAULT_ENCODING) {
-			// преобразование кодировки
+		public function __construct($content, $encoding = self::DEFAULT_ENCODING) 
+		{
+			// convert encoding
 			$encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
 			mb_internal_encoding($encoding);
 
-			// задаем контент
+			// set content
 			$this->content = iconv($encoding, 'UTF-8//IGNORE', $content);
 
-			// устанавливаем начальное состояние
+			// set default state
 			$this->state = self::STATE_ZERO_POINT;
 
-			// парсим правила - первый шаг
+			// parse rools - default state
 			$this->prepareRules();
 		}
 
-		// сигналы
+		// signals
 
 		/**
-		 * Сигнал комментария (#)
+		 * Comment signal (#)
 		 */
 		protected function sharp() {
 			return ($this->current_char == '#');
 		}
 
 		/**
-		 * Сигнал директивы Allow
+		 * Allow directive signal
 		 */
 		protected function allow() {
 			return ($this->current_word == self::DIRECTIVE_ALLOW);
 		}
 
 		/**
-		 * Сигнал директивы Disallow
+		 * Disallow directive signal
 		 */
 		protected function disallow() {
 			return ($this->current_word == self::DIRECTIVE_DISALLOW);
 		}
 
 		/**
-		 * Сигнал директивы Host
+		 * Host directive signal
 		 */
 		protected function host() {
 			return ($this->current_word == self::DIRECTIVE_HOST);
 		}
 
 		/**
-		 * Сигнал директивы Sitemap
+		 * Sitemap directive signal
 		 */
 		protected function sitemap() {
 			return ($this->current_word == self::DIRECTIVE_SITEMAP);
 		}
 
 		/**
-		 * Сигнал разделителя пары ключ : значение
+		 * Key : value pair separator signal
 		 */
 		protected function lineSeparator() {
 			return ($this->current_char == ':');
 		}
 
 		/**
-		 * Сигнал перехода на новую строку
+		 * Move to new line signal
 		 */
 		protected function newLine() {
 			return ($this->current_char == "\n"
@@ -141,7 +131,7 @@
 		}
 
 		/**
-		 * Сигнал "пробел"
+		 * "Space" signal
 		 */
 		protected function space() {
 			return ($this->current_char == "\s");
