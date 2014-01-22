@@ -360,18 +360,21 @@
 		}
 		
 		/**
-		 * Обертка для проверки sitemaps
+		 * Sitemaps check wrapper
 		 *
-		 * @param string $userAgent - для какого робота проверка
+		 * @param string $userAgent - which robot to check for
 		 *
-		 * @return array
+		 * @return mixed
 		 */
-		public function getSitemaps($userAgent = '*') {
-			// если нет правила или группы паравил по user-agent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP])) {
-				// проверяем категорию "*" - для всех
+		public function getSitemaps($userAgent = '*') 
+		{
+			// if there is not rule or a set of rules for UserAgent
+			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP])) 
+			{
+				// check for all
 				return ($userAgent != '*') ? $this->getSitemaps() : false;
 			}
+			
 			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
 	}
