@@ -233,7 +233,10 @@
 						{
 							$this->rules[$this->current_word] = array();
 							$this->userAgent = $this->current_word;
-						} 
+						}
+						elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
+							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+						}
 						else {
 							if ($this->current_directive == self::DIRECTIVE_ALLOW 
 								|| $this->current_directive == self::DIRECTIVE_DISALLOW
@@ -354,6 +357,22 @@
 			}
 
 			return $result;
+		}
+		
+		/**
+		 * Обертка для проверки sitemaps
+		 *
+		 * @param string $userAgent - для какого робота проверка
+		 *
+		 * @return array
+		 */
+		public function getSitemaps($userAgent = '*') {
+			// если нет правила или группы паравил по user-agent
+			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP])) {
+				// проверяем категорию "*" - для всех
+				return ($userAgent != '*') ? $this->getSitemaps() : false;
+			}
+			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
 	}
 ?>
