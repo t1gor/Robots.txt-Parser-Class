@@ -7,8 +7,8 @@ Example:
 ```php
 <?php
 	// lib import
-	require_once('robotstxtparsermachine.php');
-	$parser = new robotstxtparsermachine(file_get_contents('http://google.com/robots.txt'), 'UTF-8');
+	require_once('robotstxtparser.php');
+	$parser = new robotstxtparser(file_get_contents('http://google.com/robots.txt'), 'UTF-8');
 	var_dump($parser->isDisallowed('/someurl'));
 	var_dump($parser->isAllowed('/someotherurl.html'));
 	print_r($parser->rules);
