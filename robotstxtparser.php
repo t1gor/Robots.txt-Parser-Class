@@ -34,10 +34,11 @@
 		const DIRECTIVE_HOST = 'host';
 		const DIRECTIVE_SITEMAP = 'sitemap';
 		const DIRECTIVE_USERAGENT = 'user-agent';
+		const DIRECTIVE_CRAWL_DELAY = 'crawl-delay';
 
 		// internal logs
 		public $log_enabled = true;
-		
+
 		// current state
 		public $state = "";
 
@@ -46,7 +47,7 @@
 
 		// rules set
 		public $rules = array();
-		
+
 		protected $current_word = "";
 		protected $current_char = "";
 		protected $char_index = 0;
@@ -60,7 +61,7 @@
 		 *
 		 * @return void
 		 */
-		public function __construct($content, $encoding = self::DEFAULT_ENCODING) 
+		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
 		{
 			// convert encoding
 			$encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
@@ -123,7 +124,7 @@
 		/**
 		 * Move to new line signal
 		 */
-		protected function newLine() 
+		protected function newLine()
 		{
 			return ($this->current_char == "\n"
 				|| $this->current_word == "\r\n"
@@ -146,6 +147,13 @@
 		}
 
 		/**
+		 * Crawl-Delay directive signal
+		 */
+		protected function crawlDelay() {
+			return ($this->current_word == self::DIRECTIVE_CRAWL_DELAY);
+		}
+
+		/**
 		 * Change state
 		 *
 		 * @param string $stateTo - state that should be set
@@ -161,7 +169,7 @@
 		 *
 		 * @return void
 		 */
-		public function prepareRules() 
+		public function prepareRules()
 		{
 			$contentLength = mb_strlen($this->content);
 			while ($this->char_index <= $contentLength) {
@@ -174,24 +182,25 @@
 		 *
 		 * @return void
 		 */
-		protected function step() 
+		protected function step()
 		{
-			switch ($this->state) 
+			switch ($this->state)
 			{
 				case self::STATE_ZERO_POINT:
-					if ($this->allow() 
-						|| $this->disallow() 
-						|| $this->host() 
-						|| $this->userAgent() 
+					if ($this->allow()
+						|| $this->disallow()
+						|| $this->host()
+						|| $this->userAgent()
+						|| $this->crawlDelay()
 						|| $this->sitemap()
 					) {
 						$this->switchState(self::STATE_READ_DIRECTIVE);
-					} 
+					}
 					elseif ($this->newLine()) {
 						// неизвестная директива, пропускаем её
 						$this->current_word = "";
 						$this->increment();
-					} 
+					}
 					else {
 						$this->increment();
 					}
@@ -208,7 +217,7 @@
 					{
 						$this->current_word = "";
 						$this->switchState(self::STATE_READ_VALUE);
-					} 
+					}
 					else {
 						if ($this->space()) {
 							$this->switchState(self::STATE_SKIP_SPACE);
@@ -227,18 +236,22 @@
 				break;
 
 				case self::STATE_READ_VALUE:
-					if ($this->newLine()) 
+					if ($this->newLine())
 					{
-						if ($this->current_directive == self::DIRECTIVE_USERAGENT) 
+						if ($this->current_directive == self::DIRECTIVE_USERAGENT)
 						{
 							$this->rules[$this->current_word] = array();
 							$this->userAgent = $this->current_word;
+						}
+						elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
+						{
+							$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
 						}
 						elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
 							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
 						}
 						else {
-							if ($this->current_directive == self::DIRECTIVE_ALLOW 
+							if ($this->current_directive == self::DIRECTIVE_ALLOW
 								|| $this->current_directive == self::DIRECTIVE_DISALLOW
 							) {
 								$this->current_word = "/".ltrim($this->current_word, '/');
@@ -247,7 +260,7 @@
 						}
 						$this->current_word = "";
 						$this->switchState(self::STATE_ZERO_POINT);
-					} 
+					}
 					else {
 						$this->increment();
 					}
@@ -262,7 +275,7 @@
 		 *
 		 * @return string
 		 */
-		protected static function prepareRegexRule($value) 
+		protected static function prepareRegexRule($value)
 		{
 			$value = str_replace('*', '.*', str_replace('.', '\.', str_replace('?', '\?', str_replace('$', '\$', $value))));
 			if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
@@ -279,7 +292,7 @@
 		 *
 		 * @return void
 		 */
-		protected function skip() 
+		protected function skip()
 		{
 			if ($this->space()) {
 				$this->switchState(self::STATE_SKIP_SPACE);
@@ -295,7 +308,7 @@
 		 *
 		 * @return void
 		 */
-		protected function increment() 
+		protected function increment()
 		{
 			$this->current_char = mb_strtolower(mb_substr($this->content, $this->char_index, 1));
 			$this->current_word .= $this->current_char;
@@ -311,9 +324,9 @@
 		 *
 		 * @return bool
 		 */
-		public function isAllowed($url, $userAgent = "*") 
+		public function isAllowed($url, $userAgent = "*")
 		{
-			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) 
+			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
 				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
@@ -325,7 +338,7 @@
 		 *
 		 * @return bool
 		 */
-		public function isDisallowed($url, $userAgent = "*") 
+		public function isDisallowed($url, $userAgent = "*")
 		{
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -339,17 +352,17 @@
 		 *
 		 * @return bool
 		 */
-		public function checkRule($rule, $value = '/', $userAgent = '*') 
+		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
 			$result = false;
 			// if there is no rule or a set of rules for user-agent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule])) 
+			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule]))
 			{
 				// check 'For all' category - '*'
 				return ($userAgent != '*') ? $this->checkRule($rule, $value) : false;
 			}
 
-			foreach ($this->rules[$userAgent][$rule] as $robotRule) 
+			foreach ($this->rules[$userAgent][$rule] as $robotRule)
 			{
 				if (preg_match('@'.$robotRule.'@', $value)) {
 					return true;
@@ -358,7 +371,7 @@
 
 			return $result;
 		}
-		
+
 		/**
 		 * Sitemaps check wrapper
 		 *
@@ -366,15 +379,15 @@
 		 *
 		 * @return mixed
 		 */
-		public function getSitemaps($userAgent = '*') 
+		public function getSitemaps($userAgent = '*')
 		{
 			// if there is not rule or a set of rules for UserAgent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP])) 
+			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP]))
 			{
 				// check for all
 				return ($userAgent != '*') ? $this->getSitemaps() : false;
 			}
-			
+
 			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
 	}
