@@ -17,7 +17,14 @@ print_r($parser->rules);
 
 More code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
 
-**Algorythm schema:**
+### Algorythm schema:
+**Conditions:**
+* (0) ZERO_POINT
+* (1) READ_DIRECTIVE
+* (2) SKIP_SPACE
+* (3) READ_VALUE
+* (4) SKIP_LINE
+
 ![Schema](https://raw.githubusercontent.com/t1gor/Robots.txt-Parser-Class/master/assets/schema.png)
 
 **Some useful links and materials:**
