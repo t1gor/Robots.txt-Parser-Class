@@ -12,29 +12,33 @@
 	 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 	 * @link http://help.yandex.com/webmaster/?id=1113851
 	 * @link http://socoder.net/index.php?snippet=23824
-	 * @link http://www.sphider.eu/forum/read.php?3,2740
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
 
-	class robotstxtparser {
+	use \InvalidArgumentException;
+
+	class RobotsTxtParser {
 
 		// default encoding
 		const DEFAULT_ENCODING = 'UTF-8';
 
 		// states
-		const STATE_ZERO_POINT = 'zero-point';
+		const STATE_ZERO_POINT     = 'zero-point';
 		const STATE_READ_DIRECTIVE = 'read-directive';
-		const STATE_SKIP_SPACE = 'skip-space';
-		const STATE_SKIP_LINE = 'skip-line';
-		const STATE_READ_VALUE = 'read-value';
+		const STATE_SKIP_SPACE     = 'skip-space';
+		const STATE_SKIP_LINE      = 'skip-line';
+		const STATE_READ_VALUE     = 'read-value';
 
 		// directives
-		const DIRECTIVE_ALLOW = 'allow';
-		const DIRECTIVE_DISALLOW = 'disallow';
-		const DIRECTIVE_HOST = 'host';
-		const DIRECTIVE_SITEMAP = 'sitemap';
-		const DIRECTIVE_USERAGENT = 'user-agent';
+		const DIRECTIVE_ALLOW       = 'allow';
+		const DIRECTIVE_DISALLOW    = 'disallow';
+		const DIRECTIVE_HOST        = 'host';
+		const DIRECTIVE_SITEMAP     = 'sitemap';
+		const DIRECTIVE_USERAGENT   = 'user-agent';
 		const DIRECTIVE_CRAWL_DELAY = 'crawl-delay';
+
+		// language
+		const LANG_NO_CONTENT_PASSED = "No content submitted - please check the file that you are using.";
 
 		// internal logs
 		public $log_enabled = true;
@@ -48,6 +52,7 @@
 		// rules set
 		public $rules = array();
 
+		// internally used variables
 		protected $current_word = "";
 		protected $current_char = "";
 		protected $char_index = 0;
@@ -56,13 +61,18 @@
 		protected $userAgent = "*";
 
 		/**
-		 * @param string $content  - file content
-		 * @param string $encoding - encoding
-		 *
+		 * @param  string $content  - file content
+		 * @param  string $encoding - encoding
+		 * @throws InvalidArgumentException
 		 * @return void
 		 */
 		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
 		{
+			// checl for empty content
+			if (strlen($content) == 0) {
+				throw new InvalidArgumentException(self::LANG_NO_CONTENT_PASSED);
+			}
+
 			// convert encoding
 			$encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
 			mb_internal_encoding($encoding);
@@ -157,7 +167,6 @@
 		 * Change state
 		 *
 		 * @param string $stateTo - state that should be set
-		 *
 		 * @return void
 		 */
 		protected function switchState($stateTo = self::STATE_SKIP_LINE) {
@@ -197,7 +206,7 @@
 						$this->switchState(self::STATE_READ_DIRECTIVE);
 					}
 					elseif ($this->newLine()) {
-						// неизвестная директива, пропускаем её
+						// unknown directive - skip it
 						$this->current_word = "";
 						$this->increment();
 					}
@@ -276,7 +285,6 @@
 		 * Convert robots.txt rool to php regex
 		 *
 		 * @param string $value
-		 *
 		 * @return string
 		 */
 		protected static function prepareRegexRule($value)
@@ -323,9 +331,8 @@
 		/**
 		 * Check url wrapper
 		 *
-		 * @param string $url       - url to check
-		 * @param string $userAgent - which robot to check for
-		 *
+		 * @param  string $url       - url to check
+		 * @param  string $userAgent - which robot to check for
 		 * @return bool
 		 */
 		public function isAllowed($url, $userAgent = "*")
@@ -337,9 +344,8 @@
 		/**
 		 * Check url wrapper
 		 *
-		 * @param string $url       - url to check
-		 * @param string $userAgent - which robot to check for
-		 *
+		 * @param  string $url       - url to check
+		 * @param  string $userAgent - which robot to check for
 		 * @return bool
 		 */
 		public function isDisallowed($url, $userAgent = "*")
@@ -350,15 +356,15 @@
 		/**
 		 * Check url rules
 		 *
-		 * @param string $rule      - which rule to check
-		 * @param string $url       - url to check
-		 * @param string $userAgent - which robot to check for
-		 *
+		 * @param  string $rule      - which rule to check
+		 * @param  string $url       - url to check
+		 * @param  string $userAgent - which robot to check for
 		 * @return bool
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
 			$result = false;
+
 			// if there is no rule or a set of rules for user-agent
 			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule]))
 			{
@@ -379,8 +385,7 @@
 		/**
 		 * Sitemaps check wrapper
 		 *
-		 * @param string $userAgent - which robot to check for
-		 *
+		 * @param  string $userAgent - which robot to check for
 		 * @return mixed
 		 */
 		public function getSitemaps($userAgent = '*')
