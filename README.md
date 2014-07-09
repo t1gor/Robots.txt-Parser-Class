@@ -15,7 +15,14 @@ print_r($parser->rules);
 ?>
 ```
 
+More code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
+
+**Algorythm schema:**
+![Schema](https://raw.githubusercontent.com/t1gor/Robots.txt-Parser-Class/master/assets/schema.png)
+
 **Some useful links and materials:**
 * [Google: Robots.txt Specifications](https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt)
 * [Yandex: Using robots.txt](http://help.yandex.com/webmaster/?id=1113851)
 * [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I)
+
+Thanks for the contriution!
