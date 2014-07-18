@@ -80,6 +80,10 @@
 			// set content
 			$this->content = iconv($encoding, 'UTF-8//IGNORE', $content);
 
+			// Ensure that there's a newline at the end of the file, otherwise the
+			// last line is ignored
+			$this->content .= "\n";
+
 			// set default state
 			$this->state = self::STATE_ZERO_POINT;
 
@@ -249,7 +253,9 @@
 					{
 						if ($this->current_directive == self::DIRECTIVE_USERAGENT)
 						{
-							$this->rules[$this->current_word] = array();
+							if (empty($this->rules[$this->current_word])) {
+								$this->rules[$this->current_word] = array();
+							}
 							$this->userAgent = $this->current_word;
 						}
 						elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
