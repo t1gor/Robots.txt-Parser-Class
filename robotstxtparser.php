@@ -244,7 +244,9 @@
 					{
 						if ($this->current_directive == self::DIRECTIVE_USERAGENT)
 						{
-							$this->rules[$this->current_word] = array();
+							if (empty($this->rules[$this->current_word])) {
+								$this->rules[$this->current_word] = array();
+							}
 							$this->userAgent = $this->current_word;
 						}
 						elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
