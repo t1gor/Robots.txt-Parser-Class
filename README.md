@@ -32,4 +32,4 @@ More code samples could be found in the [tests folder](https://github.com/t1gor/
 * [Yandex: Using robots.txt](http://help.yandex.com/webmaster/?id=1113851)
 * [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I)
 
-Thanks for the contriution!
+Thanks for the contribution!
