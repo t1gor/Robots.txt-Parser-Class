@@ -15,8 +15,6 @@
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
 
-	use \InvalidArgumentException;
-
 	class RobotsTxtParser {
 
 		// default encoding
@@ -296,7 +294,10 @@
 		protected static function prepareRegexRule($value)
 		{
 			$value = str_replace('*', '.*', str_replace('.', '\.', str_replace('?', '\?', str_replace('$', '\$', $value))));
-			if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
+            if(strlen($value)>2 && substr($value, -2)=='\$'){
+                $value  =  substr($value, 0, -2).'$';
+            }
+            if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '=') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '?') == (mb_strlen($value)-1)
 			) {
