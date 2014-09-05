@@ -294,10 +294,15 @@
 		protected static function prepareRegexRule($value)
 		{
 			$value = str_replace('*', '.*', str_replace('.', '\.', str_replace('?', '\?', str_replace('$', '\$', $value))));
-            if(strlen($value)>2 && substr($value, -2)=='\$'){
-                $value  =  substr($value, 0, -2).'$';
-            }
-            if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
+			
+			/**
+			 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
+			 */
+			if(mb_strlen($value) > 2 && mb_substr($value, -2) == '\$'){
+                		$value  =  substr($value, 0, -2).'$';
+            		}
+            		
+            		if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '=') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '?') == (mb_strlen($value)-1)
 			) {
