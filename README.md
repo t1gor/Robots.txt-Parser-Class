@@ -35,7 +35,7 @@ More code samples could be found in the [tests folder](https://github.com/t1gor/
 Thanks for the contribution!
 
 ### TODO:
- * Travis CI integration
+ * [Travis CI integration](https://travis-ci.org/getting_started)
  * phpUnit tests
 
 License
