@@ -58,12 +58,11 @@
 		protected $previous_directive = "";
 		protected $userAgent = "*";
 
-		/**
-		 * @param  string $content  - file content
-		 * @param  string $encoding - encoding
-		 * @throws InvalidArgumentException
-		 * @return void
-		 */
+        /**
+         * @param  string $content - file content
+         * @param  string $encoding - encoding
+         * @return \RobotsTxtParser
+         */
 		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
 		{
 			// checl for empty content
@@ -360,14 +359,15 @@
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
-		/**
-		 * Check url rules
-		 *
-		 * @param  string $rule      - which rule to check
-		 * @param  string $url       - url to check
-		 * @param  string $userAgent - which robot to check for
-		 * @return bool
-		 */
+        /**
+         * Check url rules
+         *
+         * @param  string $rule - which rule to check
+         * @param string $value
+         * @param  string $userAgent - which robot to check for
+         * @internal param string $url - url to check
+         * @return bool
+         */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
 			$result = false;
@@ -381,7 +381,7 @@
 
 			foreach ($this->rules[$userAgent][$rule] as $robotRule)
 			{
-				if (preg_match('@'.$robotRule.'@', $value)) {
+                if (preg_match('@'.str_replace('@','\\@',$robotRule.'@'), $value)) {
 					return true;
 				}
 			}
@@ -407,4 +407,3 @@
 			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
 	}
-?>
