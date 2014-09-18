@@ -382,7 +382,7 @@
 
 			foreach ($this->rules[$userAgent][$rule] as $robotRule)
 			{
-                if (preg_match('@'.str_replace('@','\\@',$robotRule.'@'), $value)) {
+                if (preg_match('@'.str_replace('@','\\@',$robotRule).'@', $value)) {
 					return true;
 				}
 			}
