@@ -36,6 +36,7 @@ Thanks for the contribution!
 
 ### TODO:
  * [Travis CI integration](https://travis-ci.org/getting_started)
+ * Composer installation
  * phpUnit tests
 
 License
