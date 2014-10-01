@@ -264,14 +264,12 @@
 							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
 						}
 						else {
-							if ($this->current_directive == self::DIRECTIVE_ALLOW
-								|| $this->current_directive == self::DIRECTIVE_DISALLOW
-							) {
-								if (!empty($this->current_word)) {
-									$this->current_word = "/".ltrim($this->current_word, '/');
-								}
-							}
-							if (!empty($this->current_word)) {
+                            if (!empty($this->current_word)) {
+                                if ($this->current_directive == self::DIRECTIVE_ALLOW
+                                    || $this->current_directive == self::DIRECTIVE_DISALLOW
+                                ) {
+                                        $this->current_word = "/".ltrim($this->current_word, '/');
+                                }
 								$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
 							}
 						}
