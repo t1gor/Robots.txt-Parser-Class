@@ -38,6 +38,7 @@ Thanks for the contribution!
 ### TODO:
  * [Travis CI integration](https://travis-ci.org/getting_started)
  * [Add composer installation](https://packagist.org/packages/submit)
+ * Add a method for validation
  * phpUnit tests
 
 License
