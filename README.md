@@ -31,6 +31,7 @@ More code samples could be found in the [tests folder](https://github.com/t1gor/
 * [Google: Robots.txt Specifications](https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt)
 * [Yandex: Using robots.txt](http://help.yandex.com/webmaster/?id=1113851)
 * [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I)
+* [Google Webmaster tools Robots.txt testing tool](https://www.google.com/webmasters/tools/robots-testing-tool)
 
 Thanks for the contribution!
 
