@@ -16,4 +16,3 @@
 	assert($parser->isDisallowed("/url_containing_@_symbol"));
 
 	echo "OK\n";
-	
