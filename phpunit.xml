@@ -2,9 +2,9 @@
 <phpunit>
 	<testsuites>
 		<testsuite name="">
-			<file>AtSymbol.php</file>
-			<file>CrawlDelay.php</file>
-			<file>EmptyDisallow.php</file>
+			<file>test/AtSymbol.php</file>
+			<file>test/CrawlDelay.php</file>
+			<file>test/EmptyDisallow.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>
