@@ -62,7 +62,7 @@
 		 * @param  string $content  - file content
 		 * @param  string $encoding - encoding
 		 * @throws InvalidArgumentException
-		 * @return void
+		 * @return RobotsTxtParser
 		 */
 		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
 		{
@@ -264,14 +264,12 @@
 							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
 						}
 						else {
-							if ($this->current_directive == self::DIRECTIVE_ALLOW
-								|| $this->current_directive == self::DIRECTIVE_DISALLOW
-							) {
-								if (!empty($this->current_word)) {
-									$this->current_word = "/".ltrim($this->current_word, '/');
-								}
-							}
-							if (!empty($this->current_word)) {
+                            if (!empty($this->current_word)) {
+                                if ($this->current_directive == self::DIRECTIVE_ALLOW
+                                    || $this->current_directive == self::DIRECTIVE_DISALLOW
+                                ) {
+                                        $this->current_word = "/".ltrim($this->current_word, '/');
+                                }
 								$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
 							}
 						}
@@ -369,8 +367,9 @@
 		 * Check url rules
 		 *
 		 * @param  string $rule      - which rule to check
-		 * @param  string $url       - url to check
+		 * @param  string $value       - url to check
 		 * @param  string $userAgent - which robot to check for
+         * @internal param string $url - url to check
 		 * @return bool
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
@@ -386,7 +385,7 @@
 
 			foreach ($this->rules[$userAgent][$rule] as $robotRule)
 			{
-				if (preg_match('@'.$robotRule.'@', $value)) {
+                if (preg_match('@'.str_replace('@','\\@',$robotRule).'@', $value)) {
 					return true;
 				}
 			}
