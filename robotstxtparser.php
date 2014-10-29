@@ -258,7 +258,7 @@
 						}
 						elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
 						{
-							$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
+							$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
 						}
 						elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
 							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
@@ -292,15 +292,15 @@
 		protected static function prepareRegexRule($value)
 		{
 			$value = str_replace('*', '.*', str_replace('.', '\.', str_replace('?', '\?', str_replace('$', '\$', $value))));
-			
+
 			/**
 			 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 			 */
-			if(mb_strlen($value) > 2 && mb_substr($value, -2) == '\$'){
-						$value  =  substr($value, 0, -2).'$';
-					}
-					
-					if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
+			if (mb_strlen($value) > 2 && mb_substr($value, -2) == '\$') {
+				$value  =  substr($value, 0, -2).'$';
+			}
+
+			if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '=') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '?') == (mb_strlen($value)-1)
 			) {
