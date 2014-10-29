@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+	<testsuites>
+		<testsuite name="">
+			<file>AtSymbol.php</file>
+			<file>CrawlDelay.php</file>
+			<file>EmptyDisallow.php</file>
+		</testsuite>
+	</testsuites>
+</phpunit>
