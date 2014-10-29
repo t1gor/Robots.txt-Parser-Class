@@ -264,12 +264,12 @@
 							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
 						}
 						else {
-                            if (!empty($this->current_word)) {
-                                if ($this->current_directive == self::DIRECTIVE_ALLOW
-                                    || $this->current_directive == self::DIRECTIVE_DISALLOW
-                                ) {
-                                        $this->current_word = "/".ltrim($this->current_word, '/');
-                                }
+							if (!empty($this->current_word)) {
+								if ($this->current_directive == self::DIRECTIVE_ALLOW
+									|| $this->current_directive == self::DIRECTIVE_DISALLOW
+								) {
+										$this->current_word = "/".ltrim($this->current_word, '/');
+								}
 								$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
 							}
 						}
@@ -297,10 +297,10 @@
 			 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 			 */
 			if(mb_strlen($value) > 2 && mb_substr($value, -2) == '\$'){
-                		$value  =  substr($value, 0, -2).'$';
-            		}
-            		
-            		if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
+						$value  =  substr($value, 0, -2).'$';
+					}
+					
+					if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '=') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '?') == (mb_strlen($value)-1)
 			) {
@@ -366,10 +366,10 @@
 		/**
 		 * Check url rules
 		 *
-		 * @param  string $rule      - which rule to check
+		 * @param  string $rule        - which rule to check
 		 * @param  string $value       - url to check
-		 * @param  string $userAgent - which robot to check for
-         * @internal param string $url - url to check
+		 * @param  string $userAgent   - which robot to check for
+		 * @internal param string $url - url to check
 		 * @return bool
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
@@ -385,7 +385,7 @@
 
 			foreach ($this->rules[$userAgent][$rule] as $robotRule)
 			{
-                if (preg_match('@'.str_replace('@','\\@',$robotRule).'@', $value)) {
+				if (preg_match('@'.preg_quote($robotRule,'@').'@', $value)) {
 					return true;
 				}
 			}
