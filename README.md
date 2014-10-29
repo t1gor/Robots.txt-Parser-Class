@@ -1,6 +1,8 @@
 Robots.txt php parser class
 =====================
 
+[![Build Status](https://travis-ci.org/t1gor/Robots.txt-Parser-Class.svg?branch=master)](https://travis-ci.org/t1gor/Robots.txt-Parser-Class)
+
 Php class to parse robots.txt rules according to Google & Yandex specifications. **Please note that the class name was changed in the recent [commits](https://github.com/t1gor/Robots.txt-Parser-Class/commit/b4db1555cd35f3f3d34845af53aa403a8537fbef#diff-ff40970a7a5d1e6998d9eafe3e228456L19)**, so if upgrading from the older code - please consider checking your code.
 
 **Code sample:**
