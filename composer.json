@@ -1,5 +1,5 @@
 {
-   "name": "t1gor/RobotsTxtParser",
+   "name": "t1gor/robots-txt-parser",
    "description": "Php class to parse robots.txt rules according to Google & Yandex specifications.",
    "version": "0.0.1",
    "keywords": ["robots.txt", "parser","Yandex", "Google"],
