@@ -38,10 +38,9 @@ More code samples could be found in the [tests folder](https://github.com/t1gor/
 Thanks for the contribution!
 
 ### TODO:
- * [Travis CI integration](https://travis-ci.org/getting_started)
- * [Add composer installation](https://packagist.org/packages/submit)
+ * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
+ * [Add Coveralls integration](https://github.com/satooshi/php-coveralls/blob/master/README.md)
  * Add a method for validation
- * phpUnit tests
 
 License
 -------
