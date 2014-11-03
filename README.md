@@ -40,6 +40,7 @@ Thanks for the contribution!
 ### TODO:
  * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
  * [Add Coveralls integration](https://github.com/satooshi/php-coveralls/blob/master/README.md)
+ * [Integrate VersionEye (?)](https://www.versioneye.com/)
  * Add a method for validation
 
 License
