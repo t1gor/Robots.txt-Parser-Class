@@ -411,4 +411,4 @@
 			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
 	}
-?>
+
