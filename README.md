@@ -40,6 +40,7 @@ Thanks for the contribution!
 ### TODO:
  * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
  * Fix [code issues](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/issues)
+ * Add composer installation instructions
  * Add a method for validation
 
 License
