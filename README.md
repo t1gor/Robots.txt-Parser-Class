@@ -1,7 +1,7 @@
 Robots.txt php parser class
 =====================
 
-[![Build Status](https://travis-ci.org/t1gor/Robots.txt-Parser-Class.svg?branch=master)](https://travis-ci.org/t1gor/Robots.txt-Parser-Class)
+[![Build Status](https://travis-ci.org/t1gor/Robots.txt-Parser-Class.svg?branch=master)](https://travis-ci.org/t1gor/Robots.txt-Parser-Class) [![Code Climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/gpa.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class)
 
 Php class to parse robots.txt rules according to Google & Yandex specifications. **Please note that the class name was changed in the recent [commits](https://github.com/t1gor/Robots.txt-Parser-Class/commit/b4db1555cd35f3f3d34845af53aa403a8537fbef#diff-ff40970a7a5d1e6998d9eafe3e228456L19)**, so if upgrading from the older code - please consider checking your code.
 
@@ -39,8 +39,7 @@ Thanks for the contribution!
 
 ### TODO:
  * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
- * [Add Coveralls integration](https://github.com/satooshi/php-coveralls/blob/master/README.md)
- * [Integrate VersionEye (?)](https://www.versioneye.com/)
+ * Fix [code issues](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/issues)
  * Add a method for validation
 
 License
