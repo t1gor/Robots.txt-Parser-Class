@@ -9,9 +9,11 @@ Php class to parse robots.txt rules according to Google & Yandex specifications.
 The library is available for install via Composer package. To install via Composer, please add the requerement to your `composer.json` file, like this:
 
 ```json
+{
     "require": {
         "t1gor/robots-txt-parser": "dev-master"
     }
+}
 ```
 
 and then use composer to load the lib:
