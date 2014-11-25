@@ -189,6 +189,120 @@
 		}
 
 		/**
+		 * Process state ZERO_POINT
+		 * @return RobotsTxtParser
+		 */
+		protected function zeroPoint()
+		{
+			if ($this->allow()
+				|| $this->disallow()
+				|| $this->host()
+				|| $this->userAgent()
+				|| $this->crawlDelay()
+				|| $this->sitemap()
+			) {
+				$this->switchState(self::STATE_READ_DIRECTIVE);
+			}
+			elseif ($this->newLine()) {
+				// unknown directive - skip it
+				$this->current_word = "";
+				$this->increment();
+			}
+			else {
+				$this->increment();
+			}
+			return $this;
+		}
+
+		/**
+		 * Read directive
+		 * @return RobotsTxtParser
+		 */
+		protected function readDirective()
+		{
+			$this->previous_directive = $this->current_directive;
+			$this->current_directive = mb_strtolower(trim($this->current_word));
+			$this->current_word = "";
+
+			$this->increment();
+
+			if ($this->lineSeparator())
+			{
+				$this->current_word = "";
+				$this->switchState(self::STATE_READ_VALUE);
+			}
+			else {
+				if ($this->space()) {
+					$this->switchState(self::STATE_SKIP_SPACE);
+				}
+			}
+			return $this;
+		}
+
+		/**
+		 * Skip space
+		 * @return RobotsTxtParser
+		 */
+		protected function skipSpace()
+		{
+			$this->char_index++;
+			$this->current_word = mb_substr($this->current_word, -1);
+			return $this;
+		}
+
+		/**
+		 * Skip line
+		 * @return RobotsTxtParser
+		 */
+		protected function skipLine()
+		{
+			$this->char_index++;
+			$this->switchState(self::STATE_ZERO_POINT);
+			return $this;
+		}
+
+		/**
+		 * Read value
+		 * @return RobotsTxtParser
+		 */
+		protected function readValue()
+		{
+			if ($this->newLine())
+			{
+				if ($this->current_directive == self::DIRECTIVE_USERAGENT)
+				{
+					if (empty($this->rules[$this->current_word])) {
+						$this->rules[$this->current_word] = array();
+					}
+					$this->userAgent = $this->current_word;
+				}
+				elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
+				{
+					$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
+				}
+				elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
+					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+				}
+				else {
+					if (!empty($this->current_word)) {
+						if ($this->current_directive == self::DIRECTIVE_ALLOW
+							|| $this->current_directive == self::DIRECTIVE_DISALLOW
+						) {
+								$this->current_word = "/".ltrim($this->current_word, '/');
+						}
+						$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
+					}
+				}
+				$this->current_word = "";
+				$this->switchState(self::STATE_ZERO_POINT);
+			}
+			else {
+				$this->increment();
+			}
+			return $this;
+		}
+
+		/**
 		 * Machine step
 		 *
 		 * @return void
@@ -198,88 +312,24 @@
 			switch ($this->state)
 			{
 				case self::STATE_ZERO_POINT:
-					if ($this->allow()
-						|| $this->disallow()
-						|| $this->host()
-						|| $this->userAgent()
-						|| $this->crawlDelay()
-						|| $this->sitemap()
-					) {
-						$this->switchState(self::STATE_READ_DIRECTIVE);
-					}
-					elseif ($this->newLine()) {
-						// unknown directive - skip it
-						$this->current_word = "";
-						$this->increment();
-					}
-					else {
-						$this->increment();
-					}
-				break;
+					$this->zeroPoint();
+					break;
 
 				case self::STATE_READ_DIRECTIVE:
-					$this->previous_directive = $this->current_directive;
-					$this->current_directive = mb_strtolower(trim($this->current_word));
-					$this->current_word = "";
-
-					$this->increment();
-
-					if ($this->lineSeparator())
-					{
-						$this->current_word = "";
-						$this->switchState(self::STATE_READ_VALUE);
-					}
-					else {
-						if ($this->space()) {
-							$this->switchState(self::STATE_SKIP_SPACE);
-						}
-					}
-				break;
+					$this->readDirective();
+					break;
 
 				case self::STATE_SKIP_SPACE:
-					$this->char_index++;
-					$this->current_word = mb_substr($this->current_word, -1);
-				break;
+					$this->skipSpace();
+					break;
 
 				case self::STATE_SKIP_LINE:
-					$this->char_index++;
-					$this->switchState(self::STATE_ZERO_POINT);
-				break;
+					$this->skipLine();
+					break;
 
 				case self::STATE_READ_VALUE:
-					if ($this->newLine())
-					{
-						if ($this->current_directive == self::DIRECTIVE_USERAGENT)
-						{
-							if (empty($this->rules[$this->current_word])) {
-								$this->rules[$this->current_word] = array();
-							}
-							$this->userAgent = $this->current_word;
-						}
-						elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
-						{
-							$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
-						}
-						elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
-							$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-						}
-						else {
-							if (!empty($this->current_word)) {
-								if ($this->current_directive == self::DIRECTIVE_ALLOW
-									|| $this->current_directive == self::DIRECTIVE_DISALLOW
-								) {
-										$this->current_word = "/".ltrim($this->current_word, '/');
-								}
-								$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
-							}
-						}
-						$this->current_word = "";
-						$this->switchState(self::STATE_ZERO_POINT);
-					}
-					else {
-						$this->increment();
-					}
-				break;
+					$this->readValue();
+					break;
 			}
 		}
 
@@ -297,7 +347,7 @@
 			 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 			 */
 			if (mb_strlen($value) > 2 && mb_substr($value, -2) == '\$') {
-				$value  =  substr($value, 0, -2).'$';
+				$value = substr($value, 0, -2).'$';
 			}
 
 			if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
@@ -411,4 +461,3 @@
 			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
 	}
-
