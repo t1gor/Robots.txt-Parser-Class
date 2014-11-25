@@ -194,13 +194,12 @@
 		 */
 		protected function shouldSwitchToZeroPoint()
 		{
-			return in_array($this->current_word, array(
-				self::DIRECTIVE_ALLOW, 
-				self::DIRECTIVE_DISALLOW, 
-				self::DIRECTIVE_HOST, 
-				self::DIRECTIVE_CRAWL_DELAY, 
-				self::DIRECTIVE_SITEMAP
-			));
+			return $this->allow()
+				|| $this->disallow()
+				|| $this->host()
+				|| $this->userAgent()
+				|| $this->crawlDelay()
+				|| $this->sitemap();
 		}
 
 		/**
