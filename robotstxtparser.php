@@ -335,17 +335,18 @@
 
 		/**
 		 * Convert robots.txt rool to php regex
-		 *
+		 * 
+		 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 		 * @param string $value
 		 * @return string
 		 */
 		protected static function prepareRegexRule($value)
 		{
-			$value = str_replace('*', '.*', str_replace('.', '\.', str_replace('?', '\?', str_replace('$', '\$', $value))));
+			$value = str_replace('$', '\$', $value);
+			$value = str_replace('?', '\?', $value);
+			$value = str_replace('.', '\.', $value);
+			$value = str_replace('*', '.*', $value);
 
-			/**
-			 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
-			 */
 			if (mb_strlen($value) > 2 && mb_substr($value, -2) == '\$') {
 				$value = substr($value, 0, -2).'$';
 			}
