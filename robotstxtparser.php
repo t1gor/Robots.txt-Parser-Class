@@ -211,14 +211,15 @@
 		{
 			if ($this->shouldSwitchToZeroPoint()) {
 				$this->switchState(self::STATE_READ_DIRECTIVE);
-				return $this;
 			}
-
 			// unknown directive - skip it
-			if ($this->newLine()) {
+			elseif ($this->newLine()) {
 				$this->current_word = "";
+				$this->increment();
 			}
-			$this->increment();
+			else {
+				$this->increment();
+			}
 			return $this;
 		}
 
