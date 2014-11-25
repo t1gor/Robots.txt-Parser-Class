@@ -3,17 +3,36 @@ Robots.txt php parser class
 
 [![Build Status](https://travis-ci.org/t1gor/Robots.txt-Parser-Class.svg?branch=master)](https://travis-ci.org/t1gor/Robots.txt-Parser-Class) [![Code Climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/gpa.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![Test Coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/coverage.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class)
 
-Php class to parse robots.txt rules according to Google & Yandex specifications. **Please note that the class name was changed in the recent [commits](https://github.com/t1gor/Robots.txt-Parser-Class/commit/b4db1555cd35f3f3d34845af53aa403a8537fbef#diff-ff40970a7a5d1e6998d9eafe3e228456L19)**, so if upgrading from the older code - please consider checking your code.
+Php class to parse robots.txt rules according to Google & Yandex specifications. Please keep in mind that this is an alpha-version project, as you might see from the coverage report :) But I am about to change that.
 
-**Code sample:**
+### Installation
+The library is available for install via Composer package. To install via Composer, please add the requerement to your `composer.json` file, like this:
+
+```json
+    "require": {
+        "t1gor/robots-txt-parser": "dev-master"
+    }
+```
+
+and then use composer to load the lib:
+
 ```php
 <?php
-// lib import
-require_once('robotstxtparser.php');
-$parser = new RobotsTxtParser(file_get_contents('http://google.com/robots.txt'));
-var_dump($parser->isDisallowed('/someurl'));
-var_dump($parser->isAllowed('/someotherurl.html'));
-print_r($parser->rules);
+    require 'vendor/autoload.php';
+    $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
+    ...
+```
+
+You can find out more about Composer here: https://getcomposer.org/
+
+### Usage example
+```php
+<?php
+    require_once('robotstxtparser.php');
+    $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
+    var_dump($parser->isDisallowed('/someurl'));
+    var_dump($parser->isAllowed('/someotherurl.html'));
+    print_r($parser->rules);
 ?>
 ```
 
@@ -28,6 +47,7 @@ More code samples could be found in the [tests folder](https://github.com/t1gor/
 * (4) SKIP_LINE
 
 ![Schema](https://raw.githubusercontent.com/t1gor/Robots.txt-Parser-Class/master/assets/schema.png)
+![Components graph](https://raw.githubusercontent.com/t1gor/Robots.txt-Parser-Class/master/assets/components-graph.png)
 
 **Some useful links and materials:**
 * [Google: Robots.txt Specifications](https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt)
@@ -35,12 +55,17 @@ More code samples could be found in the [tests folder](https://github.com/t1gor/
 * [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I)
 * [Google Webmaster tools Robots.txt testing tool](https://www.google.com/webmasters/tools/robots-testing-tool)
 
-Thanks for the contribution!
+### Contributing
+First of all - thank you for your interest and a desire to help! If you found an issue and know how to fix it, please submit a pull request to the dev branch. Please do not forget the following:
+- Your fixed issue should be covered with tests (we are using phpUnit)
+- Please mind the [code climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) recommendations. It some-how helps to keep things simplier, or at least seems to :)
+- Following the coding standard would also be much appreciated (4 tabs as an ident, camelCase, etc.)
+
+I would really appreciate if you could share the link to your project that is utilizing the lib.
 
 ### TODO:
  * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
- * Fix [code issues](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/issues)
- * Add composer installation instructions
+ * [Raise coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/code?sort=covered_percent&sort_direction=desc)
  * Add a method for validation
 
 License
