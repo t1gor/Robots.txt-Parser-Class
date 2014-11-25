@@ -1,4 +1,4 @@
 vendor/*
 composer.lock
 composer.phar
-test/coverage.xml
+build/logs/coverage.xml
