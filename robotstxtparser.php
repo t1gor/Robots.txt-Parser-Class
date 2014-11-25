@@ -189,28 +189,36 @@
 		}
 
 		/**
+		 * Check if we should switch
+		 * @return bool
+		 */
+		protected function shouldSwitchToZeroPoint()
+		{
+			return in_array($this->current_word, array(
+				self::DIRECTIVE_ALLOW, 
+				self::DIRECTIVE_DISALLOW, 
+				self::DIRECTIVE_HOST, 
+				self::DIRECTIVE_CRAWL_DELAY, 
+				self::DIRECTIVE_SITEMAP
+			));
+		}
+
+		/**
 		 * Process state ZERO_POINT
 		 * @return RobotsTxtParser
 		 */
 		protected function zeroPoint()
 		{
-			if ($this->allow()
-				|| $this->disallow()
-				|| $this->host()
-				|| $this->userAgent()
-				|| $this->crawlDelay()
-				|| $this->sitemap()
-			) {
+			if ($this->shouldSwitchToZeroPoint()) {
 				$this->switchState(self::STATE_READ_DIRECTIVE);
+				return $this;
 			}
-			elseif ($this->newLine()) {
-				// unknown directive - skip it
+
+			// unknown directive - skip it
+			if ($this->newLine()) {
 				$this->current_word = "";
-				$this->increment();
 			}
-			else {
-				$this->increment();
-			}
+			$this->increment();
 			return $this;
 		}
 
