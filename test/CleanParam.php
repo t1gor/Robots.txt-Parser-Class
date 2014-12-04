@@ -28,7 +28,7 @@
 			$this->assertObjectHasAttribute('rules', $parser);
 			$this->assertArrayHasKey('*', $parser->rules);
 			$this->assertArrayHasKey('clean-param', $parser->rules['*']);
-			$this->assertEquals(array('utm_source&utm_medium&utm_campaign'), $parser->rules['*']['clean-param']);
+			$this->assertEquals(array('utm_source&utm_medium&utm.campaign'), $parser->rules['*']['clean-param']);
 		}
 
 		/**
@@ -41,7 +41,7 @@
 				array("
 					User-Agent: *
 					#Clean-param: utm_source_commented&comment
-					Clean-param: utm_source&utm_medium&utm_campaign
+					Clean-param: utm_source&utm_medium&utm.campaign
 				"),
 			);
 		}
