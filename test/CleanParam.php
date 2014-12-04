@@ -20,7 +20,7 @@
 		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
-		public function testCleanParam($robotsTxtContent)
+		public function testCleanParam($robotsTxtContent, $message = NULL)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
@@ -28,7 +28,7 @@
 			$this->assertObjectHasAttribute('rules', $parser);
 			$this->assertArrayHasKey('*', $parser->rules);
 			$this->assertArrayHasKey('clean-param', $parser->rules['*']);
-			$this->assertEquals(array('utm_source&utm_medium&utm.campaign'), $parser->rules['*']['clean-param']);
+			$this->assertEquals(array('utm_source&utm_medium&utm.campaign'), $parser->rules['*']['clean-param'], $message);
 		}
 
 		/**
@@ -38,11 +38,22 @@
 		public function generateDataForTest()
 		{
 			return array(
-				array("
+				array(
+					"
 					User-Agent: *
 					#Clean-param: utm_source_commented&comment
 					Clean-param: utm_source&utm_medium&utm.campaign
-				"),
+					",
+					'with comment'
+				),
+				array(
+					"
+					User-Agent: *
+					Clean-param: utm_source&utm_medium&utm.campaign
+					Clean-param: utm_source&utm_medium&utm.campaign
+					",
+					'expected to remove repetitions of lines'
+				),
 			);
 		}
 	}

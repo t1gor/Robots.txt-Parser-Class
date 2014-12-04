@@ -86,7 +86,7 @@
 			// set default state
 			$this->state = self::STATE_ZERO_POINT;
 
-			// parse rools - default state
+			// parse rules - default state
 			$this->prepareRules();
 		}
 
@@ -177,7 +177,7 @@
 		}
 
 		/**
-		 * Parse rools
+		 * Parse rules
 		 *
 		 * @return void
 		 */
@@ -186,6 +186,14 @@
 			$contentLength = mb_strlen($this->content);
 			while ($this->char_index <= $contentLength) {
 				$this->step();
+			}
+
+			foreach ($this->rules as $userAgent => $directive) {
+				foreach ($directive as $directiveName => $directiveValue) {
+					if (is_array($directiveValue)) {
+						$this->rules[$userAgent][$directiveName] = array_values(array_unique($directiveValue));
+					}
+				}
 			}
 		}
 
@@ -352,7 +360,7 @@
 		}
 
 		/**
-		 * Convert robots.txt rool to php regex
+		 * Convert robots.txt rules to php regex
 		 * 
 		 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 		 * @param string $value
