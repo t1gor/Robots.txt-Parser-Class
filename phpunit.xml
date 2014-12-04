@@ -8,6 +8,7 @@
 			<file>test/AtSymbol.php</file>
 			<file>test/CrawlDelay.php</file>
 			<file>test/EmptyDisallow.php</file>
+			<file>test/Host.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>
