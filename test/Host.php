@@ -26,7 +26,7 @@
 			$this->assertObjectHasAttribute('rules', $parser);
 			$this->assertArrayHasKey('*', $parser->rules);
 			$this->assertArrayHasKey('host', $parser->rules['*']);
-			$this->assertEquals(array('www.aquaphor.ru'), $parser->rules['*']['host']);
+			$this->assertEquals('www.aquaphor.ru', $parser->rules['*']['host']);
 		}
 
 		/**
