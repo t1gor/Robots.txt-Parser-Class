@@ -34,6 +34,7 @@
 		const DIRECTIVE_SITEMAP     = 'sitemap';
 		const DIRECTIVE_USERAGENT   = 'user-agent';
 		const DIRECTIVE_CRAWL_DELAY = 'crawl-delay';
+		const DIRECTIVE_CLEAN_PARAM = 'clean-param';
 
 		// language
 		const LANG_NO_CONTENT_PASSED = "No content submitted - please check the file that you are using.";
@@ -199,8 +200,9 @@
 				self::DIRECTIVE_DISALLOW,
 				self::DIRECTIVE_HOST,
 				self::DIRECTIVE_USERAGENT,
+				self::DIRECTIVE_SITEMAP,
 				self::DIRECTIVE_CRAWL_DELAY,
-				self::DIRECTIVE_SITEMAP
+				self::DIRECTIVE_CLEAN_PARAM,
 			), true);
 		}
 
@@ -291,6 +293,9 @@
 					$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
 				}
 				elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
+					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+				}
+				elseif ($this->current_directive == self::DIRECTIVE_CLEAN_PARAM) {
 					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
 				}
 				elseif ($this->current_directive == self::DIRECTIVE_HOST) {
