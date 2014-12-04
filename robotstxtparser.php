@@ -293,6 +293,9 @@
 				elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
 					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
 				}
+				elseif ($this->current_directive == self::DIRECTIVE_HOST) {
+					$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
+				}
 				else {
 					if (!empty($this->current_word)) {
 						if ($this->current_directive == self::DIRECTIVE_ALLOW
