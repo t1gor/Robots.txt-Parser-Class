@@ -24,11 +24,12 @@
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
+			$rules = $parser->getRules();
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('*', $parser->getRules());
-			$this->assertArrayHasKey('clean-param', $parser->getRules()['*']);
-			$this->assertEquals(array('utm_source&utm_medium&utm.campaign'), $parser->getRules()['*']['clean-param'], $message);
+			$this->assertArrayHasKey('*', $rules);
+			$this->assertArrayHasKey('clean-param', $rules['*']);
+			$this->assertEquals(array('utm_source&utm_medium&utm.campaign'), $rules['*']['clean-param'], $message);
 		}
 
 		/**
