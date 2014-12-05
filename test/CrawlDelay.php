@@ -22,9 +22,9 @@
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
-			$rules = $parser->getRules();
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
-			$this->assertObjectHasAttribute('rules', $parser);
+			$rules = $parser->getRules();
+
 			$this->assertArrayHasKey('ahrefsbot', $rules);
 			$this->assertArrayHasKey('crawl-delay', $rules['ahrefsbot']);
 			$this->assertEquals(1.5, $rules['ahrefsbot']['crawl-delay']);
