@@ -2,7 +2,7 @@
 	/**
 	 * @backupGlobals disabled
 	 */
-	class WithWhiteSpacesTest extends \PHPUnit_Framework_TestCase
+	class WithWhitespacesTest extends \PHPUnit_Framework_TestCase
 	{
 		/**
 		 * Load library
@@ -18,13 +18,13 @@
 		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
-		public function testContainingAtChar($robotsTxtContent)
+		public function testWithWhitespaces($robotsTxtContent)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 
-			$this->assertTrue(!empty($parser->getRules()['*']), 'failed rules for *');
+			$this->assertNotEmpty($parser->getRules('*'), 'expected rules for *');
 			$this->assertFalse($parser->isDisallowed("/admin"), 'failed disallowed');
 			$this->assertTrue($parser->isAllowed("/admin/front"), 'failed allow');
 		}
