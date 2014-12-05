@@ -2,7 +2,7 @@
 	/**
 	 * @backupGlobals disabled
 	 */
-	class CrawlDelayTest extends \PHPUnit_Framework_TestCase
+	class HostTest extends \PHPUnit_Framework_TestCase
 	{
 		/**
 		 * Load library
@@ -18,15 +18,15 @@
 		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
-		public function testCrawlDelay($robotsTxtContent)
+		public function testHost($robotsTxtContent)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('ahrefsbot', $parser->getRules());
-			$this->assertArrayHasKey('crawl-delay', $parser->getRules()['ahrefsbot']);
-			$this->assertEquals(1.5, $parser->getRules()['ahrefsbot']['crawl-delay']);
+			$this->assertArrayHasKey('*', $parser->getRules());
+			$this->assertArrayHasKey('host', $parser->getRules()['*']);
+			$this->assertEquals('www.aquaphor.ru', $parser->getRules()['*']['host']);
 		}
 
 		/**
@@ -37,8 +37,8 @@
 		{
 			return array(
 				array("
-					User-Agent: AhrefsBot
-					Crawl-Delay: 1.5
+					User-Agent: *
+					Host: www.aquaphor.ru
 				")
 			);
 		}

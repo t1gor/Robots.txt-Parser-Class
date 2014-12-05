@@ -5,7 +5,7 @@
 	 *
 	 * @author Igor Timoshenkov (igor.timoshenkov@gmail.com)
 	 *
-	 * Logic schem and signals:
+	 * Logic schema and signals:
 	 * @link https://docs.google.com/document/d/1_rNjxpnUUeJG13ap6cnXM6Sx9ZQtd1ngADXnW9SHJSE/edit
 	 *
 	 * Some useful links and materials:
@@ -14,7 +14,6 @@
 	 * @link http://socoder.net/index.php?snippet=23824
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
-
 	class RobotsTxtParser {
 
 		// default encoding
@@ -34,21 +33,19 @@
 		const DIRECTIVE_SITEMAP     = 'sitemap';
 		const DIRECTIVE_USERAGENT   = 'user-agent';
 		const DIRECTIVE_CRAWL_DELAY = 'crawl-delay';
+		const DIRECTIVE_CLEAN_PARAM = 'clean-param';
 
 		// language
 		const LANG_NO_CONTENT_PASSED = "No content submitted - please check the file that you are using.";
 
-		// internal logs
-		public $log_enabled = true;
-
 		// current state
-		public $state = "";
+		private $state = "";
 
 		// robots.txt file content
-		public $content = "";
+		private $content = "";
 
 		// rules set
-		public $rules = array();
+		private $rules = array();
 
 		// internally used variables
 		protected $current_word = "";
@@ -66,11 +63,6 @@
 		 */
 		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
 		{
-			// checl for empty content
-			if (strlen($content) == 0) {
-				throw new InvalidArgumentException(self::LANG_NO_CONTENT_PASSED);
-			}
-
 			// convert encoding
 			$encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
 			mb_internal_encoding($encoding);
@@ -85,8 +77,29 @@
 			// set default state
 			$this->state = self::STATE_ZERO_POINT;
 
-			// parse rools - default state
+			// parse rules - default state
 			$this->prepareRules();
+		}
+
+		public function getRules($userAgent = NULL)
+		{
+			if (is_null($userAgent)) {
+				//return all rules
+				return $this->rules;
+			}
+			else {
+				if (isset($this->rules[$userAgent])) {
+					return $this->rules[$userAgent];
+				}
+				else {
+					return array();
+				}
+			}
+		}
+
+		public function getContent()
+		{
+			return $this->content;
 		}
 
 		// signals
@@ -176,7 +189,7 @@
 		}
 
 		/**
-		 * Parse rools
+		 * Parse rules
 		 *
 		 * @return void
 		 */
@@ -185,6 +198,14 @@
 			$contentLength = mb_strlen($this->content);
 			while ($this->char_index <= $contentLength) {
 				$this->step();
+			}
+
+			foreach ($this->rules as $userAgent => $directive) {
+				foreach ($directive as $directiveName => $directiveValue) {
+					if (is_array($directiveValue)) {
+						$this->rules[$userAgent][$directiveName] = array_values(array_unique($directiveValue));
+					}
+				}
 			}
 		}
 
@@ -199,8 +220,9 @@
 				self::DIRECTIVE_DISALLOW,
 				self::DIRECTIVE_HOST,
 				self::DIRECTIVE_USERAGENT,
+				self::DIRECTIVE_SITEMAP,
 				self::DIRECTIVE_CRAWL_DELAY,
-				self::DIRECTIVE_SITEMAP
+				self::DIRECTIVE_CLEAN_PARAM,
 			), true);
 		}
 
@@ -232,7 +254,6 @@
 		{
 			$this->previous_directive = $this->current_directive;
 			$this->current_directive = mb_strtolower(trim($this->current_word));
-			$this->current_word = "";
 
 			$this->increment();
 
@@ -244,6 +265,9 @@
 			else {
 				if ($this->space()) {
 					$this->switchState(self::STATE_SKIP_SPACE);
+				}
+				if ($this->sharp()) {
+					$this->switchState(self::STATE_SKIP_LINE);
 				}
 			}
 			return $this;
@@ -277,39 +301,53 @@
 		 */
 		protected function readValue()
 		{
-			if ($this->newLine())
-			{
-				if ($this->current_directive == self::DIRECTIVE_USERAGENT)
-				{
-					if (empty($this->rules[$this->current_word])) {
-						$this->rules[$this->current_word] = array();
-					}
-					$this->userAgent = $this->current_word;
-				}
-				elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
-				{
-					$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
-				}
-				elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
-					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-				}
-				else {
-					if (!empty($this->current_word)) {
-						if ($this->current_directive == self::DIRECTIVE_ALLOW
-							|| $this->current_directive == self::DIRECTIVE_DISALLOW
-						) {
-								$this->current_word = "/".ltrim($this->current_word, '/');
-						}
-						$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
-					}
-				}
-				$this->current_word = "";
-				$this->switchState(self::STATE_ZERO_POINT);
+			if ($this->newLine()) {
+				$this->addValueToDirective();
+			}
+			elseif ($this->sharp()) {
+				$this->current_word = mb_substr($this->current_word, 0, -1);
+				$this->addValueToDirective();
 			}
 			else {
 				$this->increment();
 			}
 			return $this;
+		}
+
+		private function addValueToDirective()
+		{
+			if ($this->current_directive == self::DIRECTIVE_USERAGENT)
+			{
+				if (empty($this->rules[$this->current_word])) {
+					$this->rules[$this->current_word] = array();
+				}
+				$this->userAgent = $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
+			{
+				$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
+				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_CLEAN_PARAM) {
+				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_HOST) {
+				$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
+			}
+			else {
+				if (!empty($this->current_word)) {
+					if ($this->current_directive == self::DIRECTIVE_ALLOW
+						|| $this->current_directive == self::DIRECTIVE_DISALLOW
+					) {
+						$this->current_word = "/".ltrim($this->current_word, '/');
+					}
+					$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
+				}
+			}
+			$this->current_word = "";
+			$this->switchState(self::STATE_ZERO_POINT);
 		}
 
 		/**
@@ -344,13 +382,13 @@
 		}
 
 		/**
-		 * Convert robots.txt rool to php regex
+		 * Convert robots.txt rules to php regex
 		 * 
 		 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 		 * @param string $value
 		 * @return string
 		 */
-		protected static function prepareRegexRule($value)
+		protected function prepareRegexRule($value)
 		{
 			$value = str_replace('$', '\$', $value);
 			$value = str_replace('?', '\?', $value);

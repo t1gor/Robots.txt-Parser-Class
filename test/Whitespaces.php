@@ -2,7 +2,7 @@
 	/**
 	 * @backupGlobals disabled
 	 */
-	class CrawlDelayTest extends \PHPUnit_Framework_TestCase
+	class WhitespacesTest extends \PHPUnit_Framework_TestCase
 	{
 		/**
 		 * Load library
@@ -18,15 +18,19 @@
 		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
-		public function testCrawlDelay($robotsTxtContent)
+		public function testWhitespaces($robotsTxtContent)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
-			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('ahrefsbot', $parser->getRules());
-			$this->assertArrayHasKey('crawl-delay', $parser->getRules()['ahrefsbot']);
-			$this->assertEquals(1.5, $parser->getRules()['ahrefsbot']['crawl-delay']);
+
+			$rules = $parser->getRules('*');
+
+			$this->assertNotEmpty($rules, 'expected rules for *');
+			$this->assertArrayHasKey('disallow', $rules);
+			$this->assertNotEmpty($rules['disallow'], 'disallow failed');
+			$this->assertArrayHasKey('allow', $rules);
+			$this->assertNotEmpty($rules['allow'], 'allow failed');
 		}
 
 		/**
@@ -37,8 +41,9 @@
 		{
 			return array(
 				array("
-					User-Agent: AhrefsBot
-					Crawl-Delay: 1.5
+					User-agent: *
+					Disallow : /admin
+					Allow    :   /admin/front
 				")
 			);
 		}
