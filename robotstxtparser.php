@@ -5,7 +5,7 @@
 	 *
 	 * @author Igor Timoshenkov (igor.timoshenkov@gmail.com)
 	 *
-	 * Logic schem and signals:
+	 * Logic schema and signals:
 	 * @link https://docs.google.com/document/d/1_rNjxpnUUeJG13ap6cnXM6Sx9ZQtd1ngADXnW9SHJSE/edit
 	 *
 	 * Some useful links and materials:
@@ -14,7 +14,6 @@
 	 * @link http://socoder.net/index.php?snippet=23824
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
-
 	class RobotsTxtParser {
 
 		// default encoding
@@ -267,6 +266,9 @@
 				if ($this->space()) {
 					$this->switchState(self::STATE_SKIP_SPACE);
 				}
+				if ($this->sharp()) {
+					$this->switchState(self::STATE_SKIP_LINE);
+				}
 			}
 			return $this;
 		}
@@ -299,45 +301,53 @@
 		 */
 		protected function readValue()
 		{
-			if ($this->newLine())
-			{
-				if ($this->current_directive == self::DIRECTIVE_USERAGENT)
-				{
-					if (empty($this->rules[$this->current_word])) {
-						$this->rules[$this->current_word] = array();
-					}
-					$this->userAgent = $this->current_word;
-				}
-				elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
-				{
-					$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
-				}
-				elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
-					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-				}
-				elseif ($this->current_directive == self::DIRECTIVE_CLEAN_PARAM) {
-					$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-				}
-				elseif ($this->current_directive == self::DIRECTIVE_HOST) {
-					$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
-				}
-				else {
-					if (!empty($this->current_word)) {
-						if ($this->current_directive == self::DIRECTIVE_ALLOW
-							|| $this->current_directive == self::DIRECTIVE_DISALLOW
-						) {
-								$this->current_word = "/".ltrim($this->current_word, '/');
-						}
-						$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
-					}
-				}
-				$this->current_word = "";
-				$this->switchState(self::STATE_ZERO_POINT);
+			if ($this->newLine()) {
+				$this->addValueToDirective();
+			}
+			elseif ($this->sharp()) {
+				$this->current_word = mb_substr($this->current_word, 0, -1);
+				$this->addValueToDirective();
 			}
 			else {
 				$this->increment();
 			}
 			return $this;
+		}
+
+		private function addValueToDirective()
+		{
+			if ($this->current_directive == self::DIRECTIVE_USERAGENT)
+			{
+				if (empty($this->rules[$this->current_word])) {
+					$this->rules[$this->current_word] = array();
+				}
+				$this->userAgent = $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
+			{
+				$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
+				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_CLEAN_PARAM) {
+				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+			}
+			elseif ($this->current_directive == self::DIRECTIVE_HOST) {
+				$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
+			}
+			else {
+				if (!empty($this->current_word)) {
+					if ($this->current_directive == self::DIRECTIVE_ALLOW
+						|| $this->current_directive == self::DIRECTIVE_DISALLOW
+					) {
+						$this->current_word = "/".ltrim($this->current_word, '/');
+					}
+					$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
+				}
+			}
+			$this->current_word = "";
+			$this->switchState(self::STATE_ZERO_POINT);
 		}
 
 		/**

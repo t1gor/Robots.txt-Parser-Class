@@ -2,7 +2,7 @@
 	/**
 	 * @backupGlobals disabled
 	 */
-	class WithWhitespacesTest extends \PHPUnit_Framework_TestCase
+	class WhitespacesTest extends \PHPUnit_Framework_TestCase
 	{
 		/**
 		 * Load library
@@ -18,7 +18,7 @@
 		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
-		public function testWithWhitespaces($robotsTxtContent)
+		public function testWhitespaces($robotsTxtContent)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);

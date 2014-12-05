@@ -10,7 +10,8 @@
 			<file>test/EmptyDisallow.php</file>
 			<file>test/Host.php</file>
 			<file>test/CleanParam.php</file>
-			<file>test/WithWhitespaces.php</file>
+			<file>test/Whitespaces.php</file>
+			<file>test/Comments.php</file>
 		</testsuite>
 	</testsuites>
 </phpunit>
