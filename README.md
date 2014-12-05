@@ -75,7 +75,7 @@ License
 
     The MIT License
 
-    Copyright (c) 2011 Jackson Owens
+    Copyright (c) 2013 Igor Timoshenkov
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
