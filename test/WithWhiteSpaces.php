@@ -24,7 +24,7 @@
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 
-			$this->assertTrue(!empty($this->rules['*']), 'rules for * is empty');
+			$this->assertTrue(!empty($parser->getRules()['*']), 'failed rules for *');
 			$this->assertFalse($parser->isDisallowed("/admin"), 'failed disallowed');
 			$this->assertTrue($parser->isAllowed("/admin/front"), 'failed allow');
 		}

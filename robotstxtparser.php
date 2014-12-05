@@ -39,17 +39,14 @@
 		// language
 		const LANG_NO_CONTENT_PASSED = "No content submitted - please check the file that you are using.";
 
-		// internal logs
-		public $log_enabled = true;
-
 		// current state
-		public $state = "";
+		private $state = "";
 
 		// robots.txt file content
-		public $content = "";
+		private $content = "";
 
 		// rules set
-		public $rules = array();
+		private $rules = array();
 
 		// internally used variables
 		protected $current_word = "";
@@ -67,11 +64,6 @@
 		 */
 		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
 		{
-			// checl for empty content
-			if (strlen($content) == 0) {
-				throw new InvalidArgumentException(self::LANG_NO_CONTENT_PASSED);
-			}
-
 			// convert encoding
 			$encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
 			mb_internal_encoding($encoding);
@@ -88,6 +80,27 @@
 
 			// parse rules - default state
 			$this->prepareRules();
+		}
+
+		public function getRules($userAgent = NULL)
+		{
+			if (is_null($userAgent)) {
+				//return all rules
+				return $this->rules;
+			}
+			else {
+				if (isset($this->rules[$userAgent])) {
+					return $this->rules[$userAgent];
+				}
+				else {
+					return array();
+				}
+			}
+		}
+
+		public function getContent()
+		{
+			return $this->content;
 		}
 
 		// signals

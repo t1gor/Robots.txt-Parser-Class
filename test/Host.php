@@ -24,9 +24,9 @@
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('*', $parser->rules);
-			$this->assertArrayHasKey('host', $parser->rules['*']);
-			$this->assertEquals('www.aquaphor.ru', $parser->rules['*']['host']);
+			$this->assertArrayHasKey('*', $parser->getRules());
+			$this->assertArrayHasKey('host', $parser->getRules()['*']);
+			$this->assertEquals('www.aquaphor.ru', $parser->getRules()['*']['host']);
 		}
 
 		/**
