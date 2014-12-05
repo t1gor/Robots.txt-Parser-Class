@@ -26,7 +26,7 @@
 			$this->assertObjectHasAttribute('rules', $parser);
 			$this->assertArrayHasKey('*', $parser->getRules());
 			$this->assertArrayHasKey('host', $parser->getRules()['*']);
-			$this->assertEquals('www.aquaphor.ru', $parser->getRules()['*']['host']);
+			$this->assertEquals('www.example.com', $parser->getRules()['*']['host']);
 		}
 
 		/**
@@ -38,7 +38,7 @@
 			return array(
 				array("
 					User-Agent: *
-					Host: www.aquaphor.ru
+					Host: www.example.com
 				")
 			);
 		}
