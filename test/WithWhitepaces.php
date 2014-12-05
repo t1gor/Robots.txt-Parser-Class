@@ -20,15 +20,17 @@
 		 */
 		public function testWithWhitespaces($robotsTxtContent)
 		{
-			$this->markTestSkipped('not implemented yet');
-
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 
-			$this->assertNotEmpty($parser->getRules('*'), 'expected rules for *');
-			$this->assertFalse($parser->isDisallowed("/admin"), 'failed disallowed');
-			$this->assertTrue($parser->isAllowed("/admin/front"), 'failed allow');
+			$rules = $parser->getRules('*');
+
+			$this->assertNotEmpty($rules, 'expected rules for *');
+			$this->assertArrayHasKey('disallow', $rules);
+			$this->assertNotEmpty($rules['disallow'], 'disallow failed');
+			$this->assertArrayHasKey('allow', $rules);
+			$this->assertNotEmpty($rules['allow'], 'allow failed');
 		}
 
 		/**

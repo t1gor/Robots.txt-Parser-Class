@@ -255,7 +255,6 @@
 		{
 			$this->previous_directive = $this->current_directive;
 			$this->current_directive = mb_strtolower(trim($this->current_word));
-			$this->current_word = "";
 
 			$this->increment();
 
@@ -379,7 +378,7 @@
 		 * @param string $value
 		 * @return string
 		 */
-		protected static function prepareRegexRule($value)
+		protected function prepareRegexRule($value)
 		{
 			$value = str_replace('$', '\$', $value);
 			$value = str_replace('?', '\?', $value);
