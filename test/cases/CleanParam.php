@@ -1,17 +1,6 @@
 <?php
-	/**
-	 * @backupGlobals disabled
-	 */
 	class CleanParamTest extends \PHPUnit_Framework_TestCase
 	{
-		/**
-		 * Load library
-		 */
-		public static function setUpBeforeClass()
-		{
-			require_once(realpath(__DIR__.'/../robotstxtparser.php'));
-		}
-
 		/**
 		 * @link https://help.yandex.ru/webmaster/controlling-robot/robots-txt.xml#clean-param
 		 *

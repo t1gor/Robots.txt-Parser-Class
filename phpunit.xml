@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit>
+<phpunit backupGlobals="disabled"
+	bootstrap="test/bootstrap.php">
 	<logging>
 		<log type="coverage-clover" target="build/logs/clover.xml"/>
 	</logging>
 	<testsuites>
 		<testsuite name="">
-			<file>test/AtSymbol.php</file>
-			<file>test/CrawlDelay.php</file>
-			<file>test/EmptyDisallow.php</file>
-			<file>test/Host.php</file>
-			<file>test/CleanParam.php</file>
-			<file>test/Whitespaces.php</file>
-			<file>test/Comments.php</file>
+			<directory suffix=".php" phpVersion="5.3.0" phpVersionOperator=">=">test/cases</directory>
 		</testsuite>
 	</testsuites>
 </phpunit>

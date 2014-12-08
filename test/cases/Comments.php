@@ -1,17 +1,6 @@
 <?php
-	/**
-	 * @backupGlobals disabled
-	 */
 	class CommentsTest extends \PHPUnit_Framework_TestCase
 	{
-		/**
-		 * Load library
-		 */
-		public static function setUpBeforeClass()
-		{
-			require_once(realpath(__DIR__.'/../robotstxtparser.php'));
-		}
-
 		/**
 		 * @dataProvider generateDataForTest
 		 * @covers RobotsTxtParser::isDisallowed
@@ -22,9 +11,7 @@
 		{
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
-
 			$rules = $parser->getRules('*');
-
 			$this->assertEmpty($rules, 'expected remove comments');
 		}
 
@@ -38,9 +25,7 @@
 		{
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
-
 			$rules = $parser->getRules('*');
-
 			$this->assertNotEmpty($rules, 'expected data');
 			$this->assertArrayHasKey('disallow', $rules);
 			$this->assertNotEmpty($rules['disallow'], 'disallow expected');
@@ -82,7 +67,7 @@
 			return array(
 				array(
 					"User-agent: *
-						Disallow: /tech #comment",
+					Disallow: /tech #comment",
 					'disallowValue' => '/tech',
 				),
 			);

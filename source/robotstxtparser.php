@@ -72,34 +72,13 @@
 
 			// Ensure that there's a newline at the end of the file, otherwise the
 			// last line is ignored
-			$this->content .= "\n";
+			$this->content .= PHP_EOL;
 
 			// set default state
 			$this->state = self::STATE_ZERO_POINT;
 
 			// parse rules - default state
 			$this->prepareRules();
-		}
-
-		public function getRules($userAgent = NULL)
-		{
-			if (is_null($userAgent)) {
-				//return all rules
-				return $this->rules;
-			}
-			else {
-				if (isset($this->rules[$userAgent])) {
-					return $this->rules[$userAgent];
-				}
-				else {
-					return array();
-				}
-			}
-		}
-
-		public function getContent()
-		{
-			return $this->content;
 		}
 
 		// signals
@@ -151,10 +130,10 @@
 		 */
 		protected function newLine()
 		{
-			return ($this->current_char == "\n"
-				|| $this->current_word == "\r\n"
-				|| $this->current_word == "\n\r"
-			);
+            return in_array(PHP_EOL, array(
+                $this->current_char,
+                $this->current_word
+            ));
 		}
 
 		/**
@@ -248,6 +227,7 @@
 
 		/**
 		 * Read directive
+         *
 		 * @return RobotsTxtParser
 		 */
 		protected function readDirective()
@@ -275,6 +255,7 @@
 
 		/**
 		 * Skip space
+         *
 		 * @return RobotsTxtParser
 		 */
 		protected function skipSpace()
@@ -314,41 +295,79 @@
 			return $this;
 		}
 
+        /**
+         * Add value to directive based on the directive type
+         */
 		private function addValueToDirective()
-		{
-			if ($this->current_directive == self::DIRECTIVE_USERAGENT)
-			{
-				if (empty($this->rules[$this->current_word])) {
-					$this->rules[$this->current_word] = array();
-				}
-				$this->userAgent = $this->current_word;
-			}
-			elseif ($this->current_directive == self::DIRECTIVE_CRAWL_DELAY)
-			{
-				$this->rules[$this->userAgent][$this->current_directive] = (double) $this->current_word;
-			}
-			elseif ($this->current_directive == self::DIRECTIVE_SITEMAP) {
-				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-			}
-			elseif ($this->current_directive == self::DIRECTIVE_CLEAN_PARAM) {
-				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-			}
-			elseif ($this->current_directive == self::DIRECTIVE_HOST) {
-				$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
-			}
-			else {
-				if (!empty($this->current_word)) {
-					if ($this->current_directive == self::DIRECTIVE_ALLOW
-						|| $this->current_directive == self::DIRECTIVE_DISALLOW
-					) {
-						$this->current_word = "/".ltrim($this->current_word, '/');
-					}
-					$this->rules[$this->userAgent][$this->current_directive][] = self::prepareRegexRule($this->current_word);
-				}
-			}
-			$this->current_word = "";
-			$this->switchState(self::STATE_ZERO_POINT);
-		}
+        {
+            switch ($this->current_directive)
+            {
+                case self::DIRECTIVE_USERAGENT:
+                    $this->setUserAgent($this->current_word);
+                    break;
+
+                case self::DIRECTIVE_CRAWL_DELAY:
+                    $this->addRule("floatval", false);
+                    break;
+
+                case self::DIRECTIVE_SITEMAP:
+                case self::DIRECTIVE_CLEAN_PARAM:
+                    $this->addRule();
+                    break;
+
+                case self::DIRECTIVE_HOST:
+                    $this->addRule("trim", false);
+                    break;
+
+                case self::DIRECTIVE_ALLOW:
+                case self::DIRECTIVE_DISALLOW:
+                    if (empty($this->current_word)) {
+                        break;
+                    }
+                    $this->addRule("self::prepareRegexRule");
+                    break;
+            }
+
+            // clean-up
+            $this->current_word = "";
+            $this->switchState(self::STATE_ZERO_POINT);
+        }
+
+        /**
+         * Set current user agent
+         * @param string $newAgent
+         */
+        private function setUserAgent($newAgent = "*")
+        {
+            $this->userAgent = $newAgent;
+
+            // create empty array if not there yet
+            if (empty($this->rules[$this->userAgent])) {
+                $this->rules[$this->userAgent] = array();
+            }
+        }
+
+        /**
+         * Prepare rule value and set the one
+         * @param callable $convert
+         * @param bool     $append
+         * @return void
+         */
+        private function addRule($convert = null, $append = true)
+        {
+            // convert value
+            $value = (!is_null($convert))
+                ? call_user_func($convert, $this->current_word)
+                : $this->current_word;
+
+            // set to rules
+            if ($append === true) {
+                $this->rules[$this->userAgent][$this->current_directive][] = $value;
+            }
+            else {
+                $this->rules[$this->userAgent][$this->current_directive] = $value;
+            }
+        }
 
 		/**
 		 * Machine step
@@ -383,13 +402,14 @@
 
 		/**
 		 * Convert robots.txt rules to php regex
-		 * 
+		 *
 		 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
 		 * @param string $value
 		 * @return string
 		 */
 		protected function prepareRegexRule($value)
 		{
+            $value = "/" . ltrim($value, '/');
 			$value = str_replace('$', '\$', $value);
 			$value = str_replace('?', '\?', $value);
 			$value = str_replace('.', '\.', $value);
@@ -509,4 +529,32 @@
 
 			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
 		}
+
+        /**
+         * Get rules based on user agent
+         *
+         * @param string|null $userAgent
+         * @return array
+         */
+        public function getRules($userAgent = null)
+        {
+            // return all rules
+            if (is_null($userAgent)) {
+                return $this->rules;
+            }
+            elseif (isset($this->rules[$userAgent])) {
+                return $this->rules[$userAgent];
+            }
+            else {
+                return array();
+            }
+        }
+
+        /**
+         * @return string
+         */
+        public function getContent()
+        {
+            return $this->content;
+        }
 	}

@@ -1,33 +1,22 @@
 <?php
-	/**
-	 * @backupGlobals disabled
-	 */
-	class HostTest extends \PHPUnit_Framework_TestCase
+	class CrawlDelayTest extends \PHPUnit_Framework_TestCase
 	{
-		/**
-		 * Load library
-		 */
-		public static function setUpBeforeClass()
-		{
-			require_once(realpath(__DIR__.'/../robotstxtparser.php'));
-		}
-
 		/**
 		 * @dataProvider generateDataForTest
 		 * @covers RobotsTxtParser::isDisallowed
 		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
-		public function testHost($robotsTxtContent)
+		public function testCrawlDelay($robotsTxtContent)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$rules = $parser->getRules();
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('*', $rules);
-			$this->assertArrayHasKey('host', $rules['*']);
-			$this->assertEquals('www.example.com', $rules['*']['host']);
+			$this->assertArrayHasKey('ahrefsbot', $rules);
+			$this->assertArrayHasKey('crawl-delay', $rules['ahrefsbot']);
+			$this->assertEquals(1.5, $rules['ahrefsbot']['crawl-delay']);
 		}
 
 		/**
@@ -38,8 +27,8 @@
 		{
 			return array(
 				array("
-					User-Agent: *
-					Host: www.example.com
+					User-Agent: AhrefsBot
+					Crawl-Delay: 1.5
 				")
 			);
 		}

@@ -1,17 +1,6 @@
 <?php
-	/**
-	 * @backupGlobals disabled
-	 */
 	class AtSymbolTest extends \PHPUnit_Framework_TestCase
 	{
-		/**
-		 * Load library
-		 */
-		public static function setUpBeforeClass()
-		{
-			require_once(realpath(__DIR__.'/../robotstxtparser.php'));
-		}
-
 		/**
 		 * @dataProvider generateDataForTest
 		 * @covers RobotsTxtParser::isDisallowed
