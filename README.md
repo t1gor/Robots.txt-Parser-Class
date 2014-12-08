@@ -67,7 +67,7 @@ I would really appreciate if you could share the link to your project that is ut
 
 ### TODO:
  * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
- * [Raise coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/code?sort=covered_percent&sort_direction=desc)
+ * [Raise coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/code?sort=covered_percent&sort_direction=desc). The goal is to reach at least 50% and release v1.0
  * Add a method for validation
 
 License
@@ -75,7 +75,7 @@ License
 
     The MIT License
 
-    Copyright (c) 2011 Jackson Owens
+    Copyright (c) 2013 Igor Timoshenkov
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
