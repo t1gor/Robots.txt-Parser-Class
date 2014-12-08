@@ -19,6 +19,6 @@
         }
     ],
     "autoload": {
-        "classmap": ["robotstxtparser.php"]
+        "classmap": [ "source/robotstxtparser.php" ]
     }
 }
