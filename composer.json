@@ -20,5 +20,10 @@
     ],
     "autoload": {
         "classmap": [ "source/robotstxtparser.php" ]
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "v0.0.1-dev"
+        }
     }
 }
