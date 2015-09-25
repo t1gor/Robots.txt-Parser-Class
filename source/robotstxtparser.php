@@ -509,9 +509,11 @@
 
 			foreach ($this->rules[$userAgent][$rule] as $robotRule)
 			{
-				if (preg_match('@'.preg_quote($robotRule,'@').'@', $value)) {
-					return true;
-				}
+				// change @ for \@
+				$escaped = strtr($robotRule, array("@" => "\@"));
+
+				// return match result
+				return (bool) preg_match('@'.$escaped.'@', $value);
 			}
 
 			return $result;
