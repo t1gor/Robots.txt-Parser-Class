@@ -61,7 +61,7 @@
 		 * @throws InvalidArgumentException
 		 * @return RobotsTxtParser
 		 */
-		public function __construct($content, $encoding = self::DEFAULT_ENCODING)
+		public function __construct($content = '', $encoding = self::DEFAULT_ENCODING)
 		{
 			// convert encoding
 			$encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
@@ -494,6 +494,11 @@
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
 			$result = false;
+
+			// if rules are empty - allowed by default
+			if (empty($this->rules)) {
+				return ( $rule === self::DIRECTIVE_ALLOW );
+			}
 
 			// if there is no rule or a set of rules for user-agent
 			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule]))
