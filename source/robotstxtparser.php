@@ -466,6 +466,9 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
+			if ($this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent)) {
+				return null;
+			}
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
 				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -479,6 +482,9 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
+			if ($this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)) {
+				return null;
+			}
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
