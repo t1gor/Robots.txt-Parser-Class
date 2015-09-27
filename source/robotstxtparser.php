@@ -496,7 +496,7 @@
 			$result = false;
 
 			// if rules are empty - allowed by default
-			if (empty($this->rules)) {
+			if (!isset($this->rules[$userAgent][self::DIRECTIVE_ALLOW]) && !isset($this->rules[$userAgent][self::DIRECTIVE_DISALLOW])) {
 				return ( $rule === self::DIRECTIVE_ALLOW );
 			}
 
