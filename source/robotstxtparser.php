@@ -46,6 +46,9 @@
 
 		// rules set
 		private $rules = array();
+		
+		// sitemaps set
+		private $sitemaps = array();
 
 		// internally used variables
 		protected $current_word = "";
@@ -311,6 +314,9 @@
                     break;
 
                 case self::DIRECTIVE_SITEMAP:
+                	$this->addSitemap();
+                	break;
+                	
                 case self::DIRECTIVE_CLEAN_PARAM:
                     $this->addRule();
                     break;
@@ -368,6 +374,16 @@
                 $this->rules[$this->userAgent][$this->current_directive] = $value;
             }
         }
+        
+        /**
+         * Add sitemap wrapper
+         * 
+         * @return void
+         */
+         private function addSitemap()
+         {
+         	$this->sitemaps[] = $this->current_word;
+         }
 
 		/**
 		 * Machine step
@@ -526,21 +542,13 @@
 		}
 
 		/**
-		 * Sitemaps check wrapper
+		 * Get sitemaps wrapper
 		 *
-		 * @param  string $userAgent - which robot to check for
-		 * @return mixed
+		 * @return array
 		 */
-		public function getSitemaps($userAgent = '*')
+		public function getSitemaps()
 		{
-			// if there is not rule or a set of rules for UserAgent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP]))
-			{
-				// check for all
-				return ($userAgent != '*') ? $this->getSitemaps() : false;
-			}
-
-			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
+			return $this->sitemaps;
 		}
 
         /**
