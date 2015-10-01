@@ -383,6 +383,7 @@
          private function addSitemap()
          {
          	$this->sitemaps[] = $this->current_word;
+         	$this->sitemaps = array_unique($this->sitemaps);
          }
 
 		/**
