@@ -462,12 +462,13 @@
 		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
-		 * @return null|boolean
+		 * @throws exception if unable to check rules
+		 * @return bool
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
 			if ($this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent)) {
-				return null;
+				throw new Exception('Unable to check rules');
 			}
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
 				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
@@ -478,12 +479,13 @@
 		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
-		 * @return null|boolean
+		 * @throws exception if unable to check rules
+		 * @return bool
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
 			if ($this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)) {
-				return null;
+				throw new Exception('Unable to check rules');
 			}
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
