@@ -4,7 +4,7 @@
  * Note: Test-data may become outdated, and the test will most likely fail when issue #22 is addressed.
  * @link https://github.com/t1gor/Robots.txt-Parser-Class/issues/22
  */
-class AllowDisallowException extends \PHPUnit_Framework_TestCase
+class IsAllowedIsDisallowedException extends \PHPUnit_Framework_TestCase
 {
     /**
      * @dataProvider generateDataForTest
