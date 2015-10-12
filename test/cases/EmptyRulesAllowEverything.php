@@ -24,9 +24,7 @@ class EmptyRulesAllowEverything extends \PHPUnit_Framework_TestCase
     public function generateDataForTest()
     {
         return array(
-            array("
-					Sitemap: http://www.example.com/sitemap.xml
-				")
+            array("Sitemap: http://www.example.com/sitemap.xml")
         );
     }
 }
