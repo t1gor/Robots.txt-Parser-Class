@@ -46,6 +46,9 @@
 
 		// rules set
 		private $rules = array();
+		
+		// sitemaps set
+		private $sitemaps = array();
 
 		// internally used variables
 		protected $current_word = "";
@@ -311,6 +314,9 @@
                     break;
 
                 case self::DIRECTIVE_SITEMAP:
+                	$this->addSitemap();
+                	break;
+                	
                 case self::DIRECTIVE_CLEAN_PARAM:
                     $this->addRule();
                     break;
@@ -368,6 +374,17 @@
                 $this->rules[$this->userAgent][$this->current_directive] = $value;
             }
         }
+        
+        /**
+         * Add sitemap wrapper
+         * 
+         * @return void
+         */
+         private function addSitemap()
+         {
+         	$this->sitemaps[] = $this->current_word;
+         	$this->sitemaps = array_unique($this->sitemaps);
+         }
 
 		/**
 		 * Machine step
@@ -458,6 +475,21 @@
 		}
 
 		/**
+		 * @param  string $url       - url to check
+		 * @param  string $userAgent - which robot to check for
+		 * @throws \DomainException
+		 */
+		protected function checkEqualRules($url, $userAgent)
+		{
+			$allow = $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
+			$disallow = $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
+
+			if ($allow === $disallow) {
+				throw new \DomainException('Unable to check rules');
+			}
+		}
+
+		/**
 		 * Check url wrapper
 		 *
 		 * @param  string $url       - url to check
@@ -467,9 +499,7 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
-			if ($this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent)) {
-				throw new Exception('Unable to check rules');
-			}
+			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
 				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -484,9 +514,7 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
-			if ($this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)) {
-				throw new Exception('Unable to check rules');
-			}
+			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
@@ -528,21 +556,13 @@
 		}
 
 		/**
-		 * Sitemaps check wrapper
+		 * Get sitemaps wrapper
 		 *
-		 * @param  string $userAgent - which robot to check for
-		 * @return mixed
+		 * @return array
 		 */
-		public function getSitemaps($userAgent = '*')
+		public function getSitemaps()
 		{
-			// if there is not rule or a set of rules for UserAgent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][self::DIRECTIVE_SITEMAP]))
-			{
-				// check for all
-				return ($userAgent != '*') ? $this->getSitemaps() : false;
-			}
-
-			return $this->rules[$userAgent][self::DIRECTIVE_SITEMAP];
+			return $this->sitemaps;
 		}
 
         /**
