@@ -1,7 +1,7 @@
 {
     "name": "t1gor/robots-txt-parser",
     "description": "Php class to parse robots.txt rules according to Google & Yandex specifications.",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "keywords": ["robots.txt", "parser", "Yandex", "Google"],
     "homepage": "https://github.com/t1gor/Robots.txt-Parser-Class",
     "type": "library",
@@ -15,7 +15,11 @@
         {
             "name": "Igor Timoshenkov",
             "email": "igor.timoshenkov@gmail.com",
-            "role": "lead"
+            "role": "creator"
+        },
+        {
+            "name": "Jan Petter",
+            "role": "contributor"
         }
     ],
     "autoload": {
