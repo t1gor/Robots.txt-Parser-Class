@@ -458,6 +458,21 @@
 		}
 
 		/**
+		 * @param  string $url       - url to check
+		 * @param  string $userAgent - which robot to check for
+		 * @throws \DomainException
+		 */
+		protected function checkEqualRules($url, $userAgent)
+		{
+			$allow = $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
+			$disallow = $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
+
+			if ($allow === $disallow) {
+				throw new \DomainException('Unable to check rules');
+			}
+		}
+
+		/**
 		 * Check url wrapper
 		 *
 		 * @param  string $url       - url to check
@@ -467,9 +482,7 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
-			if ($this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent)) {
-				throw new Exception('Unable to check rules');
-			}
+			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
 				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -484,9 +497,7 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
-			if ($this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent) == $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)) {
-				throw new Exception('Unable to check rules');
-			}
+			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
 
