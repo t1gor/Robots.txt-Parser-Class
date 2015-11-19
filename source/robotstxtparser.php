@@ -197,7 +197,7 @@
 		 */
 		protected function shouldSwitchToZeroPoint()
 		{
-			return in_array($this->current_word, array(
+			return in_array(mb_strtolower($this->current_word), array(
 				self::DIRECTIVE_ALLOW,
 				self::DIRECTIVE_DISALLOW,
 				self::DIRECTIVE_HOST,
@@ -468,7 +468,7 @@
 		 */
 		protected function increment()
 		{
-			$this->current_char = mb_strtolower(mb_substr($this->content, $this->char_index, 1));
+			$this->current_char = mb_substr($this->content, $this->char_index, 1);
 			$this->current_word .= $this->current_char;
 			$this->current_word = trim($this->current_word);
 			$this->char_index++;
