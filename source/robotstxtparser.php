@@ -549,7 +549,9 @@
 				$escaped = strtr($robotRule, array("@" => "\@"));
 
 				// return match result
-				return (bool) preg_match('@'.$escaped.'@', $value);
+				if (preg_match('@'.$escaped.'@', $value)) {
+					return true;
+				}
 			}
 
 			return $result;
