@@ -7,8 +7,6 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 	 * @covers       RobotsTxtParser::isAllowed
 	 * @covers       RobotsTxtParser::isDisallowed
 	 * @covers       RobotsTxtParser::checkRule
-	 * @expectedException \DomainException
-	 * @expectedExceptionMessage Unable to check rules
 	 * @param string $robotsTxtContent
 	 */
 	public function testEmptyDisallow($robotsTxtContent)
