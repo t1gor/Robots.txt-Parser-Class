@@ -47,20 +47,17 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 				Disallow: /admin
 				Disallow: /temp
 				Disallow: /forum
-			"),
-			array("
+				
 				User-agent: spiderX
 				Disallow:
 				Disallow: /admin
 				Disallow: /assets
-			"),
-			array("
+				
 				User-agent: botY
 				Disallow: /
 				Allow: /forum/$
 				Allow: /article
-			"),
-			array("
+				
 				User-agent: crawlerZ
 				Disallow:
 				Disallow: /
