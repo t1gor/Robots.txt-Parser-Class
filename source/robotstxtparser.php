@@ -500,8 +500,7 @@
 		public function isAllowed($url, $userAgent = "*")
 		{
 			$this->checkEqualRules($url, $userAgent);
-			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
-				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
+			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 		}
 
 		/**
