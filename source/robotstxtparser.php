@@ -494,7 +494,6 @@
 		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
-		 * @throws exception if unable to check rules
 		 * @return bool
 		 */
 		public function isAllowed($url, $userAgent = "*")
@@ -509,7 +508,6 @@
 		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
-		 * @throws exception if unable to check rules
 		 * @return bool
 		 */
 		public function isDisallowed($url, $userAgent = "*")
