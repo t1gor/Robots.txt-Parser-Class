@@ -33,6 +33,7 @@
 		const DIRECTIVE_SITEMAP     = 'sitemap';
 		const DIRECTIVE_USERAGENT   = 'user-agent';
 		const DIRECTIVE_CRAWL_DELAY = 'crawl-delay';
+		const DIRECTIVE_CACHE_DELAY = 'cache-delay';
 		const DIRECTIVE_CLEAN_PARAM = 'clean-param';
 
 		// language
@@ -159,6 +160,14 @@
 		protected function crawlDelay() {
 			return ($this->current_word == self::DIRECTIVE_CRAWL_DELAY);
 		}
+		
+		/**
+		 * Cache-Delay directive signal
+		 */
+		protected function cacheDelay()
+		{
+			return ($this->current_word == self::DIRECTIVE_CACHE_DELAY);
+		}
 
 		/**
 		 * Change state
@@ -204,7 +213,8 @@
 				self::DIRECTIVE_USERAGENT,
 				self::DIRECTIVE_SITEMAP,
 				self::DIRECTIVE_CRAWL_DELAY,
-				self::DIRECTIVE_CLEAN_PARAM,
+				self::DIRECTIVE_CACHE_DELAY,
+				self::DIRECTIVE_CLEAN_PARAM
 			), true);
 		}
 
@@ -312,6 +322,10 @@
                 case self::DIRECTIVE_CRAWL_DELAY:
                     $this->addRule("floatval", false);
                     break;
+
+		case self::DIRECTIVE_CACHE_DELAY:
+			$this->addRule("floatval", false);
+			break;
 
                 case self::DIRECTIVE_SITEMAP:
                 	$this->addSitemap();
@@ -554,6 +568,26 @@
 				}
 			}
 			return $result;
+		}
+		
+		/**
+		 * Get Cache-Delay
+		 *
+		 * @param  string $userAgent - which robot to check for
+		 * @return float
+		 */
+		public function getCacheDelay($userAgent = "*")
+		{
+			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			if(isset($this->rules[$userAgent])) {
+				if(isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])){
+					return $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY];
+				} else {
+					return 0;
+				}
+			} else {
+				return $this->getCacheDelay();
+			}
 		}
 
 		/**
