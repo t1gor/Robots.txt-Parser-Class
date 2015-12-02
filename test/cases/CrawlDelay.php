@@ -3,20 +3,14 @@
 	{
 		/**
 		 * @dataProvider generateDataForTest
-		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRule
 		 * @param string $robotsTxtContent
 		 */
 		public function testCrawlDelay($robotsTxtContent)
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
-			$rules = $parser->getRules();
-			$this->assertInstanceOf('RobotsTxtParser', $parser);
-			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('ahrefsbot', $rules);
-			$this->assertArrayHasKey('crawl-delay', $rules['ahrefsbot']);
-			$this->assertEquals(1.5, $rules['ahrefsbot']['crawl-delay']);
+			$this->assertEquals(0.9, $parser->getCrawlDelay('*'));
+			$this->assertEquals(1.5, $parser->getCrawlDelay('AhrefsBot'));
 		}
 
 		/**
@@ -27,6 +21,8 @@
 		{
 			return array(
 				array("
+					User-Agent: *
+					Crawl-Delay: 0.9
 					User-Agent: AhrefsBot
 					Crawl-Delay: 1.5
 				")

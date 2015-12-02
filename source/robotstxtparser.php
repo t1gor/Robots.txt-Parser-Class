@@ -494,7 +494,6 @@
 		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
-		 * @throws exception if unable to check rules
 		 * @return bool
 		 */
 		public function isAllowed($url, $userAgent = "*")
@@ -508,7 +507,6 @@
 		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
-		 * @throws exception if unable to check rules
 		 * @return bool
 		 */
 		public function isDisallowed($url, $userAgent = "*")
@@ -566,6 +564,26 @@
 		public function getSitemaps()
 		{
 			return $this->sitemaps;
+		}
+		
+		/**
+		 * Get Crawl-Delay
+		 *
+		 * @param  string $userAgent - which robot to check for
+		 * @return float
+		 */
+		public function getCrawlDelay($userAgent = "*")
+		{
+			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			if(isset($this->rules[$userAgent])) {
+				if(isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])){
+					return $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY];
+				} else {
+					return 0;
+				}
+			} else {
+				return $this->getCrawlDelay();
+			}
 		}
 
         /**
