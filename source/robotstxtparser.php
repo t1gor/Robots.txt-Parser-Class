@@ -542,12 +542,8 @@
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
-<<<<<<< HEAD
-			$result = ($rule === self::DIRECTIVE_ALLOW);
-=======
 			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
-			$result = false;
->>>>>>> refs/remotes/origin/useragent-strtolower
+			$result = ($rule === self::DIRECTIVE_ALLOW);
 
 			// if rules are empty - allowed by default
 			if (empty($this->rules)) {
