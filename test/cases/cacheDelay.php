@@ -22,9 +22,9 @@ class CacheDelayTest extends \PHPUnit_Framework_TestCase
         return array(
             array("
 					User-Agent: *
-					Crawl-Delay: 3.7
+					Cache-Delay: 3.7
 					User-Agent: AhrefsBot
-					Crawl-Delay: 8
+					Cache-Delay: 8
 				")
         );
     }
