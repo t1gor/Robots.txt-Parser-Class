@@ -572,7 +572,7 @@
 		public function getCrawlDelay($userAgent = "*")
 		{
 			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
-			if(isset($this->rules[$userAgent])) {
+			if(isset($this->rules[$userAgent]) || $userAgent == "*") {
 				if(isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])){
 					return $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY];
 				} else {
