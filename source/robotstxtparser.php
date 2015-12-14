@@ -500,8 +500,7 @@
 		public function isAllowed($url, $userAgent = "*")
 		{
 			$this->checkEqualRules($url, $userAgent);
-			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent)
-				&& !$this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
+			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 		}
 
 		/**
@@ -529,29 +528,33 @@
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
-			$result = false;
+			$result = ($rule === self::DIRECTIVE_ALLOW);
 
 			// if rules are empty - allowed by default
 			if (empty($this->rules)) {
-				return ( $rule === self::DIRECTIVE_ALLOW );
+				return ($rule === self::DIRECTIVE_ALLOW);
 			}
 
 			// if there is no rule or a set of rules for user-agent
-			if (!isset($this->rules[$userAgent]) || !isset($this->rules[$userAgent][$rule]))
-			{
+			if (!isset($this->rules[$userAgent]) || (!isset($this->rules[$userAgent][self::DIRECTIVE_ALLOW]) && !isset($this->rules[$userAgent][self::DIRECTIVE_DISALLOW]))) {
 				// check 'For all' category - '*'
-				return ($userAgent != '*') ? $this->checkRule($rule, $value) : false;
+				return ($userAgent != '*') ? $this->checkRule($rule, $value) : ($rule === self::DIRECTIVE_ALLOW);
 			}
 
-			foreach ($this->rules[$userAgent][$rule] as $robotRule)
-			{
-				// change @ for \@
-				$escaped = strtr($robotRule, array("@" => "\@"));
+			$directives = array(self::DIRECTIVE_DISALLOW, self::DIRECTIVE_ALLOW);
+			foreach ($directives as $directive) {
+				if (isset($this->rules[$userAgent][$directive])) {
+					foreach ($this->rules[$userAgent][$directive] as $robotRule) {
+						// change @ for \@
+						$escaped = strtr($robotRule, array("@" => "\@"));
 
-				// return match result
-				return (bool) preg_match('@'.$escaped.'@', $value);
+						// match result
+						if (preg_match('@' . $escaped . '@', $value)) {
+							$result = ($rule === $directive);
+						}
+					}
+				}
 			}
-
 			return $result;
 		}
 
