@@ -14,7 +14,7 @@
 	 * @link http://socoder.net/index.php?snippet=23824
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
-	class RobotsTxtParser {
+	class robotstxtparser {
 
 		// default encoding
 		const DEFAULT_ENCODING = 'UTF-8';

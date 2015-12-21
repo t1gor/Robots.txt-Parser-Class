@@ -3,7 +3,7 @@
 /**
  * @group unlisted-path
  */
-class unlistedPath extends \PHPUnit_Framework_TestCase
+class UnlistedPath extends \PHPUnit_Framework_TestCase
 {
     /**
      * @link https://github.com/t1gor/Robots.txt-Parser-Class/issues/22
