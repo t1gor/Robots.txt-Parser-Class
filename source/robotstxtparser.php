@@ -316,7 +316,7 @@
             switch ($this->current_directive)
             {
                 case self::DIRECTIVE_USERAGENT:
-                    $this->setUserAgent($this->current_word);
+                    $this->setUserAgent(mb_strtolower($this->current_word));
                     break;
 
                 case self::DIRECTIVE_CRAWL_DELAY:
@@ -512,6 +512,7 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
+			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 		}
@@ -525,6 +526,7 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
+			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -540,6 +542,7 @@
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
+			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
 			$result = ($rule === self::DIRECTIVE_ALLOW);
 
 			// if rules are empty - allowed by default
@@ -574,7 +577,7 @@
 		 * Get Cache-Delay
 		 *
 		 * @param  string $userAgent - which robot to check for
-		 * @return float
+		 * @return int|float
 		 */
 		public function getCacheDelay($userAgent = "*")
 		{
@@ -598,7 +601,7 @@
 		 * Get Crawl-Delay
 		 *
 		 * @param  string $userAgent - which robot to check for
-		 * @return float
+		 * @return int|float
 		 */
 		public function getCrawlDelay($userAgent = '*')
 		{
@@ -616,6 +619,7 @@
          */
         public function getRules($userAgent = null)
         {
+            if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
             // return all rules
             if (is_null($userAgent)) {
                 return $this->rules;
