@@ -577,20 +577,14 @@
 		 * Get Cache-Delay
 		 *
 		 * @param  string $userAgent - which robot to check for
-		 * @return float
+		 * @return int|float
 		 */
 		public function getCacheDelay($userAgent = "*")
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
-			if(isset($this->rules[$userAgent]) || $userAgent == "*") {
-				if(isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])){
-					return $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY];
-				} else {
-					return 0;
-				}
-			} else {
-				return $this->getCacheDelay();
-			}
+			$userAgent = mb_strtolower($userAgent);
+			return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
+				? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
+				: 0;
 		}
 
 		/**
@@ -607,20 +601,14 @@
 		 * Get Crawl-Delay
 		 *
 		 * @param  string $userAgent - which robot to check for
-		 * @return float
+		 * @return int|float
 		 */
-		public function getCrawlDelay($userAgent = "*")
+		public function getCrawlDelay($userAgent = '*')
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
-			if(isset($this->rules[$userAgent]) || $userAgent == "*") {
-				if(isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])){
-					return $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY];
-				} else {
-					return 0;
-				}
-			} else {
-				return $this->getCrawlDelay();
-			}
+			$userAgent = mb_strtolower($userAgent);
+			return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
+				? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
+				: 0;
 		}
 
         /**
