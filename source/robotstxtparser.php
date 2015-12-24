@@ -52,7 +52,7 @@
 		private $sitemaps = array();
 		
 		// robots.txt http status code
-		protected $httpStatusCode = '200';
+		protected $httpStatusCode = 200;
 
 		// internally used variables
 		protected $current_word = "";
@@ -646,27 +646,26 @@
 	 * Get delay
 	 *
 	 * @param  string $userAgent - which robot to check for
-	 * @param  string $directive - in case of non-standard directive
+	 * @param  string $type - in case of non-standard directive
 	 * @return int|float
 	 */
-	public function getDelay($userAgent = '*', $directive = 'crawl-delay')
+	public function getDelay($userAgent = '*', $type = 'crawl-delay')
 	{
 		$userAgent = $this->determineUserAgentGroup($userAgent);
-		$directive = mb_strtolower($directive);
-		switch ($directive) {
+		$type = mb_strtolower($type);
+		switch ($type) {
 			case 'cache':
 			case 'cache-delay':
-				return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
-					? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
-					: 0;
+				$directive = self::DIRECTIVE_CACHE_DELAY;
 				break;
 			case 'crawl':
 			case 'crawl-delay':
 			default:
-				return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
-					? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
-					: 0;
+				$directive = self::DIRECTIVE_CRAWL_DELAY;
 		}
+		return isset($this->rules[$userAgent][$directive])
+			? $this->rules[$userAgent][$directive]
+			: 0;
 	}
 
         /**
