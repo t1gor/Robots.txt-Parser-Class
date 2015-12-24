@@ -50,6 +50,9 @@
 		
 		// sitemaps set
 		private $sitemaps = array();
+		
+		// robots.txt http status code
+		protected $httpStatusCode = '200';
 
 		// internally used variables
 		protected $current_word = "";
@@ -351,6 +354,19 @@
             $this->current_word = "";
             $this->switchState(self::STATE_ZERO_POINT);
         }
+        
+        /**
+	 * Set the HTTP status code
+	 * @param int $code
+	 */
+	public function setHttpStatusCode($code)
+	{
+		if (isset($code) && is_int($code) && 100 <= $code && $code >= 599) {
+			$this->httpStatusCode = $code;
+		} else {
+			throw new \DomainException('Invalid HTTP status code');
+		}
+	}
 
         /**
          * Set current user agent
@@ -582,6 +598,11 @@
 			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$result = ($rule === self::DIRECTIVE_ALLOW);
 
+			// check the http status code
+			if (500 <= $this->httpStatusCode && $this->httpStatusCode >= 599) {
+				return ($rule === self::DIRECTIVE_DISALLOW);
+			}
+			
 			// if rules are empty - allowed by default
 			if (empty($this->rules)) {
 				return ($rule === self::DIRECTIVE_ALLOW);
