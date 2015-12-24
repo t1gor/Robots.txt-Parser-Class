@@ -359,13 +359,51 @@
          */
         private function setUserAgent($newAgent = "*")
         {
-            $this->userAgent = $newAgent;
+            $this->userAgent = mb_strtolower($newAgent);
 
             // create empty array if not there yet
             if (empty($this->rules[$this->userAgent])) {
                 $this->rules[$this->userAgent] = array();
             }
         }
+        
+        /**
+	 *  Determine the correct user agent group
+	 *
+	 * @param string $userAgent
+	 * @return string
+	 */
+	protected function determineUserAgentGroup($userAgent = '*')
+	{
+		if (isset($userAgent) && is_string($userAgent)) {
+			$userAgent = mb_strtolower($userAgent);
+		} else {
+			throw new \DomainException('UserAgent need to be a string');
+		}
+		if ($userAgent == '*') {
+			// already using default user agent
+			return $userAgent;
+		} elseif (isset($this->rules[$userAgent])) {
+			// user agent exists
+			return $userAgent;
+		}
+		if (strpos($userAgent, '/') !== false) {
+			$userAgent = explode('/', $userAgent, 2)[0];
+			if (isset($this->rules[$userAgent])) {
+				// user agent without version tag exists
+				return $userAgent;
+			}
+		}
+		while (strpos($userAgent, '-') !== false) {
+			$userAgent = substr($userAgent, 0, strrpos($userAgent, '-'));
+			if (isset($this->rules[$userAgent])) {
+				// user agent without hyphen(s) exists
+				return $userAgent;
+			}
+		}
+		// no user agents matching, return default
+		return '*';
+	}
 
         /**
          * Prepare rule value and set the one
@@ -512,7 +550,7 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			$userAgent = determineUserAgentGroup($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 		}
@@ -526,7 +564,7 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			$userAgent = determineUserAgentGroup($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -542,7 +580,7 @@
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			$userAgent = determineUserAgentGroup($userAgent);
 			$result = ($rule === self::DIRECTIVE_ALLOW);
 
 			// if rules are empty - allowed by default
@@ -581,7 +619,7 @@
 		 */
 		public function getCacheDelay($userAgent = "*")
 		{
-			$userAgent = mb_strtolower($userAgent);
+			$userAgent = determineUserAgentGroup($userAgent);
 			return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
 				? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
 				: 0;
@@ -605,7 +643,7 @@
 		 */
 		public function getCrawlDelay($userAgent = '*')
 		{
-			$userAgent = mb_strtolower($userAgent);
+			$userAgent = determineUserAgentGroup($userAgent);
 			return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
 				? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
 				: 0;
@@ -619,12 +657,12 @@
          */
         public function getRules($userAgent = null)
         {
-            if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
             // return all rules
             if (is_null($userAgent)) {
                 return $this->rules;
             }
-            elseif (isset($this->rules[$userAgent])) {
+            $userAgent = determineUserAgentGroup($userAgent);
+            if (isset($this->rules[$userAgent])) {
                 return $this->rules[$userAgent];
             }
             else {
