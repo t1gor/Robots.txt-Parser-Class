@@ -358,6 +358,7 @@
         /**
 	 * Set the HTTP status code
 	 * @param int $code
+	 * @throws \DomainException
 	 */
 	public function setHttpStatusCode($code)
 	{
@@ -599,7 +600,7 @@
 			$result = ($rule === self::DIRECTIVE_ALLOW);
 
 			// check the http status code
-			if (500 <= $this->httpStatusCode && $this->httpStatusCode >= 599) {
+			if ($this->httpStatusCode >= 500 && $this->httpStatusCode <= 599) {
 				return ($rule === self::DIRECTIVE_DISALLOW);
 			}
 			
