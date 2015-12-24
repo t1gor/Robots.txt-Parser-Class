@@ -1,7 +1,7 @@
 {
     "name": "t1gor/robots-txt-parser",
     "description": "Php class to parse robots.txt rules according to Google & Yandex specifications.",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "keywords": ["robots.txt", "parser", "Yandex", "Google"],
     "homepage": "https://github.com/t1gor/Robots.txt-Parser-Class",
     "type": "library",
@@ -18,7 +18,7 @@
             "role": "creator"
         },
         {
-            "name": "Jan Petter",
+            "name": "Jan-Petter Gundersen",
             "role": "contributor"
         }
     ],
