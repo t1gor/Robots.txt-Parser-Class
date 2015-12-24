@@ -550,7 +550,7 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
-			$userAgent = determineUserAgentGroup($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 		}
@@ -564,7 +564,7 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
-			$userAgent = determineUserAgentGroup($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -580,7 +580,7 @@
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
-			$userAgent = determineUserAgentGroup($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$result = ($rule === self::DIRECTIVE_ALLOW);
 
 			// if rules are empty - allowed by default
@@ -619,7 +619,7 @@
 		 */
 		public function getCacheDelay($userAgent = "*")
 		{
-			$userAgent = determineUserAgentGroup($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
 				? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
 				: 0;
@@ -643,7 +643,7 @@
 		 */
 		public function getCrawlDelay($userAgent = '*')
 		{
-			$userAgent = determineUserAgentGroup($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
 				? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
 				: 0;
@@ -661,7 +661,7 @@
             if (is_null($userAgent)) {
                 return $this->rules;
             }
-            $userAgent = determineUserAgentGroup($userAgent);
+            $userAgent = $this->determineUserAgentGroup($userAgent);
             if (isset($this->rules[$userAgent])) {
                 return $this->rules[$userAgent];
             }
