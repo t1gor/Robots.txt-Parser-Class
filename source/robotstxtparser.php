@@ -361,7 +361,7 @@
 	 */
 	public function setHttpStatusCode($code)
 	{
-		if (isset($code) && is_int($code) && 100 <= $code && $code >= 599) {
+		if (isset($code) && is_int($code) && 100 <= $code && $code <= 599) {
 			$this->httpStatusCode = $code;
 		} else {
 			throw new \DomainException('Invalid HTTP status code');
