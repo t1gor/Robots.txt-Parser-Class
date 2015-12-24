@@ -629,7 +629,7 @@
 	 */
 	public function getDelay($userAgent = '*', $directive = 'crawl-delay')
 	{
-		$userAgent = determineUserAgentGroup($userAgent);
+		$userAgent = $this->determineUserAgentGroup($userAgent);
 		$directive = mb_strtolower($directive);
 		switch ($directive) {
 			case 'cache':
