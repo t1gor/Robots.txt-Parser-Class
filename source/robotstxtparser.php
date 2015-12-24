@@ -63,7 +63,6 @@
 		 * @param  string $content  - file content
 		 * @param  string $encoding - encoding
 		 * @throws InvalidArgumentException
-		 * @return RobotsTxtParser
 		 */
 		public function __construct($content = '', $encoding = self::DEFAULT_ENCODING)
 		{
@@ -610,20 +609,6 @@
 			}
 			return $result;
 		}
-		
-		/**
-		 * Get Cache-Delay
-		 *
-		 * @param  string $userAgent - which robot to check for
-		 * @return int|float
-		 */
-		public function getCacheDelay($userAgent = "*")
-		{
-			$userAgent = $this->determineUserAgentGroup($userAgent);
-			return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
-				? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
-				: 0;
-		}
 
 		/**
 		 * Get sitemaps wrapper
@@ -635,19 +620,32 @@
 			return $this->sitemaps;
 		}
 		
-		/**
-		 * Get Crawl-Delay
-		 *
-		 * @param  string $userAgent - which robot to check for
-		 * @return int|float
-		 */
-		public function getCrawlDelay($userAgent = '*')
-		{
-			$userAgent = $this->determineUserAgentGroup($userAgent);
-			return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
-				? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
-				: 0;
+	/**
+	 * Get delay
+	 *
+	 * @param  string $userAgent - which robot to check for
+	 * @param  string $directive - in case of non-standard directive
+	 * @return int|float
+	 */
+	public function getDelay($userAgent = '*', $directive = 'crawl-delay')
+	{
+		$userAgent = determineUserAgentGroup($userAgent);
+		$directive = mb_strtolower($directive);
+		switch ($directive) {
+			case 'cache':
+			case 'cache-delay':
+				return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
+					? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
+					: 0;
+				break;
+			case 'crawl':
+			case 'crawl-delay':
+			default:
+				return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
+					? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
+					: 0;
 		}
+	}
 
         /**
          * Get rules based on user agent
