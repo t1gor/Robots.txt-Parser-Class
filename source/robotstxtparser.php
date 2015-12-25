@@ -415,11 +415,14 @@
 	private function explodeUserAgent($userAgent = '*')
 	{
 		$array = array();
+		$array[] = $userAgent;
 		$array[] = $this->stripUserAgentVersion($userAgent);
-		while (strpos(end($array), '-') !== false) {
+		$delimiter = '-';
+		while (strpos(end($array), $delimiter) !== false) {
 			$current = end($array);
-			$array[] = substr($current, 0, strrpos($current, '-'));
-		}/**/
+
+			$array[] = substr($current, 0, strrpos($current, $delimiter));
+		}
 		$array[] = '*';
 		$this->userAgent_groups = array_unique($array);
 		return $this->userAgent_groups;
@@ -433,9 +436,10 @@
 	 */
 	private function stripUserAgentVersion($userAgent)
 	{
-		if (strpos($userAgent, '/') !== false) {
-			$userAgent = explode('/', $userAgent, 2)[0];
-			return $userAgent;
+		$delimiter = '/';
+		if (strpos($userAgent, $delimiter) !== false) {
+			$stripped = explode($delimiter, $userAgent, 2)[0];
+			return $stripped;
 		}
 		return $userAgent;
 	}
