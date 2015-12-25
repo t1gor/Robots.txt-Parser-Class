@@ -400,7 +400,7 @@
 		}
 		foreach ($this->explodeUserAgent($userAgent) as $group) {
 			if (isset($this->rules[$group])) {
-				return $userAgent;
+				return $group;
 			}
 		}
 		return '*';
@@ -414,18 +414,15 @@
 	 */
 	private function explodeUserAgent($userAgent = '*')
 	{
-		$array = array();
-		$array[] = $userAgent;
-		$array[] = $this->stripUserAgentVersion($userAgent);
+		$this->userAgent_groups = array($userAgent);
+		$this->userAgent_groups[] = $this->stripUserAgentVersion($userAgent);
 		$delimiter = '-';
-		while (strpos(end($array), $delimiter) !== false) {
-			$current = end($array);
-
-			$array[] = substr($current, 0, strrpos($current, $delimiter));
+		while (strpos(end($this->userAgent_groups), $delimiter) !== false) {
+			$current = end($this->userAgent_groups);
+			$this->userAgent_groups[] = substr($current, 0, strrpos($current, $delimiter));
 		}
-		$array[] = '*';
-		$this->userAgent_groups = array_unique($array);
-		ksort($this->userAgent_groups);
+		$this->userAgent_groups[] = '*';
+		$this->userAgent_groups = array_unique($this->userAgent_groups);
 		return $this->userAgent_groups;
 	}
 
