@@ -424,7 +424,7 @@
 			$array[] = substr($current, 0, strrpos($current, $delimiter));
 		}
 		$array[] = '*';
-		$this->userAgent_groups = ksort(array_unique($array);
+		$this->userAgent_groups = ksort(array_unique($array));
 		return $this->userAgent_groups;
 	}
 
