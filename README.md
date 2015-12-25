@@ -32,9 +32,12 @@ You can find out more about Composer here: https://getcomposer.org/
 <?php
     require_once('robotstxtparser.php');
     $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
-    var_dump($parser->isDisallowed('/someurl'));
-    var_dump($parser->isAllowed('/someotherurl.html'));
+    $parser->setHttpStatusCode(200); // optional
+    var_dump($parser->isDisallowed('/someurl', 'useragent'));
+    var_dump($parser->isAllowed('/someotherurl.html', 'useragent'));
+    var_dump($parser->getDelay('useragent')); // optional
     print_r($parser->rules);
+    print_r($parser->getSitemaps()); // optional
 ?>
 ```
 
