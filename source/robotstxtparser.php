@@ -61,6 +61,7 @@
 		protected $current_directive = "";
 		protected $previous_directive = "";
 		protected $userAgent = "*";
+		protected $userAgent_groups = array();
 
 		/**
 		 * @param  string $content  - file content
@@ -397,29 +398,46 @@
 		} else {
 			throw new \DomainException('UserAgent need to be a string');
 		}
-		if ($userAgent == '*') {
-			// already using default user agent
-			return $userAgent;
-		} elseif (isset($this->rules[$userAgent])) {
-			// user agent exists
-			return $userAgent;
+		foreach ($this->explodeUserAgent($userAgent) as $group) {
+			if (isset($this->rules[$group])) {
+				return $userAgent;
+			}
 		}
+		return '*';
+	}
+	
+	/**
+	 *  Parses all possible userAgent groups to an array
+	 *
+	 * @param string $userAgent
+	 * @return array
+	 */
+	private function explodeUserAgent($userAgent = '*')
+	{
+		$array = array();
+		$array[] = $this->stripUserAgentVersion($userAgent);
+		while (strpos(end($array), '-') !== false) {
+			$current = end($array);
+			$array[] = substr($current, 0, strrpos($current, '-'));
+		}/**/
+		$array[] = '*';
+		$this->userAgent_groups = array_unique($array);
+		return $this->userAgent_groups;
+	}
+
+	/**
+	 *  Removes the userAgent version
+	 *
+	 * @param string $userAgent
+	 * @return string
+	 */
+	private function stripUserAgentVersion($userAgent)
+	{
 		if (strpos($userAgent, '/') !== false) {
 			$userAgent = explode('/', $userAgent, 2)[0];
-			if (isset($this->rules[$userAgent])) {
-				// user agent without version tag exists
-				return $userAgent;
-			}
+			return $userAgent;
 		}
-		while (strpos($userAgent, '-') !== false) {
-			$userAgent = substr($userAgent, 0, strrpos($userAgent, '-'));
-			if (isset($this->rules[$userAgent])) {
-				// user agent without hyphen(s) exists
-				return $userAgent;
-			}
-		}
-		// no user agents matching, return default
-		return '*';
+		return $userAgent;
 	}
 
         /**
