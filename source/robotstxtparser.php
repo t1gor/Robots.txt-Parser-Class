@@ -50,6 +50,9 @@
 		
 		// sitemaps set
 		private $sitemaps = array();
+		
+		// robots.txt http status code
+		protected $httpStatusCode = 200;
 
 		// internally used variables
 		protected $current_word = "";
@@ -58,12 +61,12 @@
 		protected $current_directive = "";
 		protected $previous_directive = "";
 		protected $userAgent = "*";
+		protected $userAgent_groups = array();
 
 		/**
 		 * @param  string $content  - file content
 		 * @param  string $encoding - encoding
 		 * @throws InvalidArgumentException
-		 * @return RobotsTxtParser
 		 */
 		public function __construct($content = '', $encoding = self::DEFAULT_ENCODING)
 		{
@@ -352,6 +355,21 @@
             $this->current_word = "";
             $this->switchState(self::STATE_ZERO_POINT);
         }
+        
+        /**
+	 * Set the HTTP status code
+	 * @param int $code
+	 * @throws \DomainException
+	 */
+	public function setHttpStatusCode($code)
+	{
+		$code = intval($code);
+		if (isset($code) && is_int($code) && $code >= 100 && $code <= 599) {
+			$this->httpStatusCode = $code;
+		} else {
+			throw new \DomainException('Invalid HTTP status code');
+		}
+	}
 
         /**
          * Set current user agent
@@ -359,13 +377,70 @@
          */
         private function setUserAgent($newAgent = "*")
         {
-            $this->userAgent = $newAgent;
+            $this->userAgent = mb_strtolower($newAgent);
 
             // create empty array if not there yet
             if (empty($this->rules[$this->userAgent])) {
                 $this->rules[$this->userAgent] = array();
             }
         }
+        
+        /**
+	 *  Determine the correct user agent group
+	 *
+	 * @param string $userAgent
+	 * @return string
+	 */
+	protected function determineUserAgentGroup($userAgent = '*')
+	{
+		if (isset($userAgent) && is_string($userAgent)) {
+			$userAgent = mb_strtolower($userAgent);
+		} else {
+			throw new \DomainException('UserAgent need to be a string');
+		}
+		foreach ($this->explodeUserAgent($userAgent) as $group) {
+			if (isset($this->rules[$group])) {
+				return $group;
+			}
+		}
+		return '*';
+	}
+	
+	/**
+	 *  Parses all possible userAgent groups to an array
+	 *
+	 * @param string $userAgent
+	 * @return array
+	 */
+	private function explodeUserAgent($userAgent = '*')
+	{
+		$this->userAgent_groups = array($userAgent);
+		$this->userAgent_groups[] = $this->stripUserAgentVersion($userAgent);
+		$delimiter = '-';
+		while (strpos(end($this->userAgent_groups), $delimiter) !== false) {
+			$current = end($this->userAgent_groups);
+			$this->userAgent_groups[] = substr($current, 0, strrpos($current, $delimiter));
+		}
+		$this->userAgent_groups[] = '*';
+		$this->userAgent_groups = array_unique($this->userAgent_groups);
+		return $this->userAgent_groups;
+	}
+
+	/**
+	 *  Removes the userAgent version
+	 *
+	 * @param string $userAgent
+	 * @return string
+	 */
+	private function stripUserAgentVersion($userAgent)
+	{
+		$delimiter = '/';
+		if (strpos($userAgent, $delimiter) !== false) {
+			$stripped = explode($delimiter, $userAgent, 2)[0];
+			return $stripped;
+		}
+		return $userAgent;
+	}
 
         /**
          * Prepare rule value and set the one
@@ -512,7 +587,7 @@
 		 */
 		public function isAllowed($url, $userAgent = "*")
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 		}
@@ -526,7 +601,7 @@
 		 */
 		public function isDisallowed($url, $userAgent = "*")
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$this->checkEqualRules($url, $userAgent);
 			return $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 		}
@@ -542,9 +617,14 @@
 		 */
 		public function checkRule($rule, $value = '/', $userAgent = '*')
 		{
-			if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
+			$userAgent = $this->determineUserAgentGroup($userAgent);
 			$result = ($rule === self::DIRECTIVE_ALLOW);
 
+			// check the http status code
+			if ($this->httpStatusCode >= 500 && $this->httpStatusCode <= 599) {
+				return ($rule === self::DIRECTIVE_DISALLOW);
+			}
+			
 			// if rules are empty - allowed by default
 			if (empty($this->rules)) {
 				return ($rule === self::DIRECTIVE_ALLOW);
@@ -572,20 +652,6 @@
 			}
 			return $result;
 		}
-		
-		/**
-		 * Get Cache-Delay
-		 *
-		 * @param  string $userAgent - which robot to check for
-		 * @return int|float
-		 */
-		public function getCacheDelay($userAgent = "*")
-		{
-			$userAgent = mb_strtolower($userAgent);
-			return isset($this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY])
-				? $this->rules[$userAgent][self::DIRECTIVE_CACHE_DELAY]
-				: 0;
-		}
 
 		/**
 		 * Get sitemaps wrapper
@@ -597,19 +663,31 @@
 			return $this->sitemaps;
 		}
 		
-		/**
-		 * Get Crawl-Delay
-		 *
-		 * @param  string $userAgent - which robot to check for
-		 * @return int|float
-		 */
-		public function getCrawlDelay($userAgent = '*')
-		{
-			$userAgent = mb_strtolower($userAgent);
-			return isset($this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY])
-				? $this->rules[$userAgent][self::DIRECTIVE_CRAWL_DELAY]
-				: 0;
+	/**
+	 * Get delay
+	 *
+	 * @param  string $userAgent - which robot to check for
+	 * @param  string $type - in case of non-standard directive
+	 * @return int|float
+	 */
+	public function getDelay($userAgent = '*', $type = 'crawl-delay')
+	{
+		$userAgent = $this->determineUserAgentGroup($userAgent);
+		$type = mb_strtolower($type);
+		switch ($type) {
+			case 'cache':
+			case 'cache-delay':
+				$directive = self::DIRECTIVE_CACHE_DELAY;
+				break;
+			case 'crawl':
+			case 'crawl-delay':
+			default:
+				$directive = self::DIRECTIVE_CRAWL_DELAY;
 		}
+		return isset($this->rules[$userAgent][$directive])
+			? $this->rules[$userAgent][$directive]
+			: 0;
+	}
 
         /**
          * Get rules based on user agent
@@ -619,12 +697,12 @@
          */
         public function getRules($userAgent = null)
         {
-            if(isset($userAgent)) $userAgent = mb_strtolower($userAgent);
             // return all rules
             if (is_null($userAgent)) {
                 return $this->rules;
             }
-            elseif (isset($this->rules[$userAgent])) {
+            $userAgent = $this->determineUserAgentGroup($userAgent);
+            if (isset($this->rules[$userAgent])) {
                 return $this->rules[$userAgent];
             }
             else {

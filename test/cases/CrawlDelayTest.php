@@ -9,9 +9,9 @@
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
-			$this->assertEquals(0, $parser->getCrawlDelay());
-			$this->assertEquals(0.9, $parser->getCrawlDelay('GoogleBot'));
-			$this->assertEquals(1.5, $parser->getCrawlDelay('AhrefsBot'));
+			$this->assertEquals(0, $parser->getDelay());
+			$this->assertEquals(0.9, $parser->getDelay('GoogleBot'));
+			$this->assertEquals(1.5, $parser->getDelay('AhrefsBot'));
 		}
 
 		/**
