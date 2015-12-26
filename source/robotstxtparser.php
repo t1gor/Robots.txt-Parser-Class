@@ -646,12 +646,11 @@
 						// match result
 						if (preg_match('@' . $escaped . '@', $value)) {
 							if (strpos($escaped, '$') !== false) {
-								if (mb_strlen($escaped) - 1 >= mb_strlen($value)) {
+								if (mb_strlen($escaped) - 1 == mb_strlen($value)) {
 									$result = ($rule === $directive);
 								}
 							} else {
 								$result = ($rule === $directive);
-								echo $escaped . '-' . $value . "\n";
 							}
 						}
 					}
