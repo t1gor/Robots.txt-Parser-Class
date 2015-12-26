@@ -9,9 +9,9 @@ class CacheDelayTest extends \PHPUnit_Framework_TestCase
     {
         // init parser
         $parser = new RobotsTxtParser($robotsTxtContent);
-        $this->assertEquals(0, $parser->getCacheDelay());
-        $this->assertEquals(3.7, $parser->getCacheDelay('GoogleBot'));
-        $this->assertEquals(8, $parser->getCacheDelay('AhrefsBot'));
+        $this->assertEquals(0, $parser->getDelay('*', 'cache-delay'));
+        $this->assertEquals(3.7, $parser->getDelay('GoogleBot', 'cache-delay'));
+        $this->assertEquals(8, $parser->getDelay('AhrefsBot', 'cache-delay'));
     }
 
     /**

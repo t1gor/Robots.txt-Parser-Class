@@ -18,21 +18,19 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 		$this->assertTrue($parser->isAllowed("/"));
 		$this->assertTrue($parser->isAllowed("/article"));
 		$this->assertTrue($parser->isDisallowed("/temp"));
-		
-		// Commented out due to a bug. Please see issue #34
-		// https://github.com/t1gor/Robots.txt-Parser-Class/issues/34
-		//$this->assertTrue($parser->isAllowed("/temp", "spiderX"));
-		//$this->assertTrue($parser->isDisallowed("/assets", "spiderX"));
-		//$this->assertTrue($parser->isAllowed("/forum", "spiderX"));
 
-		//$this->assertTrue($parser->isDisallowed("/", "botY"));
-		//$this->assertTrue($parser->isAllowed("/forum/", "botY"));
-		//$this->assertTrue($parser->isDisallowed("/forum/topic", "botY"));
-		//$this->assertTrue($parser->isDisallowed("/public", "botY"));
+		$this->assertTrue($parser->isAllowed("/temp", "spiderX/1.0"));
+		$this->assertTrue($parser->isDisallowed("/assets", "spiderX/1.0"));
+		$this->assertTrue($parser->isAllowed("/forum", "spiderX/1.0"));
 
-		//$this->assertTrue($parser->isAllowed("/", "crawlerZ"));
-		//$this->assertTrue($parser->isDisallowed("/forum", "crawlerZ"));
-		//$this->assertTrue($parser->isDisallowed("/public", "crawlerZ"));
+		$this->assertTrue($parser->isDisallowed("/", "botY-test"));
+		$this->assertTrue($parser->isAllowed("/forum/", "botY-test"));
+		$this->assertTrue($parser->isDisallowed("/forum/topic", "botY-test"));
+		$this->assertTrue($parser->isDisallowed("/public", "botY-test"));
+
+		$this->assertTrue($parser->isAllowed("/", "crawlerZ"));
+		$this->assertTrue($parser->isDisallowed("/forum", "crawlerZ"));
+		$this->assertTrue($parser->isDisallowed("/public", "crawlerZ"));
 	}
 
 	/**
