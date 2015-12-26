@@ -640,7 +640,7 @@
 			foreach ($directives as $directive) {
 				if (isset($this->rules[$userAgent][$directive])) {
 					foreach ($this->rules[$userAgent][$directive] as $robotRule) {
-						// change @ for \@
+						// change @ to \@
 						$escaped = strtr($robotRule, array("@" => "\@"));
 
 						// match result
