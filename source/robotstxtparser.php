@@ -645,7 +645,14 @@
 
 						// match result
 						if (preg_match('@' . $escaped . '@', $value)) {
-							$result = ($rule === $directive);
+							if (strpos($escaped, '$') !== false) {
+								if (mb_strlen($escaped) - 1 >= mb_strlen($value)) {
+									$result = ($rule === $directive);
+								}
+							} else {
+								$result = ($rule === $directive);
+								echo $escaped . '-' . $value . "\n";
+							}
 						}
 					}
 				}
