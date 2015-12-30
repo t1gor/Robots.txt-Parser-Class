@@ -28,20 +28,25 @@ and then use composer to load the lib:
 You can find out more about Composer here: https://getcomposer.org/
 
 ### Usage example
-```php
+````php
 <?php
-    require_once('robotstxtparser.php');
-    $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
-    $parser->setHttpStatusCode(200); // optional
-    var_dump($parser->isDisallowed('/someurl', 'useragent'));
-    var_dump($parser->isAllowed('/someotherurl.html', 'useragent'));
-    var_dump($parser->getDelay('useragent')); // optional
-    print_r($parser->rules);
-    print_r($parser->getSitemaps()); // optional
-?>
-```
+require_once('source/robotstxtparser.php');
+$parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
 
-More code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
+$useragent = 'MySimpleBot';
+
+if ($parser->isAllowed('/', $useragent)) {
+	// Crawl of the frontpage is Allowed.
+}
+// or
+if ($parser->isDisallowed('/path/to/page.html', $useragent)) {
+	// Crawl of /path/to/page.html is Disallowed
+}
+?>
+````
+Take a look at the [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Features-and-usage-examples) for additonal features and how to use them.
+
+Even more code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
 
 ### Algorythm schema:
 **Conditions:**
