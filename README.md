@@ -3,7 +3,9 @@ Robots.txt php parser class
 
 [![Build Status](https://travis-ci.org/t1gor/Robots.txt-Parser-Class.svg?branch=master)](https://travis-ci.org/t1gor/Robots.txt-Parser-Class) [![Code Climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/gpa.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![Test Coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/coverage.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![License](https://poser.pugx.org/t1gor/robots-txt-parser/license.svg)](https://packagist.org/packages/t1gor/robots-txt-parser) [![Total Downloads](https://poser.pugx.org/t1gor/robots-txt-parser/downloads.svg)](https://packagist.org/packages/t1gor/robots-txt-parser)
 
-Php class to parse robots.txt rules according to Google & Yandex specifications. Please keep in mind that this is an alpha-version project, as you might see from the coverage report :) But I am about to change that.
+PHP class to parse robots.txt rules according to Google & Yandex specifications. Please keep in mind that this is an beta-version project, as you might see from the coverage report :) But I am about to change that.
+
+Full list of supported specifications (and what's not supported yet) are available in our [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Specification-overview).
 
 ### Installation
 The library is available for install via Composer package. To install via Composer, please add the requerement to your `composer.json` file, like this:
