@@ -602,7 +602,7 @@
 				throw new \DomainException('Unable to check rules');
 			}
 		}
-		
+
 	/**
 	 * Validate URL scheme
 	 *
@@ -612,6 +612,20 @@
 	protected function isValidScheme($scheme)
 	{
 		return in_array($scheme, array('http', 'https'));
+	}
+	
+	/**
+	 * Validate host name
+	 *
+	 * @param  string $host
+	 * @return bool
+	 */
+	protected function  isValidHostName($host)
+	{
+		return (preg_match("/^([a-z\d](-*[a-z\d])*)(\.([a-z\d](-*[a-z\d])*))*$/i", $host) //valid chars check
+			&& preg_match("/^.{1,253}$/", $host) //overall length check
+			&& preg_match("/^[^\.]{1,63}(\.[^\.]{1,63})*$/", $host) //length of each label
+			&& !filter_var($host, FILTER_VALIDATE_IP)); //is not an IP
 	}
 	
 	/**
@@ -716,15 +730,20 @@
 	{
 		foreach ($this->host as $value) {
 			$parsed = parse_url($value);
-			if (isset($parsed['scheme']) && !$this->isValidScheme($parsed['scheme'])) {
+			if ($parsed == false) {
 				continue;
 			}
-			if (!isset($parsed['host'])) {
+			// Is valid domain
+			$host = isset($parsed['host']) ? $parsed['host'] : $parsed['path'];
+			if (!$this->isValidHostName($host)) {
+				continue;
+			}
+			if (isset($parsed['scheme']) && !$this->isValidScheme($parsed['scheme'])) {
 				continue;
 			}
 			$scheme = isset($parsed['scheme']) ? $parsed['scheme'] . '://' : '';
 			$port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
-			if ($value == $scheme . $parsed['host'] . $port) {
+			if ($value == $scheme . $host . $port) {
 				return $value;
 			}
 		}
