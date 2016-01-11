@@ -11,6 +11,7 @@
 		{
 			// init parser
 			$parser = new RobotsTxtParser($robotsTxtContent);
+			$parser->enterValidationMode(true);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 			$this->assertFalse($parser->isDisallowed("/peanuts"));
 			$this->assertTrue($parser->isDisallowed("/url_containing_@_symbol"));
