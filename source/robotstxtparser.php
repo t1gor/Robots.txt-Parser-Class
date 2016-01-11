@@ -454,46 +454,46 @@
 		return $userAgent;
 	}
 
-		/**
-		 * Add group-member rule
-		 *
-		 * @param bool $append
-		 * @return void
-		 */
-		private function addGroupMember($append = true)
-		{
-			if ($append === true) {
-				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
-			} else {
-				$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
-			}
+	/**
+	 * Add group-member rule
+	 *
+	 * @param bool $append
+	 * @return void
+	 */
+	private function addGroupMember($append = true)
+	{
+		if ($append === true) {
+			$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+		} else {
+			$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
 		}
+	}
 
-		/**
-		 * Add non-group record
-		 *
-		 * @param bool $append
-		 * @return void
-		 */
-		private function addNonMember($append = true)
-		{
-			if ($append === true) {
-				$this->{$this->current_directive}[] = $this->current_word;
-			} else {
-				$this->{$this->current_directive} = $this->current_word;
-			}
+	/**
+	 * Add non-group record
+	 *
+	 * @param bool $append
+	 * @return void
+	 */
+	private function addNonMember($append = true)
+	{
+		if ($append === true) {
+			$this->{$this->current_directive}[] = $this->current_word;
+		} else {
+			$this->{$this->current_directive} = $this->current_word;
 		}
+	}
 
-		/**
-		 * Convert wrapper
-		 *
-		 * @param string $convert
-		 * @return void
-		 */
-		private function convert($convert)
-		{
-			$this->current_word = call_user_func($convert, $this->current_word);
-		}
+	/**
+	 * Convert wrapper
+	 *
+	 * @param string $convert
+	 * @return void
+	 */
+	private function convert($convert)
+	{
+		$this->current_word = call_user_func($convert, $this->current_word);
+	}
 
 		/**
 		 * Machine step
@@ -625,7 +625,7 @@
 		return (preg_match("/^([a-z\d](-*[a-z\d])*)(\.([a-z\d](-*[a-z\d])*))*$/i", $host) //valid chars check
 			&& preg_match("/^.{1,253}$/", $host) //overall length check
 			&& preg_match("/^[^\.]{1,63}(\.[^\.]{1,63})*$/", $host) //length of each label
-			&& !filter_var($host, FILTER_VALIDATE_IP)); //is not an IP
+			&& !filter_var($host, FILTER_VALIDATE_IP)); //is not an IP address
 	}
 	
 	/**
