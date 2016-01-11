@@ -12,7 +12,7 @@ class HostTest extends \PHPUnit_Framework_TestCase
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
-		$this->assertEquals('www.example.com', $parser->getHost());
+		$this->assertEquals('myhost.ru', $parser->getHost());
 	}
 
 	/**
@@ -23,7 +23,7 @@ class HostTest extends \PHPUnit_Framework_TestCase
 	{
 		return array(
 			array(<<<ROBOTS
-Host: myhost.ru # uses
+Host: myhost.ru
 
 User-agent: *
 Disallow: /cgi-bin
