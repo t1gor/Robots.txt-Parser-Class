@@ -1,35 +1,54 @@
 <?php
-	class HostTest extends \PHPUnit_Framework_TestCase
-	{
-		/**
-		 * @dataProvider generateDataForTest
-		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRule
-		 * @param string $robotsTxtContent
-		 */
-		public function testHost($robotsTxtContent)
-		{
-			// init parser
-			$parser = new RobotsTxtParser($robotsTxtContent);
-			$rules = $parser->getRules();
-			$this->assertInstanceOf('RobotsTxtParser', $parser);
-			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('*', $rules);
-			$this->assertArrayHasKey('host', $rules['*']);
-			$this->assertEquals('www.example.com', $rules['*']['host']);
-		}
 
-		/**
-		 * Generate test case data
-		 * @return array
-		 */
-		public function generateDataForTest()
-		{
-			return array(
-				array("
-					User-Agent: *
-					Host: www.example.com
-				")
-			);
-		}
+class HostTest extends \PHPUnit_Framework_TestCase
+{
+	/**
+	 * @dataProvider generateDataForTest
+	 * @covers       RobotsTxtParser::getHost
+	 * @param string $robotsTxtContent
+	 */
+	public function testHost($robotsTxtContent)
+	{
+		// init parser
+		$parser = new RobotsTxtParser($robotsTxtContent);
+		$this->assertInstanceOf('RobotsTxtParser', $parser);
+		$this->assertEquals('myhost.ru', $parser->getHost());
 	}
+
+	/**
+	 * Generate test case data
+	 * @return array
+	 */
+	public function generateDataForTest()
+	{
+		return array(
+			array(<<<ROBOTS
+User-agent: *
+Disallow: /cgi-bin
+
+User-agent: Yandex
+Disallow: /cgi-bin
+
+# Examples of Host directives that will be ignored
+Host: www.myhost-.com
+Host: www.-myhost.com
+Host: www.myhost.com:100000
+Host: www.my_host.com
+Host: .my-host.com:8000
+Host: my-host.com.Host: my..host.com
+Host: www.myhost.com:8080/
+Host: 213.180.194.129
+Host: [2001:db8::1]
+Host: FE80::0202:B3FF:FE1E:8329
+Host: https://[2001:db8:0:1]:80
+Host: www.firsthost.ru,www.secondhost.com
+# Host: www.firsthost.ru www.secondhost.com # Disabled due to a bug
+
+# Examples of valid Host directives
+Host: myhost.ru # uses this one
+Host: www.myhost.ru # is not used
+ROBOTS
+			)
+		);
+	}
+}

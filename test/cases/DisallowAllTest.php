@@ -15,6 +15,7 @@ class ApplyToAll extends \PHPUnit_Framework_TestCase
 			User-Agent: *
 			Disallow: /
 		");
+		$parser->enterValidationMode(true);
 
 		// asserts
 		$this->assertTrue($parser->isDisallowed("/index"));
@@ -31,6 +32,7 @@ class ApplyToAll extends \PHPUnit_Framework_TestCase
 			User-agent: *
 			Allow: /
 		");
+		$parser->enterValidationMode(true);
 
 		// asserts
 		$this->assertFalse($parser->isDisallowed("/index"));
