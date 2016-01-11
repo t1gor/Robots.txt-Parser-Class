@@ -1,35 +1,38 @@
 <?php
-	class HostTest extends \PHPUnit_Framework_TestCase
-	{
-		/**
-		 * @dataProvider generateDataForTest
-		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRule
-		 * @param string $robotsTxtContent
-		 */
-		public function testHost($robotsTxtContent)
-		{
-			// init parser
-			$parser = new RobotsTxtParser($robotsTxtContent);
-			$rules = $parser->getRules();
-			$this->assertInstanceOf('RobotsTxtParser', $parser);
-			$this->assertObjectHasAttribute('rules', $parser);
-			$this->assertArrayHasKey('*', $rules);
-			$this->assertArrayHasKey('host', $rules['*']);
-			$this->assertEquals('www.example.com', $rules['*']['host']);
-		}
 
-		/**
-		 * Generate test case data
-		 * @return array
-		 */
-		public function generateDataForTest()
-		{
-			return array(
-				array("
-					User-Agent: *
-					Host: www.example.com
-				")
-			);
-		}
+class HostTest extends \PHPUnit_Framework_TestCase
+{
+	/**
+	 * @dataProvider generateDataForTest
+	 * @covers       RobotsTxtParser::getHost
+	 * @param string $robotsTxtContent
+	 */
+	public function testHost($robotsTxtContent)
+	{
+		// init parser
+		$parser = new RobotsTxtParser($robotsTxtContent);
+		$this->assertInstanceOf('RobotsTxtParser', $parser);
+		$this->assertEquals('www.example.com', $parser->getHost());
 	}
+
+	/**
+	 * Generate test case data
+	 * @return array
+	 */
+	public function generateDataForTest()
+	{
+		return array(
+			array(<<<ROBOTS
+Host: myhost.ru # uses
+
+User-agent: *
+Disallow: /cgi-bin
+
+User-agent: Yandex
+Disallow: /cgi-bin
+Host: www.myhost.ru # is not used
+ROBOTS
+			)
+		);
+	}
+}
