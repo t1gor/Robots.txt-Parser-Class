@@ -94,18 +94,6 @@
 			$this->prepareRules();
 		}
 
-		/**
-		 * Enter validation mode
-		 *
-		 * @param bool $bool
-		 */
-		protected function enterValidationMode($bool = true)
-		{
-			if (is_bool($bool)) {
-				$this->validationMode = $bool;
-			}
-		}
-
 		// signals
 
 		/**
@@ -624,6 +612,18 @@
 	protected function isValidScheme($scheme)
 	{
 		return in_array($scheme, array('http', 'https'));
+	}
+	
+	/**
+	 * Enter validation mode
+	 *
+	 * @param bool $bool
+	 */
+	public function enterValidationMode($bool = true)
+	{
+		if (is_bool($bool)) {
+			$this->validationMode = $bool;
+		}
 	}
 
 		/**
