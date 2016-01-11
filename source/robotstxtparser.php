@@ -14,7 +14,7 @@
 	 * @link http://socoder.net/index.php?snippet=23824
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
-	class robotstxtparser {
+	class RobotsTxtParser {
 
 		// default encoding
 		const DEFAULT_ENCODING = 'UTF-8';
@@ -39,6 +39,9 @@
 		// language
 		const LANG_NO_CONTENT_PASSED = "No content submitted - please check the file that you are using.";
 
+		// rule validation mode
+		private $validationMode = false;
+
 		// current state
 		private $state = "";
 
@@ -47,10 +50,13 @@
 
 		// rules set
 		private $rules = array();
-		
-		// sitemaps set
-		private $sitemaps = array();
-		
+
+		// sitemap set
+		protected $sitemap = array();
+
+		// host set
+		protected $host = array();
+
 		// robots.txt http status code
 		protected $httpStatusCode = 200;
 
@@ -86,6 +92,18 @@
 
 			// parse rules - default state
 			$this->prepareRules();
+		}
+
+		/**
+		 * Enter validation mode
+		 *
+		 * @param bool $bool
+		 */
+		protected function enterValidationMode($bool = true)
+		{
+			if (is_bool($bool)) {
+				$this->validationMode = $bool;
+			}
 		}
 
 		// signals
@@ -205,6 +223,7 @@
 
 		/**
 		 * Check if we should switch
+		 *
 		 * @return bool
 		 */
 		protected function shouldSwitchToZeroPoint()
@@ -223,6 +242,7 @@
 
 		/**
 		 * Process state ZERO_POINT
+		 *
 		 * @return RobotsTxtParser
 		 */
 		protected function zeroPoint()
@@ -283,6 +303,7 @@
 
 		/**
 		 * Skip line
+		 *
 		 * @return RobotsTxtParser
 		 */
 		protected function skipLine()
@@ -294,6 +315,7 @@
 
 		/**
 		 * Read value
+		 *
 		 * @return RobotsTxtParser
 		 */
 		protected function readValue()
@@ -311,53 +333,54 @@
 			return $this;
 		}
 
-        /**
-         * Add value to directive based on the directive type
-         */
-		private function addValueToDirective()
-        {
-            switch ($this->current_directive)
-            {
-                case self::DIRECTIVE_USERAGENT:
-                    $this->setUserAgent(mb_strtolower($this->current_word));
-                    break;
-
-                case self::DIRECTIVE_CRAWL_DELAY:
-                    $this->addRule("floatval", false);
-                    break;
-
-		case self::DIRECTIVE_CACHE_DELAY:
-			$this->addRule("floatval", false);
-			break;
-
-                case self::DIRECTIVE_SITEMAP:
-                	$this->addSitemap();
-                	break;
-                	
-                case self::DIRECTIVE_CLEAN_PARAM:
-                    $this->addRule();
-                    break;
-
-                case self::DIRECTIVE_HOST:
-                    $this->addRule("trim", false);
-                    break;
-
-                case self::DIRECTIVE_ALLOW:
-                case self::DIRECTIVE_DISALLOW:
-                    if (empty($this->current_word)) {
-                        break;
-                    }
-                    $this->addRule("self::prepareRegexRule");
-                    break;
-            }
-
-            // clean-up
-            $this->current_word = "";
-            $this->switchState(self::STATE_ZERO_POINT);
-        }
-        
-        /**
+	/**
+	 * Add value to directive based on the directive type
+	 *
+	 * @return void
+	 */
+	private function addValueToDirective()
+	{
+		switch ($this->current_directive) {
+			case self::DIRECTIVE_USERAGENT:
+				$this->setUserAgent(mb_strtolower($this->current_word));
+				break;
+			case self::DIRECTIVE_CRAWL_DELAY:
+				$this->convert("floatval");
+				$this->addGroupMember(false);
+				break;
+			case self::DIRECTIVE_CACHE_DELAY:
+				$this->convert("floatval");
+				$this->addGroupMember(false);
+				break;
+			case self::DIRECTIVE_SITEMAP:
+				$this->convert("trim");
+				$this->addNonMember();
+				break;
+			case self::DIRECTIVE_CLEAN_PARAM:
+				$this->convert("trim");
+				$this->addGroupMember();
+				break;
+			case self::DIRECTIVE_HOST:
+				$this->convert("trim");
+				$this->addNonMember();
+				break;
+			case self::DIRECTIVE_ALLOW:
+			case self::DIRECTIVE_DISALLOW:
+				if (empty($this->current_word)) {
+					break;
+				}
+				$this->convert("self::prepareRegexRule");
+				$this->addGroupMember();
+				break;
+		}
+		// clean-up
+		$this->current_word = "";
+		$this->switchState(self::STATE_ZERO_POINT);
+	}
+	
+	/**
 	 * Set the HTTP status code
+	 *
 	 * @param int $code
 	 * @throws \DomainException
 	 */
@@ -373,6 +396,7 @@
 
         /**
          * Set current user agent
+         *
          * @param string $newAgent
          */
         private function setUserAgent($newAgent = "*")
@@ -384,7 +408,7 @@
                 $this->rules[$this->userAgent] = array();
             }
         }
-        
+
         /**
 	 *  Determine the correct user agent group
 	 *
@@ -405,7 +429,7 @@
 		}
 		return '*';
 	}
-	
+
 	/**
 	 *  Parses all possible userAgent groups to an array
 	 *
@@ -442,38 +466,46 @@
 		return $userAgent;
 	}
 
-        /**
-         * Prepare rule value and set the one
-         * @param callable $convert
-         * @param bool     $append
-         * @return void
-         */
-        private function addRule($convert = null, $append = true)
-        {
-            // convert value
-            $value = (!is_null($convert))
-                ? call_user_func($convert, $this->current_word)
-                : $this->current_word;
+		/**
+		 * Add group-member rule
+		 *
+		 * @param bool $append
+		 * @return void
+		 */
+		private function addGroupMember($append = true)
+		{
+			if ($append === true) {
+				$this->rules[$this->userAgent][$this->current_directive][] = $this->current_word;
+			} else {
+				$this->rules[$this->userAgent][$this->current_directive] = $this->current_word;
+			}
+		}
 
-            // set to rules
-            if ($append === true) {
-                $this->rules[$this->userAgent][$this->current_directive][] = $value;
-            }
-            else {
-                $this->rules[$this->userAgent][$this->current_directive] = $value;
-            }
-        }
-        
-        /**
-         * Add sitemap wrapper
-         * 
-         * @return void
-         */
-         private function addSitemap()
-         {
-         	$this->sitemaps[] = $this->current_word;
-         	$this->sitemaps = array_unique($this->sitemaps);
-         }
+		/**
+		 * Add non-group record
+		 *
+		 * @param bool $append
+		 * @return void
+		 */
+		private function addNonMember($append = true)
+		{
+			if ($append === true) {
+				$this->{$this->current_directive}[] = $this->current_word;
+			} else {
+				$this->{$this->current_directive} = $this->current_word;
+			}
+		}
+
+		/**
+		 * Convert wrapper
+		 *
+		 * @param string $convert
+		 * @return void
+		 */
+		private function convert($convert)
+		{
+			$this->current_word = call_user_func($convert, $this->current_word);
+		}
 
 		/**
 		 * Machine step
@@ -515,7 +547,7 @@
 		 */
 		protected function prepareRegexRule($value)
 		{
-            $value = "/" . ltrim($value, '/');
+			$value = "/" . ltrim($value, '/');
 			$value = str_replace('$', '\$', $value);
 			$value = str_replace('?', '\?', $value);
 			$value = str_replace('.', '\.', $value);
@@ -564,12 +596,17 @@
 		}
 
 		/**
+		 * Check the rule parsing credibility
+		 *
 		 * @param  string $url       - url to check
 		 * @param  string $userAgent - which robot to check for
 		 * @throws \DomainException
 		 */
 		protected function checkEqualRules($url, $userAgent)
 		{
+			if ($this->validationMode === false) {
+				return;
+			}
 			$allow = $this->checkRule(self::DIRECTIVE_ALLOW, $url, $userAgent);
 			$disallow = $this->checkRule(self::DIRECTIVE_DISALLOW, $url, $userAgent);
 
@@ -577,6 +614,17 @@
 				throw new \DomainException('Unable to check rules');
 			}
 		}
+		
+	/**
+	 * Validate URL scheme
+	 *
+	 * @param  string $scheme
+	 * @return bool
+	 */
+	protected function isValidScheme($scheme)
+	{
+		return in_array($scheme, array('http', 'https'));
+	}
 
 		/**
 		 * Check url wrapper
@@ -624,7 +672,7 @@
 			if ($this->httpStatusCode >= 500 && $this->httpStatusCode <= 599) {
 				return ($rule === self::DIRECTIVE_DISALLOW);
 			}
-			
+
 			// if rules are empty - allowed by default
 			if (empty($this->rules)) {
 				return ($rule === self::DIRECTIVE_ALLOW);
@@ -659,6 +707,30 @@
 			return $result;
 		}
 
+	/**
+	 * Get host wrapper
+	 *
+	 * @return string|null
+	 */
+	public function getHost()
+	{
+		foreach ($this->host as $value) {
+			$parsed = parse_url($value);
+			if (isset($parsed['scheme']) && !$this->isValidScheme($parsed['scheme'])) {
+				continue;
+			}
+			if (!isset($parsed['host'])) {
+				continue;
+			}
+			$scheme = isset($parsed['scheme']) ? $parsed['scheme'] . '://' : '';
+			$port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+			if ($value == $scheme . $parsed['host'] . $port) {
+				return $value;
+			}
+		}
+		return null;
+	}
+
 		/**
 		 * Get sitemaps wrapper
 		 *
@@ -666,9 +738,10 @@
 		 */
 		public function getSitemaps()
 		{
-			return $this->sitemaps;
+			$this->sitemap = array_unique($this->sitemap);
+			return $this->sitemap;
 		}
-		
+
 	/**
 	 * Get delay
 	 *
@@ -717,6 +790,8 @@
         }
 
         /**
+         * Get the robots.txt content
+         *
          * @return string
          */
         public function getContent()
