@@ -13,6 +13,7 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
+		$parser->enterValidationMode(true);
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
 
 		$this->assertTrue($parser->isAllowed("/"));
