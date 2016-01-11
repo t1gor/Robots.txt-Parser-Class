@@ -23,13 +23,29 @@ class HostTest extends \PHPUnit_Framework_TestCase
 	{
 		return array(
 			array(<<<ROBOTS
-Host: myhost.ru
-
 User-agent: *
 Disallow: /cgi-bin
 
 User-agent: Yandex
 Disallow: /cgi-bin
+
+# Examples of Host directives that will be ignored
+Host: www.myhost-.com
+Host: www.-myhost.com
+Host: www.myhost.com:100000
+Host: www.my_host.com
+Host: .my-host.com:8000
+Host: my-host.com.Host: my..host.com
+Host: www.myhost.com:8080/
+Host: 213.180.194.129
+Host: [2001:db8::1]
+Host: FE80::0202:B3FF:FE1E:8329
+Host: https://[2001:db8:0:1]:80
+Host: www.firsthost.ru,www.secondhost.com
+# Host: www.firsthost.ru www.secondhost.com # Disabled due to a bug
+
+# Examples of valid Host directives
+Host: myhost.ru # uses this one
 Host: www.myhost.ru # is not used
 ROBOTS
 			)
