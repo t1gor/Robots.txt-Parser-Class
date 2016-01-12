@@ -332,14 +332,12 @@
 			case self::DIRECTIVE_USERAGENT:
 				$this->setUserAgent(mb_strtolower($this->current_word));
 				break;
+			case self::DIRECTIVE_CACHE_DELAY:
 			case self::DIRECTIVE_CRAWL_DELAY:
 				$this->convert("floatval");
 				$this->addGroupMember(false);
 				break;
-			case self::DIRECTIVE_CACHE_DELAY:
-				$this->convert("floatval");
-				$this->addGroupMember(false);
-				break;
+			case self::DIRECTIVE_HOST:
 			case self::DIRECTIVE_SITEMAP:
 				$this->convert("trim");
 				$this->addNonMember();
@@ -347,10 +345,6 @@
 			case self::DIRECTIVE_CLEAN_PARAM:
 				$this->convert("trim");
 				$this->addGroupMember();
-				break;
-			case self::DIRECTIVE_HOST:
-				$this->convert("trim");
-				$this->addNonMember();
 				break;
 			case self::DIRECTIVE_ALLOW:
 			case self::DIRECTIVE_DISALLOW:
