@@ -730,7 +730,7 @@
 	{
 		foreach ($this->host as $value) {
 			$parsed = parse_url($value);
-			if ($parsed == false) {
+			if ($parsed === false) {
 				continue;
 			}
 			// Is valid domain
