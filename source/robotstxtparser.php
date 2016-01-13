@@ -50,6 +50,9 @@
 
 		// rules set
 		private $rules = array();
+		
+		// clean param set
+		protected $cleanparam = array();
 
 		// sitemap set
 		protected $sitemap = array();
@@ -344,7 +347,7 @@
 				break;
 			case self::DIRECTIVE_CLEAN_PARAM:
 				$this->convert("trim");
-				$this->addGroupMember();
+				$this->addNonMember();
 				break;
 			case self::DIRECTIVE_ALLOW:
 			case self::DIRECTIVE_DISALLOW:
@@ -471,10 +474,11 @@
 	 */
 	private function addNonMember($append = true)
 	{
+		$variable = str_ireplace('-', '', $this->current_directive);
 		if ($append === true) {
-			$this->{$this->current_directive}[] = $this->current_word;
+			$this->{$variable}[] = $this->current_word;
 		} else {
-			$this->{$this->current_directive} = $this->current_word;
+			$this->{$variable} = $this->current_word;
 		}
 	}
 
@@ -801,6 +805,17 @@
                 return array();
             }
         }
+        
+        /**
+	 * Get Clean-Param
+	 *
+	 * @return array
+	 */
+	public function getCleanParam()
+	{
+		$this->cleanparam = array_unique($this->cleanparam);
+		return $this->cleanparam;
+	}
 
         /**
          * Get the robots.txt content
