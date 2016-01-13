@@ -474,11 +474,21 @@
 	 */
 	private function addNonMember($append = true)
 	{
-		$variable = str_ireplace('-', '', $this->current_directive);
+		switch ($this->current_directive) {
+			case self::DIRECTIVE_CLEAN_PARAM:
+				$var = 'cleanparam';
+				break;
+			case self::DIRECTIVE_HOST:
+				$var = 'host';
+				break;
+			case self::DIRECTIVE_SITEMAP:
+				$var = 'sitemap';
+				break;
+		}
 		if ($append === true) {
-			$this->{$variable}[] = $this->current_word;
+			$this->{$var}[] = $this->current_word;
 		} else {
-			$this->{$variable} = $this->current_word;
+			$this->{$var} = $this->current_word;
 		}
 	}
 
