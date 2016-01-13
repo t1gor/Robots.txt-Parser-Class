@@ -50,6 +50,9 @@
 
 		// rules set
 		private $rules = array();
+		
+		// clean param set
+		protected $cleanparam = array();
 
 		// sitemap set
 		protected $sitemap = array();
@@ -332,23 +335,17 @@
 			case self::DIRECTIVE_USERAGENT:
 				$this->setUserAgent(mb_strtolower($this->current_word));
 				break;
+			case self::DIRECTIVE_CACHE_DELAY:
 			case self::DIRECTIVE_CRAWL_DELAY:
 				$this->convert("floatval");
 				$this->addGroupMember(false);
 				break;
-			case self::DIRECTIVE_CACHE_DELAY:
-				$this->convert("floatval");
-				$this->addGroupMember(false);
-				break;
+			case self::DIRECTIVE_HOST:
 			case self::DIRECTIVE_SITEMAP:
 				$this->convert("trim");
 				$this->addNonMember();
 				break;
 			case self::DIRECTIVE_CLEAN_PARAM:
-				$this->convert("trim");
-				$this->addGroupMember();
-				break;
-			case self::DIRECTIVE_HOST:
 				$this->convert("trim");
 				$this->addNonMember();
 				break;
@@ -477,10 +474,11 @@
 	 */
 	private function addNonMember($append = true)
 	{
+		$variable = str_ireplace('-', '', $this->current_directive);
 		if ($append === true) {
-			$this->{$this->current_directive}[] = $this->current_word;
+			$this->{$variable}[] = $this->current_word;
 		} else {
-			$this->{$this->current_directive} = $this->current_word;
+			$this->{$variable} = $this->current_word;
 		}
 	}
 
@@ -730,7 +728,7 @@
 	{
 		foreach ($this->host as $value) {
 			$parsed = parse_url($value);
-			if ($parsed == false) {
+			if ($parsed === false) {
 				continue;
 			}
 			// Is valid domain
@@ -807,6 +805,17 @@
                 return array();
             }
         }
+        
+        /**
+	 * Get Clean-Param
+	 *
+	 * @return array
+	 */
+	public function getCleanParam()
+	{
+		$this->cleanparam = array_unique($this->cleanparam);
+		return $this->cleanparam;
+	}
 
         /**
          * Get the robots.txt content
