@@ -18,19 +18,19 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 		$cleanParam = $parser->getCleanParam();
 
 		$this->assertArrayHasKey('abc', $cleanParam);
-		$this->assertEquals('/forum/showthread.php', $cleanParam['abc']);
+		$this->assertEquals(array('/forum/showthread.php'), $cleanParam['abc']);
 
 		$this->assertArrayHasKey('sid', $cleanParam);
-		$this->assertEquals('/forumt/*.php', $cleanParam['sid']);
+		$this->assertEquals(array('/forumt/*.php'), $cleanParam['sid']);
 
 		$this->assertArrayHasKey('sort', $cleanParam);
-		$this->assertEquals('/forumt/*.php', $cleanParam['sort']);
+		$this->assertEquals(array('/forumt/*.php'), $cleanParam['sort']);
 
 		$this->assertArrayHasKey('someTrash', $cleanParam);
-		$this->assertEquals('/*', $cleanParam['someTrash']);
+		$this->assertEquals(array('/*'), $cleanParam['someTrash']);
 
 		$this->assertArrayHasKey('otherTrash', $cleanParam);
-		$this->assertEquals('/*', $cleanParam['otherTrash']);
+		$this->assertEquals(array('/*'), $cleanParam['otherTrash']);
 	}
 
 	/**
