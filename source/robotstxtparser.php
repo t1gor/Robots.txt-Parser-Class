@@ -322,10 +322,9 @@
 	protected function readValue()
 	{
 		if ($this->newLine()) {
-			$this->current_word = trim($this->current_word);
 			$this->addValueToDirective();
 		} elseif ($this->sharp()) {
-			$this->current_word = trim(mb_substr($this->current_word, 0, -1));
+			$this->current_word = mb_substr($this->current_word, 0, -1);
 			$this->addValueToDirective();
 		} else {
 			$this->increment();
@@ -346,6 +345,7 @@
 				break;
 			case self::DIRECTIVE_CACHE_DELAY:
 			case self::DIRECTIVE_CRAWL_DELAY:
+				$this->convert("trim");
 				$this->convert("floatval");
 				$this->addGroupMember(false);
 				break;
@@ -360,9 +360,7 @@
 				break;
 			case self::DIRECTIVE_ALLOW:
 			case self::DIRECTIVE_DISALLOW:
-				if (empty($this->current_word)) {
-					break;
-				}
+				$this->convert("trim");
 				$this->convert("self::prepareRegexRule");
 				$this->addGroupMember();
 				break;
@@ -395,7 +393,7 @@
          */
         private function setUserAgent($newAgent = "*")
         {
-            $this->userAgent = mb_strtolower($newAgent);
+            $this->userAgent = trim(mb_strtolower($newAgent));
 
             // create empty array if not there yet
             if (empty($this->rules[$this->userAgent])) {
@@ -596,6 +594,7 @@
 	{
 		$this->current_char = mb_substr($this->content, $this->char_index, 1);
 		$this->current_word .= $this->current_char;
+		$this->current_word = ltrim($this->current_word);
 		$this->char_index++;
 	}
 
