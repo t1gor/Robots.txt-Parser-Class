@@ -509,6 +509,7 @@
 		foreach ($parameters as $param) {
 			$param = trim($param);
 			$this->cleanparam[$param][] = $path;
+			$this->cleanparam[$param] = array_unique($this->cleanparam[$param]);
 		}
 	}
 
@@ -843,7 +844,6 @@
 	 */
 	public function getCleanParam()
 	{
-		$this->cleanparam = array_unique($this->cleanparam, SORT_REGULAR);
 		return $this->cleanparam;
 	}
 
