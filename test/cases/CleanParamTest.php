@@ -10,12 +10,27 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 	 * @covers       RobotsTxtParser::checkRule
 	 * @param string $robotsTxtContent
 	 */
-	public function testCleanParam($robotsTxtContent, $message = NULL)
+	public function testCleanParam($robotsTxtContent)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
-		$this->assertEquals(array('utm_source&utm_medium&utm.campaign'), $parser->getCleanParam(), $message);
+		$cleanParam = $parser->getCleanParam();
+
+		$this->assertArrayHasKey('abc', $cleanParam);
+		$this->assertEquals(array('/forum/showthread.php'), $cleanParam['abc']);
+
+		$this->assertArrayHasKey('sid', $cleanParam);
+		$this->assertEquals(array('/forumt/*.php'), $cleanParam['sid']);
+
+		$this->assertArrayHasKey('sort', $cleanParam);
+		$this->assertEquals(array('/forumt/*.php'), $cleanParam['sort']);
+
+		$this->assertArrayHasKey('someTrash', $cleanParam);
+		$this->assertEquals(array('/*'), $cleanParam['someTrash']);
+
+		$this->assertArrayHasKey('otherTrash', $cleanParam);
+		$this->assertEquals(array('/*'), $cleanParam['otherTrash']);
 	}
 
 	/**
@@ -25,22 +40,12 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 	public function generateDataForTest()
 	{
 		return array(
-			array(
-				"
-					User-Agent: *
-					#Clean-param: utm_source_commented&comment
-					Clean-param: utm_source&utm_medium&utm.campaign
-					",
-				'with comment'
-			),
-			array(
-				"
-					User-Agent: *
-					Clean-param: utm_source&utm_medium&utm.campaign
-					Clean-param: utm_source&utm_medium&utm.campaign
-					",
-				'expected to remove repetitions of lines'
-			),
+			array(<<<ROBOTS
+Clean-param: abc /forum/showthread.php
+Clean-param: sid&sort /forumt/*.php
+Clean-param: someTrash&otherTrash
+ROBOTS
+			)
 		);
 	}
 }

@@ -479,26 +479,37 @@
 	/**
 	 * Add non-group record
 	 *
-	 * @param bool $append
 	 * @return void
 	 */
-	private function addNonMember($append = true)
+	private function addNonMember()
 	{
 		switch ($this->current_directive) {
 			case self::DIRECTIVE_CLEAN_PARAM:
-				$var = 'cleanparam';
+				$this->addCleanParam();
 				break;
 			case self::DIRECTIVE_HOST:
-				$var = 'host';
+				$this->host[] = $this->current_word;
 				break;
 			case self::DIRECTIVE_SITEMAP:
-				$var = 'sitemap';
+				$this->sitemap[] = $this->current_word;
 				break;
 		}
-		if ($append === true) {
-			$this->{$var}[] = $this->current_word;
-		} else {
-			$this->{$var} = $this->current_word;
+	}
+
+	/**
+	 * Add Clean-Param record
+	 *
+	 * @return void
+	 */
+	private function addCleanParam()
+	{
+		$array = explode(' ', $this->current_word, 2);
+		$path = isset($array[1]) ? trim($array[1]) : '/*';
+		$parameters = explode('&', $array[0]);
+		foreach ($parameters as $param) {
+			$param = trim($param);
+			$this->cleanparam[$param][] = $path;
+			$this->cleanparam[$param] = array_unique($this->cleanparam[$param]);
 		}
 	}
 
@@ -833,7 +844,6 @@
 	 */
 	public function getCleanParam()
 	{
-		$this->cleanparam = array_unique($this->cleanparam);
 		return $this->cleanparam;
 	}
 
@@ -846,4 +856,4 @@
         {
             return $this->content;
         }
-	}
+}
