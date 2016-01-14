@@ -42,7 +42,7 @@ Host: [2001:db8::1]
 Host: FE80::0202:B3FF:FE1E:8329
 Host: https://[2001:db8:0:1]:80
 Host: www.firsthost.ru,www.secondhost.com
-# Host: www.firsthost.ru www.secondhost.com # Disabled due to a bug
+Host: www.firsthost.ru www.secondhost.com
 
 # Examples of valid Host directives
 Host: myhost.ru # uses this one
