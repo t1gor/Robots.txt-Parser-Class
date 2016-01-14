@@ -361,6 +361,9 @@
 			case self::DIRECTIVE_ALLOW:
 			case self::DIRECTIVE_DISALLOW:
 				$this->convert("trim");
+				if (empty($this->current_word)) {
+					break;
+				}
 				$this->convert("self::prepareRegexRule");
 				$this->addGroupMember();
 				break;
