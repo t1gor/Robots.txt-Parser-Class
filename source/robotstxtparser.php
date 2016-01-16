@@ -14,8 +14,8 @@
 	 * @link http://socoder.net/index.php?snippet=23824
 	 * @link http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I
 	 */
-	class RobotsTxtParser {
-
+class RobotsTxtParser
+{
 		// default encoding
 		const DEFAULT_ENCODING = 'UTF-8';
 
@@ -44,6 +44,9 @@
 
 		// current state
 		private $state = "";
+		
+	// url
+	private $url = null;
 
 		// robots.txt file content
 		private $content = "";
@@ -356,7 +359,7 @@
 				break;
 			case self::DIRECTIVE_CLEAN_PARAM:
 				$this->convert("trim");
-				$this->addNonMember();
+				$this->addCleanParam();
 				break;
 			case self::DIRECTIVE_ALLOW:
 			case self::DIRECTIVE_DISALLOW:
@@ -484,9 +487,6 @@
 	private function addNonMember()
 	{
 		switch ($this->current_directive) {
-			case self::DIRECTIVE_CLEAN_PARAM:
-				$this->addCleanParam();
-				break;
 			case self::DIRECTIVE_HOST:
 				$this->host[] = $this->current_word;
 				break;
@@ -612,6 +612,23 @@
 		$this->char_index++;
 	}
 
+	/**
+	 * Check if the rule contains a inline directive
+	 *
+	 * @param  string $rule
+	 * @return string|false
+	 */
+	protected function ruleIsInlineDirective($rule)
+	{
+		$rule = mb_strtolower($rule);
+		foreach ($this->directiveArray() as $directive) {
+			if (0 === strpos($rule, $directive . ':')) {
+				return $directive;
+			}
+		}
+		return false;
+	}
+
 		/**
 		 * Check the rule parsing credibility
 		 *
@@ -731,24 +748,70 @@
 			foreach ($directives as $directive) {
 				if (isset($this->rules[$userAgent][$directive])) {
 					foreach ($this->rules[$userAgent][$directive] as $robotRule) {
-						// change @ to \@
-						$escaped = strtr($robotRule, array("@" => "\@"));
-
-						// match result
-						if (preg_match('@' . $escaped . '@', $value)) {
-							if (strpos($escaped, '$') !== false) {
-								if (mb_strlen($escaped) - 1 == mb_strlen($value)) {
-									$result = ($rule === $directive);
-								}
-							} else {
+					$inline = $this->ruleIsInlineDirective($robotRule);
+					switch ($inline) {
+						case self::DIRECTIVE_CLEAN_PARAM:
+							// TODO: Add support for inline directive Clean-param
+							$result = ($rule === $directive);
+							break;
+						case self::DIRECTIVE_HOST;
+							if (!isset($url)) {
+								trigger_error('Unable to check Host directive. Destination URL not set. The result may be inaccurate.', E_USER_NOTICE);
+								continue;
+							}
+							$url = parse_url($this->url);
+							$host = trim(str_replace('host:', '', mb_strtolower($robotRule)));
+							if (in_array($host, array(
+								$url['host'],
+								$url['scheme'] . '://' . $url['host'],
+								$url['host'] . ':' . $url['port'],
+								$url['scheme'] . '://' . $url['host'] . ':' . $url['port']
+							))) {
 								$result = ($rule === $directive);
 							}
-						}
+							break;
+						default:
+							// change @ to \@
+							$escaped = strtr($robotRule, array("@" => "\@"));
+							// match result
+							if (preg_match('@' . $escaped . '@', $value)) {
+								if (strpos($escaped, '$') !== false) {
+									if (mb_strlen($escaped) - 1 == mb_strlen($value)) {
+										$result = ($rule === $directive);
+									}
+								} else {
+									$result = ($rule === $directive);
+								}
+							}
+					}
 					}
 				}
 			}
 			return $result;
 		}
+
+	/**
+	 * Set URL wrapper
+	 *
+	 * @param  string $url
+	 * @throws \DomainException
+	 * @return void
+	 */
+	public function setURL($url)
+	{
+		$url = mb_strtolower($url);
+		$parsed = parse_url($url);
+		if ($parsed === false) {
+			throw new \DomainException('Invalid URL');
+		}
+		if (!isset($parsed['host']) || !$this->isValidHostName($parsed['host'])) {
+			throw new \DomainException('Invalid host in URL');
+		}
+		if (!isset($parsed['scheme']) || !$this->isValidScheme($parsed['scheme'])) {
+			throw new \DomainException('Invalid scheme in URL');
+		}
+		$this->url = $url;
+	}
 
 	/**
 	 * Get host wrapper
