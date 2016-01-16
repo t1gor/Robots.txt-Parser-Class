@@ -564,7 +564,6 @@ class RobotsTxtParser
 		 */
 		protected function prepareRegexRule($value)
 		{
-			$value = "/" . ltrim($value, '/');
 			$value = str_replace('$', '\$', $value);
 			$value = str_replace('?', '\?', $value);
 			$value = str_replace('.', '\.', $value);
@@ -648,6 +647,33 @@ class RobotsTxtParser
 				throw new \DomainException('Unable to check rules');
 			}
 		}
+
+	/**
+	 * Parse URL
+	 *
+	 * @param  string $url
+	 * @return array|false
+	 */
+	protected function parse_url($url)
+	{
+		$parsed = parse_url($url);
+		if ($parsed === false) {
+			return false;
+		}
+		if (!isset($parsed['scheme']) || !$this->isValidScheme($parsed['scheme'])) {
+			return false;
+		}
+		if (!isset($parsed['host']) || !$this->isValidHostName($parsed['host'])) {
+			return false;
+		}
+		if (!isset($parsed['port'])) {
+			$parsed['port'] = getservbyname($parsed['scheme'], 'tcp');
+			if (!is_int($parsed['port'])) {
+				return false;
+			}
+		}
+		return $parsed;
+	}
 
 	/**
 	 * Validate URL scheme
@@ -755,17 +781,17 @@ class RobotsTxtParser
 							$result = ($rule === $directive);
 							break;
 						case self::DIRECTIVE_HOST;
-							if (!isset($url)) {
+							if (!isset($this->url)) {
 								trigger_error('Unable to check Host directive. Destination URL not set. The result may be inaccurate.', E_USER_NOTICE);
 								continue;
 							}
-							$url = parse_url($this->url);
-							$host = trim(str_replace('host:', '', mb_strtolower($robotRule)));
+							$url = $this->parse_url($this->url);
+							$host = trim(str_replace(self::DIRECTIVE_HOST . ':', '', mb_strtolower($robotRule)));
 							if (in_array($host, array(
-								$url['host'],
-								$url['scheme'] . '://' . $url['host'],
-								$url['host'] . ':' . $url['port'],
-								$url['scheme'] . '://' . $url['host'] . ':' . $url['port']
+								$this->prepareRegexRule($url['host']),
+								$this->prepareRegexRule($url['scheme'] . '://' . $url['host']),
+								$this->prepareRegexRule($url['host'] . ':' . $url['port']),
+								$this->prepareRegexRule($url['scheme'] . '://' . $url['host'] . ':' . $url['port'])
 							))) {
 								$result = ($rule === $directive);
 							}
@@ -799,16 +825,9 @@ class RobotsTxtParser
 	 */
 	public function setURL($url)
 	{
-		$url = mb_strtolower($url);
-		$parsed = parse_url($url);
+		$parsed = $this->parse_url($url);
 		if ($parsed === false) {
 			throw new \DomainException('Invalid URL');
-		}
-		if (!isset($parsed['host']) || !$this->isValidHostName($parsed['host'])) {
-			throw new \DomainException('Invalid host in URL');
-		}
-		if (!isset($parsed['scheme']) || !$this->isValidScheme($parsed['scheme'])) {
-			throw new \DomainException('Invalid scheme in URL');
 		}
 		$this->url = $url;
 	}
