@@ -5,14 +5,17 @@ class HostTest extends \PHPUnit_Framework_TestCase
 	/**
 	 * @dataProvider generateDataForTest
 	 * @covers       RobotsTxtParser::getHost
+	 * @covers       RobotsTxtParser::checkRule
 	 * @param string $robotsTxtContent
 	 */
 	public function testHost($robotsTxtContent)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
+		$parser->setURL('http://www.myhost.ru/somepage.html');
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
 		$this->assertEquals('myhost.ru', $parser->getHost());
+		$this->assertTrue($parser->isDisallowed("/"));
 	}
 
 	/**
@@ -25,6 +28,7 @@ class HostTest extends \PHPUnit_Framework_TestCase
 			array(<<<ROBOTS
 User-agent: *
 Disallow: /cgi-bin
+Disallow: Host: www.myhost.ru
 
 User-agent: Yandex
 Disallow: /cgi-bin
