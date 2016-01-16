@@ -191,6 +191,25 @@
 			$this->state = $stateTo;
 		}
 
+	/**
+	 * Directive array
+	 *
+	 * @return array
+	 */
+	protected function directiveArray()
+	{
+		return array(
+			self::DIRECTIVE_ALLOW,
+			self::DIRECTIVE_DISALLOW,
+			self::DIRECTIVE_HOST,
+			self::DIRECTIVE_USERAGENT,
+			self::DIRECTIVE_SITEMAP,
+			self::DIRECTIVE_CRAWL_DELAY,
+			self::DIRECTIVE_CACHE_DELAY,
+			self::DIRECTIVE_CLEAN_PARAM
+		);
+	}
+
 		/**
 		 * Parse rules
 		 *
@@ -212,24 +231,15 @@
 			}
 		}
 
-		/**
-		 * Check if we should switch
-		 *
-		 * @return bool
-		 */
-		protected function shouldSwitchToZeroPoint()
-		{
-			return in_array(mb_strtolower($this->current_word), array(
-				self::DIRECTIVE_ALLOW,
-				self::DIRECTIVE_DISALLOW,
-				self::DIRECTIVE_HOST,
-				self::DIRECTIVE_USERAGENT,
-				self::DIRECTIVE_SITEMAP,
-				self::DIRECTIVE_CRAWL_DELAY,
-				self::DIRECTIVE_CACHE_DELAY,
-				self::DIRECTIVE_CLEAN_PARAM
-			), true);
-		}
+	/**
+	 * Check if we should switch
+	 *
+	 * @return bool
+	 */
+	protected function shouldSwitchToZeroPoint()
+	{
+		return in_array(mb_strtolower($this->current_word), $this->directiveArray(), true);
+	}
 
 		/**
 		 * Process state ZERO_POINT
@@ -304,25 +314,23 @@
 			return $this;
 		}
 
-		/**
-		 * Read value
-		 *
-		 * @return RobotsTxtParser
-		 */
-		protected function readValue()
-		{
-			if ($this->newLine()) {
-				$this->addValueToDirective();
-			}
-			elseif ($this->sharp()) {
-				$this->current_word = mb_substr($this->current_word, 0, -1);
-				$this->addValueToDirective();
-			}
-			else {
-				$this->increment();
-			}
-			return $this;
+	/**
+	 * Read value
+	 *
+	 * @return RobotsTxtParser
+	 */
+	protected function readValue()
+	{
+		if ($this->newLine()) {
+			$this->addValueToDirective();
+		} elseif ($this->sharp()) {
+			$this->current_word = mb_substr($this->current_word, 0, -1);
+			$this->addValueToDirective();
+		} else {
+			$this->increment();
 		}
+		return $this;
+	}
 
 	/**
 	 * Add value to directive based on the directive type
@@ -337,6 +345,7 @@
 				break;
 			case self::DIRECTIVE_CACHE_DELAY:
 			case self::DIRECTIVE_CRAWL_DELAY:
+				$this->convert("trim");
 				$this->convert("floatval");
 				$this->addGroupMember(false);
 				break;
@@ -351,6 +360,7 @@
 				break;
 			case self::DIRECTIVE_ALLOW:
 			case self::DIRECTIVE_DISALLOW:
+				$this->convert("trim");
 				if (empty($this->current_word)) {
 					break;
 				}
@@ -386,7 +396,7 @@
          */
         private function setUserAgent($newAgent = "*")
         {
-            $this->userAgent = mb_strtolower($newAgent);
+            $this->userAgent = trim(mb_strtolower($newAgent));
 
             // create empty array if not there yet
             if (empty($this->rules[$this->userAgent])) {
@@ -469,16 +479,37 @@
 	/**
 	 * Add non-group record
 	 *
-	 * @param bool $append
 	 * @return void
 	 */
-	private function addNonMember($append = true)
+	private function addNonMember()
 	{
-		$variable = str_ireplace('-', '', $this->current_directive);
-		if ($append === true) {
-			$this->{$variable}[] = $this->current_word;
-		} else {
-			$this->{$variable} = $this->current_word;
+		switch ($this->current_directive) {
+			case self::DIRECTIVE_CLEAN_PARAM:
+				$this->addCleanParam();
+				break;
+			case self::DIRECTIVE_HOST:
+				$this->host[] = $this->current_word;
+				break;
+			case self::DIRECTIVE_SITEMAP:
+				$this->sitemap[] = $this->current_word;
+				break;
+		}
+	}
+
+	/**
+	 * Add Clean-Param record
+	 *
+	 * @return void
+	 */
+	private function addCleanParam()
+	{
+		$array = explode(' ', $this->current_word, 2);
+		$path = isset($array[1]) ? trim($array[1]) : '/*';
+		$parameters = explode('&', $array[0]);
+		foreach ($parameters as $param) {
+			$param = trim($param);
+			$this->cleanparam[$param][] = $path;
+			$this->cleanparam[$param] = array_unique($this->cleanparam[$param]);
 		}
 	}
 
@@ -568,18 +599,18 @@
 			}
 		}
 
-		/**
-		 * Move to the following step
-		 *
-		 * @return void
-		 */
-		protected function increment()
-		{
-			$this->current_char = mb_substr($this->content, $this->char_index, 1);
-			$this->current_word .= $this->current_char;
-			$this->current_word = trim($this->current_word);
-			$this->char_index++;
-		}
+	/**
+	 * Move to the following step
+	 *
+	 * @return void
+	 */
+	protected function increment()
+	{
+		$this->current_char = mb_substr($this->content, $this->char_index, 1);
+		$this->current_word .= $this->current_char;
+		$this->current_word = ltrim($this->current_word);
+		$this->char_index++;
+	}
 
 		/**
 		 * Check the rule parsing credibility
@@ -813,7 +844,6 @@
 	 */
 	public function getCleanParam()
 	{
-		$this->cleanparam = array_unique($this->cleanparam);
 		return $this->cleanparam;
 	}
 
@@ -826,4 +856,4 @@
         {
             return $this->content;
         }
-	}
+}
