@@ -488,7 +488,7 @@ class RobotsTxtParser
 			return;
 		}
 		$parsed = parse_url($this->current_word);
-		if ($parsed == false) {
+		if ($parsed === false) {
 			return;
 		}
 		$host = isset($parsed['host']) ? $parsed['host'] : $parsed['path'];
@@ -561,24 +561,21 @@ class RobotsTxtParser
 			}
 		}
 
-		/**
-		 * Convert robots.txt rules to php regex
-		 *
-		 * @link https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt
-		 * @param string $value
-		 * @return string
-		 */
-		protected function prepareRegexRule($value)
-		{
-			$value = str_replace('$', '\$', $value);
-			$value = str_replace('?', '\?', $value);
-			$value = str_replace('.', '\.', $value);
-			$value = str_replace('*', '.*', $value);
-
+	/**
+	 * Convert robots.txt rules to php regex
+	 *
+	 * @param string $value
+	 * @return string
+	 */
+	protected function prepareRegexRule($value)
+	{
+		$escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*'];
+		foreach ($escape as $search => $replace) {
+			$value = str_replace($search, $replace, $value);
+		}
 			if (mb_strlen($value) > 2 && mb_substr($value, -2) == '\$') {
 				$value = substr($value, 0, -2).'$';
 			}
-
 			if (mb_strrpos($value, '/') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '=') == (mb_strlen($value)-1) ||
 				mb_strrpos($value, '?') == (mb_strlen($value)-1)
@@ -586,7 +583,7 @@ class RobotsTxtParser
 				$value .= '.*';
 			}
 			return $value;
-		}
+	}
 
 		/**
 		 * Common part for the most of the states - skip line and space
@@ -676,6 +673,22 @@ class RobotsTxtParser
 	}
 
 	/**
+	 * Get path
+	 *
+	 * @param $url
+	 * @return string
+	 */
+	private function getPath($url)
+	{
+		$parsed = $this->parseURL($url);
+		if ($parsed !== false) {
+			$this->url = $url;
+			return $parsed['custom'];
+		}
+		return $url;
+	}
+
+	/**
 	 * Validate URL scheme
 	 *
 	 * @param  string $scheme
@@ -712,13 +725,8 @@ class RobotsTxtParser
 	 */
 	public function isAllowed($url, $userAgent = "*")
 	{
-		$parsed = $this->parseURL($url);
-		if ($parsed !== false) {
-			$this->url = $url;
-			$url = $parsed['custom'];
-		}
 		$userAgent = $this->determineUserAgentGroup($userAgent);
-		return $this->checkRules(self::DIRECTIVE_ALLOW, $url, $userAgent);
+		return $this->checkRules(self::DIRECTIVE_ALLOW, $this->getPath($url), $userAgent);
 	}
 
 	/**
@@ -730,13 +738,8 @@ class RobotsTxtParser
 	 */
 	public function isDisallowed($url, $userAgent = "*")
 	{
-		$parsed = $this->parseURL($url);
-		if ($parsed !== false) {
-			$this->url = $url;
-			$url = $parsed['custom'];
-		}
 		$userAgent = $this->determineUserAgentGroup($userAgent);
-		return $this->checkRules(self::DIRECTIVE_DISALLOW, $url, $userAgent);
+		return $this->checkRules(self::DIRECTIVE_DISALLOW, $this->getPath($url), $userAgent);
 	}
 
 	/**
@@ -822,7 +825,7 @@ class RobotsTxtParser
 			return false;
 		}
 		$_parameters = explode('&', $array[0]);
-		$i = 0;
+		$count = 0;
 		foreach ($_parameters as $_param) {
 			$_param = trim($_param);
 			if (!strpos($path, "?$_param=") &&
@@ -830,8 +833,8 @@ class RobotsTxtParser
 			) {
 				break;
 			}
-			$i++;
-			if (count($_parameters) == $i) {
+			$count++;
+			if (count($_parameters) == $count) {
 				// all parameters matched
 				return true;
 			}
