@@ -195,7 +195,7 @@ class RobotsTxtParser
 	/**
 	 * Directive array
 	 *
-	 * @return array
+	 * @return string[]
 	 */
 	protected function directiveArray()
 	{
@@ -369,20 +369,25 @@ class RobotsTxtParser
 	 * Set the HTTP status code
 	 *
 	 * @param int $code
+	 * @return void;
 	 */
 	public function setHttpStatusCode($code)
 	{
 		$code = intval($code);
-		if (!isset($code) || !is_int($code) ||
+		if (!is_int($code) ||
 			$code <= 100 ||
-			$code >= 599) {
+			$code >= 599
+		) {
 			trigger_error('Invalid HTTP status code, not taken into account.', E_USER_WARNING);
+			return;
 		}
 		$this->httpStatusCode = $code;
 	}
 
 	/**
 	 * Set current user agent
+	 *
+	 * return void
 	 */
 	private function setUserAgent()
 	{
@@ -468,7 +473,7 @@ class RobotsTxtParser
 	private function addCleanParam()
 	{
 		$array = explode(' ', $this->current_word, 2);
-		$path = isset($array[1]) ? trim($array[1]) : '/*';
+		$path = isset($array[1]) ? trim($array[1]) : "/*";
 		$parameters = explode('&', $array[0]);
 		foreach ($parameters as $param) {
 			$param = trim($param);
@@ -484,18 +489,14 @@ class RobotsTxtParser
 	 */
 	private function addHost()
 	{
-		if (isset($this->host)) {
-			return;
-		}
 		$parsed = parse_url($this->current_word);
-		if ($parsed === false) {
+		if (isset($this->host) || $parsed === false) {
 			return;
 		}
 		$host = isset($parsed['host']) ? $parsed['host'] : $parsed['path'];
 		if (!$this->isValidHostName($host)) {
 			return;
-		}
-		if (isset($parsed['scheme']) && !$this->isValidScheme($parsed['scheme'])) {
+		} elseif (isset($parsed['scheme']) && !$this->isValidScheme($parsed['scheme'])) {
 			return;
 		}
 		$scheme = isset($parsed['scheme']) ? $parsed['scheme'] . '://' : '';
@@ -639,7 +640,7 @@ class RobotsTxtParser
 	protected function stripInlineDirective($rule)
 	{
 		$directive = $this->isInlineDirective($rule);
-		if ($directive != false) {
+		if ($directive !== false) {
 			$rule = trim(str_ireplace(self::DIRECTIVE_CLEAN_PARAM . ':', '', $rule));
 		}
 		return $rule;
@@ -666,16 +667,14 @@ class RobotsTxtParser
 				return false;
 			}
 		}
-		$parsed['custom'] = '';
-		$parsed['custom'] .= isset($parsed['path']) ? $parsed['path'] : '/';
-		$parsed['custom'] .= isset($parsed['query']) ? '?' . $parsed['query'] : '';
+		$parsed['custom'] = (isset($parsed['path']) ? $parsed['path'] : '/') . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
 		return $parsed;
 	}
 
 	/**
 	 * Get path
 	 *
-	 * @param $url
+	 * @param string $url
 	 * @return string
 	 */
 	private function getPath($url)
@@ -761,26 +760,43 @@ class RobotsTxtParser
 		foreach (array(self::DIRECTIVE_DISALLOW, self::DIRECTIVE_ALLOW) as $directive) {
 			if (isset($this->rules[$userAgent][$directive])) {
 				foreach ($this->rules[$userAgent][$directive] as $robotRule) {
-					switch ($this->isInlineDirective($robotRule)) {
-						case self::DIRECTIVE_CLEAN_PARAM:
-							if ($this->checkCleanParamRule($this->stripInlineDirective($robotRule), $path)) {
-								$result = ($rule === $directive);
-							}
-							break;
-						case self::DIRECTIVE_HOST;
-							if ($this->checkHostRule($this->stripInlineDirective($robotRule))) {
-								$result = ($rule === $directive);
-							}
-							break;
-						default:
-							if ($this->checkBasicRule($this->stripInlineDirective($robotRule), $path)) {
-								$result = ($rule === $directive);
-							}
+					// check rule
+					if ($this->checkRuleSwitch($robotRule, $path)) {
+						// rule match
+						$result = ($rule === $directive);
 					}
 				}
 			}
 		}
 		return $result;
+	}
+
+	/**
+	 * Check rule switch
+	 *
+	 * @param  string $rule - rule to check
+	 * @param  string $path - path to check
+	 * @return bool
+	 */
+	protected function checkRuleSwitch($rule, $path)
+	{
+		switch ($this->isInlineDirective($rule)) {
+			case self::DIRECTIVE_CLEAN_PARAM:
+				if ($this->checkCleanParamRule($this->stripInlineDirective($rule), $path)) {
+					return true;
+				}
+				break;
+			case self::DIRECTIVE_HOST;
+				if ($this->checkHostRule($this->stripInlineDirective($rule))) {
+					return true;
+				}
+				break;
+			default:
+				if ($this->checkBasicRule($this->stripInlineDirective($rule), $path)) {
+					return true;
+				}
+		}
+		return false;
 	}
 
 	/**
@@ -819,27 +835,21 @@ class RobotsTxtParser
 		// split into parameter and path
 		$array = explode(' ', $rule, 2);
 		// strip any invalid characters from path prefix
-		$_path = isset($array[1]) ? trim(preg_replace('/[^A-Za-z0-9\.-\/\*\_]/', '', $array[1])) : '/*';
+		$_path = isset($array[1]) ? trim(preg_replace('/[^A-Za-z0-9\.-\/\*\_]/', '', $array[1])) : "/*";
 		// check if path prefix matches the path of the url we're checking
 		if (!$this->checkBasicRule($_path, $path)) {
 			return false;
 		}
-		$_parameters = explode('&', $array[0]);
-		$count = 0;
+		$_parameters = array_unique(explode('&', $array[0]));
 		foreach ($_parameters as $_param) {
 			$_param = trim($_param);
 			if (!strpos($path, "?$_param=") &&
 				!strpos($path, "&$_param=")
 			) {
-				break;
-			}
-			$count++;
-			if (count($_parameters) == $count) {
-				// all parameters matched
-				return true;
+				return false;
 			}
 		}
-		return false;
+		return true;
 	}
 
 	/**
@@ -916,8 +926,7 @@ class RobotsTxtParser
 	public function getDelay($userAgent = '*', $type = 'crawl-delay')
 	{
 		$userAgent = $this->determineUserAgentGroup($userAgent);
-		$type = mb_strtolower($type);
-		switch ($type) {
+		switch (mb_strtolower($type)) {
 			case 'cache':
 			case 'cache-delay':
 				// non-standard directive

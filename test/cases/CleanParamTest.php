@@ -7,15 +7,15 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 	 *
 	 * @dataProvider generateDataForTest
 	 * @covers       RobotsTxtParser::isDisallowed
-	 * @covers       RobotsTxtParser::checkRules
+	 * @covers       RobotsTxtParser::getCleanParam
 	 * @param string $robotsTxtContent
 	 */
 	public function testCleanParam($robotsTxtContent)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
-		$cleanParam = $parser->getCleanParam();
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
+		$cleanParam = $parser->getCleanParam();
 
 		$this->assertTrue($parser->isDisallowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 		$this->assertFalse($parser->isAllowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));

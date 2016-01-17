@@ -15,6 +15,8 @@ class HostTest extends \PHPUnit_Framework_TestCase
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
 		$this->assertTrue($parser->isDisallowed("http://www.myhost.ru/"));
 		$this->assertFalse($parser->isAllowed("http://www.myhost.ru/"));
+		$this->assertTrue($parser->isAllowed("http://myhost.ru/"));
+		$this->assertFalse($parser->isDisallowed("http://myhost.ru/"));
 		$this->assertEquals('myhost.ru', $parser->getHost());
 	}
 

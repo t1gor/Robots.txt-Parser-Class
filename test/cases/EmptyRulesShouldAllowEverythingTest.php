@@ -6,7 +6,8 @@
 class EmptyRulesShouldAllowEverythingTest extends \PHPUnit_Framework_TestCase
 {
 	/**
-	 * @covder RobotsTxtParser::checkRule
+	 * @cover RobotsTxtParser::checkRule
+	 * @cover RobotsTxtParser::getHost
 	 * @link https://github.com/t1gor/Robots.txt-Parser-Class/issues/23
 	 */
 	public function testEmptyRulesAllow()
@@ -14,5 +15,6 @@ class EmptyRulesShouldAllowEverythingTest extends \PHPUnit_Framework_TestCase
 		$parser = new RobotsTxtParser('');
 		$this->assertTrue($parser->isAllowed('/foo'));
 		$this->assertFalse($parser->isDisallowed('/foo'));
+		$this->assertNull($parser->getHost());
 	}
 }
