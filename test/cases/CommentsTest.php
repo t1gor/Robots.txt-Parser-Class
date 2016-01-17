@@ -4,7 +4,7 @@
 		/**
 		 * @dataProvider generateDataForTest
 		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRule
+		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
 		 */
 		public function testRemoveComments($robotsTxtContent)
@@ -18,7 +18,7 @@
 		/**
 		 * @dataProvider generateDataFor2Test
 		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRule
+		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
 		 */
 		public function testRemoveCommentsFromValue($robotsTxtContent, $expectedDisallowValue)

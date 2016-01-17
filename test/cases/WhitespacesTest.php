@@ -4,7 +4,7 @@
 		/**
 		 * @dataProvider generateDataForTest
 		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRule
+		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
 		 */
 		public function testWhitespaces($robotsTxtContent)

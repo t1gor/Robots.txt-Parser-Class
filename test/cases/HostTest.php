@@ -5,17 +5,17 @@ class HostTest extends \PHPUnit_Framework_TestCase
 	/**
 	 * @dataProvider generateDataForTest
 	 * @covers       RobotsTxtParser::getHost
-	 * @covers       RobotsTxtParser::checkRule
+	 * @covers       RobotsTxtParser::checkRules
 	 * @param string $robotsTxtContent
 	 */
 	public function testHost($robotsTxtContent)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
-		$parser->setURL('http://www.myhost.ru/somepage.html');
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
+		$this->assertTrue($parser->isDisallowed("http://www.myhost.ru/"));
+		$this->assertFalse($parser->isAllowed("http://www.myhost.ru/"));
 		$this->assertEquals('myhost.ru', $parser->getHost());
-		$this->assertTrue($parser->isDisallowed("/"));
 	}
 
 	/**

@@ -7,15 +7,21 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 	 *
 	 * @dataProvider generateDataForTest
 	 * @covers       RobotsTxtParser::isDisallowed
-	 * @covers       RobotsTxtParser::checkRule
+	 * @covers       RobotsTxtParser::checkRules
 	 * @param string $robotsTxtContent
 	 */
 	public function testCleanParam($robotsTxtContent)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
-		$this->assertInstanceOf('RobotsTxtParser', $parser);
 		$cleanParam = $parser->getCleanParam();
+		$this->assertInstanceOf('RobotsTxtParser', $parser);
+
+		$this->assertTrue($parser->isDisallowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
+		$this->assertFalse($parser->isAllowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
+
+		$this->assertTrue($parser->isAllowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
+		$this->assertFalse($parser->isDisallowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
 
 		$this->assertArrayHasKey('abc', $cleanParam);
 		$this->assertEquals(array('/forum/showthread.php'), $cleanParam['abc']);
@@ -41,6 +47,8 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 	{
 		return array(
 			array(<<<ROBOTS
+User-agent: *
+Disallow: Clean-param: s&ref /forum*/sh*wthread.php
 Clean-param: abc /forum/showthread.php
 Clean-param: sid&sort /forumt/*.php
 Clean-param: someTrash&otherTrash

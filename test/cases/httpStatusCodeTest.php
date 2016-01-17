@@ -12,8 +12,10 @@ class httpStatusCodeTest extends \PHPUnit_Framework_TestCase
 		$parser = new RobotsTxtParser($robotsTxtContent);
 		$parser->setHttpStatusCode(200);
 		$this->assertTrue($parser->isAllowed("/"));
+		$this->assertFalse($parser->isDisallowed("/"));
 		$parser->setHttpStatusCode(503);
 		$this->assertTrue($parser->isDisallowed("/"));
+		$this->assertFalse($parser->isAllowed("/"));
 	}
 
 	/**
