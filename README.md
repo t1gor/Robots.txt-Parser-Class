@@ -3,12 +3,12 @@ Robots.txt php parser class
 
 [![Build Status](https://travis-ci.org/t1gor/Robots.txt-Parser-Class.svg?branch=master)](https://travis-ci.org/t1gor/Robots.txt-Parser-Class) [![Code Climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/gpa.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![Test Coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/coverage.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![License](https://poser.pugx.org/t1gor/robots-txt-parser/license.svg)](https://packagist.org/packages/t1gor/robots-txt-parser) [![Total Downloads](https://poser.pugx.org/t1gor/robots-txt-parser/downloads.svg)](https://packagist.org/packages/t1gor/robots-txt-parser)
 
-PHP class to parse robots.txt rules according to Google & Yandex specifications. Please keep in mind that this is an beta-version project, as you might see from the coverage report :) But I am about to change that.
+PHP class to parse robots.txt rules according to Google, Yandex, W3C and The Web Robots Pages specifications.
 
-Full list of supported specifications (and what's not supported yet) are available in our [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Specification-overview).
+Full list of supported specifications (and what's not supported, yet) are available in our [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Specifications).
 
 ### Installation
-The library is available for install via Composer package. To install via Composer, please add the requerement to your `composer.json` file, like this:
+The library is available for install via Composer package. To install via Composer, please add the requirement to your `composer.json` file, like this:
 
 ```json
 {
@@ -33,24 +33,24 @@ You can find out more about Composer here: https://getcomposer.org/
 ````php
 <?php
 require_once('source/robotstxtparser.php');
+
 $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
+$parser->setUserAgent('MySimpleBot');
 
-$useragent = 'MySimpleBot';
-
-if ($parser->isAllowed('/', $useragent)) {
+if ($parser->isAllowed('/')) {
 	// Crawl of the frontpage is Allowed.
 }
 // or
-if ($parser->isDisallowed('/path/to/page.html', $useragent)) {
+if ($parser->isDisallowed('/path/to/page.html')) {
 	// Crawl of /path/to/page.html is Disallowed
 }
 ?>
 ````
-Take a look at the [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Features-and-usage-examples) for additonal features and how to use them.
+Take a look at the [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Features-and-usage-examples) for additional features and how to use them.
 
 Even more code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
 
-### Algorythm schema:
+### Algorithm schema:
 **Conditions:**
 * (0) ZERO_POINT
 * (1) READ_DIRECTIVE
@@ -64,21 +64,22 @@ Even more code samples could be found in the [tests folder](https://github.com/t
 **Some useful links and materials:**
 * [Google: Robots.txt Specifications](https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt)
 * [Yandex: Using robots.txt](http://help.yandex.com/webmaster/?id=1113851)
-* [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/#.UP0C1ZGhM6I)
+* [The Web Robots Pages](http://www.robotstxt.org/)
+* [W3C Recommendation](https://www.w3.org/TR/html4/appendix/notes.html#h-B.4.1.2)
+* [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/)
 * [Google Webmaster tools Robots.txt testing tool](https://www.google.com/webmasters/tools/robots-testing-tool)
 
 ### Contributing
 First of all - thank you for your interest and a desire to help! If you found an issue and know how to fix it, please submit a pull request to the dev branch. Please do not forget the following:
 - Your fixed issue should be covered with tests (we are using phpUnit)
-- Please mind the [code climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) recommendations. It some-how helps to keep things simplier, or at least seems to :)
-- Following the coding standard would also be much appreciated (4 tabs as an ident, camelCase, etc.)
+- Please mind the [code climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) recommendations. It some-how helps to keep things simpler, or at least seems to :)
+- Following the coding standard would also be much appreciated (4 tabs as an indent, camelCase, etc.)
 
 I would really appreciate if you could share the link to your project that is utilizing the lib.
 
-### TODO:
+### To do:
  * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
- * [Raise coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/code?sort=covered_percent&sort_direction=desc). The goal is to reach at least 50% and release v1.0
- * Add a method for validation
+ * [Raise coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/code?sort=covered_percent&sort_direction=desc)
 
 License
 -------

@@ -20,6 +20,7 @@
 		 * @covers RobotsTxtParser::isDisallowed
 		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
+		 * @param string $expectedDisallowValue
 		 */
 		public function testRemoveCommentsFromValue($robotsTxtContent, $expectedDisallowValue)
 		{

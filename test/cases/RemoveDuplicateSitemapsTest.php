@@ -4,9 +4,9 @@ class RemoveDuplicateSitemaps extends \PHPUnit_Framework_TestCase
 {
 	/**
 	 * @dataProvider generateDataForTest
-	 * @covder RobotsTxtParser::isAllowed
-	 * @covder RobotsTxtParser::isDisallowed
-	 * @link https://github.com/t1gor/Robots.txt-Parser-Class/issues/23
+	 * @cover RobotsTxtParser::isAllowed
+	 * @cover RobotsTxtParser::isDisallowed
+	 * @param string $robotsTxtContent
 	 */
 	public function testRemoveDuplicateSitemaps($robotsTxtContent)
 	{
