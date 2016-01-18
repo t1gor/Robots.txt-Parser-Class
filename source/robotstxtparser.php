@@ -435,7 +435,7 @@ class RobotsTxtParser
 		foreach ($this->userAgent_groups as $group) {
 			if (isset($this->rules[$group])) {
 				$this->userAgent_match = $group;
-				break;
+				return;
 			}
 		}
 		$this->userAgent_match = '*';
