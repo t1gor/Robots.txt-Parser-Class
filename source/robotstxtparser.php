@@ -417,7 +417,7 @@ class RobotsTxtParser
 	 */
 	private function setCurrentUserAgent()
 	{
-		$this->current_UserAgent = mb_strtolower($this->current_word);
+		$this->current_UserAgent = mb_strtolower(trim($this->current_word));
 
 		// create empty array if not there yet
 		if (empty($this->rules[$this->current_UserAgent])) {
@@ -428,16 +428,16 @@ class RobotsTxtParser
 	/**
 	 *  Determine the correct user agent group
 	 *
-	 * @return string
+	 * @return void
 	 */
 	protected function determineUserAgentGroup()
 	{
 		foreach ($this->userAgent_groups as $group) {
 			if (isset($this->rules[$group])) {
-				return $group;
+				$this->userAgent_match = $group;
 			}
 		}
-		return '*';
+		$this->userAgent_match = '*';
 	}
 
 	/**

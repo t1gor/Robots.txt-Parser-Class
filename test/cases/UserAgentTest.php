@@ -6,10 +6,9 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 	 * @dataProvider generateDataForTest
 	 * @covers       RobotsTxtParser::isAllowed
 	 * @covers       RobotsTxtParser::isDisallowed
-	 * @covers       RobotsTxtParser::checkRules
 	 * @param string $robotsTxtContent
 	 */
-	public function testEmptyDisallow($robotsTxtContent)
+	public function testUserAgentPermission($robotsTxtContent)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
