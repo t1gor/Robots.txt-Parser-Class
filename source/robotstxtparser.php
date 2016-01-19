@@ -395,7 +395,7 @@ class RobotsTxtParser
 	 * Set the HTTP status code
 	 *
 	 * @param int $code
-	 * @return void;
+	 * @return void
 	 */
 	public function setHttpStatusCode($code)
 	{
