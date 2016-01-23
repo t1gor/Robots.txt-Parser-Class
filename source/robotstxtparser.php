@@ -593,7 +593,6 @@ class RobotsTxtParser
 	 */
 	protected function prepareRegexRule($value)
 	{
-		$value = $this->encode_url($value);
 		$escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*'];
 		foreach ($escape as $search => $replace) {
 			$value = str_replace($search, $replace, $value);
@@ -665,7 +664,7 @@ class RobotsTxtParser
 	{
 		$directive = $this->isInlineDirective($rule);
 		if ($directive !== false) {
-			$rule = trim(str_ireplace(self::DIRECTIVE_CLEAN_PARAM . ':', '', $rule));
+			$rule = trim(str_ireplace($directive . ':', '', $rule));
 		}
 		return $rule;
 	}
@@ -892,10 +891,11 @@ class RobotsTxtParser
 	 * @param  string $path
 	 * @return bool
 	 */
-	private static function checkBasicRule($rule, $path)
+	private function checkBasicRule($rule, $path)
 	{
+		$rule = $this->encode_url($rule);
 		// change @ to \@
-		$escaped = strtr($rule, array("@" => "\@"));
+		$escaped = strtr($rule, array("@" => '\@'));
 		// match result
 		if (preg_match('@' . $escaped . '@', $path)) {
 			if (strpos($escaped, '$') !== false) {
