@@ -114,34 +114,6 @@ class RobotsTxtParser
 		}
 
 		/**
-		 * Allow directive signal
-		 */
-		protected function allow() {
-			return ($this->current_word == self::DIRECTIVE_ALLOW);
-		}
-
-		/**
-		 * Disallow directive signal
-		 */
-		protected function disallow() {
-			return ($this->current_word == self::DIRECTIVE_DISALLOW);
-		}
-
-		/**
-		 * Host directive signal
-		 */
-		protected function host() {
-			return ($this->current_word == self::DIRECTIVE_HOST);
-		}
-
-		/**
-		 * Sitemap directive signal
-		 */
-		protected function sitemap() {
-			return ($this->current_word == self::DIRECTIVE_SITEMAP);
-		}
-
-		/**
 		 * Key : value pair separator signal
 		 */
 		protected function lineSeparator() {
@@ -164,28 +136,6 @@ class RobotsTxtParser
 		 */
 		protected function space() {
 			return ($this->current_char == "\s");
-		}
-
-		/**
-		 * User-agent directive signal
-		 */
-		protected function userAgent() {
-			return ($this->current_word == self::DIRECTIVE_USERAGENT);
-		}
-
-		/**
-		 * Crawl-Delay directive signal
-		 */
-		protected function crawlDelay() {
-			return ($this->current_word == self::DIRECTIVE_CRAWL_DELAY);
-		}
-
-		/**
-		 * Cache-Delay directive signal
-		 */
-		protected function cacheDelay()
-		{
-			return ($this->current_word == self::DIRECTIVE_CACHE_DELAY);
 		}
 
 		/**
@@ -609,22 +559,6 @@ class RobotsTxtParser
 			return $value;
 	}
 
-		/**
-		 * Common part for the most of the states - skip line and space
-		 *
-		 * @return void
-		 */
-		protected function skip()
-		{
-			if ($this->space()) {
-				$this->switchState(self::STATE_SKIP_SPACE);
-			}
-
-			if ($this->sharp() || $this->newLine()) {
-				$this->switchState(self::STATE_SKIP_LINE);
-			}
-		}
-
 	/**
 	 * Move to the following step
 	 *
@@ -722,8 +656,7 @@ class RobotsTxtParser
 			"=" => '!%3D!ui',
 			"%" => '!%25!ui'
 		);
-		$url = rawurlencode($url);
-		$url = preg_replace(array_values($reserved), array_keys($reserved), $url);
+		$url = preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
 		return $url;
 	}
 
