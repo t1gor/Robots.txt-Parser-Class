@@ -203,7 +203,7 @@ class RobotsTxtParser
 	 *
 	 * @return string[]
 	 */
-	protected function directiveArray()
+	protected static function directiveArray()
 	{
 		return array(
 			self::DIRECTIVE_ALLOW,
@@ -465,7 +465,7 @@ class RobotsTxtParser
 	 * @param string $userAgent
 	 * @return string
 	 */
-	private function stripUserAgentVersion($userAgent)
+	private static function stripUserAgentVersion($userAgent)
 	{
 		if (strpos($userAgent, '/') !== false) {
 			return explode('/', $userAgent, 2)[0];
@@ -512,7 +512,7 @@ class RobotsTxtParser
 	 */
 	private function addHost()
 	{
-		$parsed = parse_url($this->current_word);
+		$parsed = parse_url($this->encode_url($this->current_word));
 		if (isset($this->host) || $parsed === false) {
 			return;
 		}
@@ -536,7 +536,7 @@ class RobotsTxtParser
 	 */
 	private function addSitemap()
 	{
-		$parsed = $this->parseURL($this->current_word);
+		$parsed = $this->parseURL($this->encode_url($this->current_word));
 		if ($parsed !== false) {
 			$this->sitemap[] = $this->current_word;
 			$this->sitemap = array_unique($this->sitemap);
@@ -546,7 +546,7 @@ class RobotsTxtParser
 	/**
 	 * Convert wrapper
 	 *
-	 * @param string $convert
+	 * @param array|string $convert
 	 * @return void
 	 */
 	private function convert($convert)
@@ -593,6 +593,7 @@ class RobotsTxtParser
 	 */
 	protected function prepareRegexRule($value)
 	{
+		$value = $this->encode_url($value);
 		$escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*'];
 		foreach ($escape as $search => $replace) {
 			$value = str_replace($search, $replace, $value);
@@ -683,12 +684,48 @@ class RobotsTxtParser
 		$array = explode(' ', $rule, 2);
 		$cleanParam = array();
 		// strip any invalid characters from path prefix
-		$cleanParam['path'] = isset($array[1]) ? trim(preg_replace('/[^A-Za-z0-9\.-\/\*\_]/', '', $array[1])) : "/*";
+		$cleanParam['path'] = isset($array[1]) ? $this->encode_url(preg_replace('/[^A-Za-z0-9\.-\/\*\_]/', '', $array[1])) : "/*";
 		$param = explode('&', $array[0]);
 		foreach ($param as $key) {
 			$cleanParam['param'][] = trim($key);
 		}
 		return $cleanParam;
+	}
+
+	/**
+	 * URL encoder according to RFC 3986
+	 * Returns a string containing the encoded URL with disallowed characters converted to their percentage encodings.
+	 * @link http://publicmind.in/blog/url-encoding/
+	 *
+	 * @param string $url
+	 * @return string string
+	 */
+	protected static function encode_url($url)
+	{
+		$reserved = array(
+			":" => '!%3A!ui',
+			"/" => '!%2F!ui',
+			"?" => '!%3F!ui',
+			"#" => '!%23!ui',
+			"[" => '!%5B!ui',
+			"]" => '!%5D!ui',
+			"@" => '!%40!ui',
+			"!" => '!%21!ui',
+			"$" => '!%24!ui',
+			"&" => '!%26!ui',
+			"'" => '!%27!ui',
+			"(" => '!%28!ui',
+			")" => '!%29!ui',
+			"*" => '!%2A!ui',
+			"+" => '!%2B!ui',
+			"," => '!%2C!ui',
+			";" => '!%3B!ui',
+			"=" => '!%3D!ui',
+			"%" => '!%25!ui'
+		);
+		$url = rawurlencode($url);
+		$url = preg_replace(array_values($reserved), array_keys($reserved), $url);
+		return $url;
 	}
 
 	/**
@@ -724,12 +761,13 @@ class RobotsTxtParser
 	 */
 	private function getPath($url)
 	{
-		$parsed = $this->parseURL(trim($url));
+		$url = trim($url);
+		$parsed = $this->parseURL($url);
 		if ($parsed !== false) {
-			$this->url = trim($url);
+			$this->url = $url;
 			return $parsed['custom'];
 		}
-		return trim($url);
+		return $url;
 	}
 
 	/**
@@ -738,7 +776,7 @@ class RobotsTxtParser
 	 * @param  string $scheme
 	 * @return bool
 	 */
-	private function isValidScheme($scheme)
+	private static function isValidScheme($scheme)
 	{
 		return in_array($scheme, array(
 			'http', 'https',
@@ -749,10 +787,11 @@ class RobotsTxtParser
 	/**
 	 * Validate host name
 	 *
+	 * @link http://stackoverflow.com/questions/1755144/how-to-validate-domain-name-in-php
 	 * @param  string $host
 	 * @return bool
 	 */
-	private function  isValidHostName($host)
+	private static function  isValidHostName($host)
 	{
 		return (preg_match("/^([a-z\d](-*[a-z\d])*)(\.([a-z\d](-*[a-z\d])*))*$/i", $host) //valid chars check
 			&& preg_match("/^.{1,253}$/", $host) //overall length check
@@ -770,6 +809,7 @@ class RobotsTxtParser
 	public function isAllowed($url, $userAgent = null)
 	{
 		$this->setUserAgent($userAgent);
+		$url = $this->encode_url($url);
 		return $this->checkRules(self::DIRECTIVE_ALLOW, $this->getPath($url), $this->userAgent_match);
 	}
 
@@ -783,6 +823,7 @@ class RobotsTxtParser
 	public function isDisallowed($url, $userAgent = null)
 	{
 		$this->setUserAgent($userAgent);
+		$url = $this->encode_url($url);
 		return $this->checkRules(self::DIRECTIVE_DISALLOW, $this->getPath($url), $this->userAgent_match);
 	}
 
@@ -851,7 +892,7 @@ class RobotsTxtParser
 	 * @param  string $path
 	 * @return bool
 	 */
-	private function checkBasicRule($rule, $path)
+	private static function checkBasicRule($rule, $path)
 	{
 		// change @ to \@
 		$escaped = strtr($rule, array("@" => "\@"));
