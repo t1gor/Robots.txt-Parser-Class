@@ -15,22 +15,22 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
-		$cleanParam = $parser->getCleanParam();
 
 		$this->assertTrue($parser->isDisallowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 		$this->assertFalse($parser->isAllowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
+		$this->contains('Rule match: clean-param directive', $parser->getLog());
 
 		$this->assertTrue($parser->isAllowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
 		$this->assertFalse($parser->isDisallowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
 
-		$this->assertArrayHasKey('/forum/showthread.php', $cleanParam);
-		$this->assertEquals(array('abc'), $cleanParam['/forum/showthread.php']);
+		$this->assertArrayHasKey('/forum/showthread.php', $parser->getCleanParam());
+		$this->assertEquals(array('abc'), $parser->getCleanParam()['/forum/showthread.php']);
 
-		$this->assertArrayHasKey('/forum/*.php', $cleanParam);
-		$this->assertEquals(array('sid', 'sort'), $cleanParam['/forum/*.php']);
+		$this->assertArrayHasKey('/forum/*.php', $parser->getCleanParam());
+		$this->assertEquals(array('sid', 'sort'), $parser->getCleanParam()['/forum/*.php']);
 
-		$this->assertArrayHasKey('/*', $cleanParam);
-		$this->assertEquals(array('someTrash', 'otherTrash'), $cleanParam['/*']);
+		$this->assertArrayHasKey('/*', $parser->getCleanParam());
+		$this->assertEquals(array('someTrash', 'otherTrash'), $parser->getCleanParam()['/*']);
 	}
 
 	/**

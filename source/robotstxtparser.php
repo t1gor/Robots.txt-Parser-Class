@@ -70,6 +70,9 @@ class RobotsTxtParser
 	// robots.txt http status code
 	protected $httpStatusCode = null;
 
+	// Log
+	protected $log = array();
+
 	// internally used variables
 	protected $current_UserAgent = "";
 		protected $current_word = "";
@@ -351,8 +354,8 @@ class RobotsTxtParser
 	{
 		$code = intval($code);
 		if (!is_int($code) ||
-			$code <= 100 ||
-			$code >= 599
+			$code < 100 ||
+			$code > 599
 		) {
 			trigger_error('Invalid HTTP status code, not taken into account.', E_USER_WARNING);
 			return;
@@ -810,7 +813,7 @@ class RobotsTxtParser
 				}
 				break;
 			default:
-				if ($this->checkBasicRule($this->stripInlineDirective($rule), $path)) {
+				if ($this->checkBasicRule($rule, $path)) {
 					return true;
 				}
 		}
@@ -836,6 +839,7 @@ class RobotsTxtParser
 					return true;
 				}
 			} else {
+				$this->log[] = "Rule match: Path $rule";
 				return true;
 			}
 		}
@@ -863,6 +867,7 @@ class RobotsTxtParser
 				return false;
 			}
 		}
+		$this->log[] = 'Rule match: ' . self::DIRECTIVE_CLEAN_PARAM . ' directive';
 		return true;
 	}
 
@@ -875,7 +880,9 @@ class RobotsTxtParser
 	private function checkHostRule($rule)
 	{
 		if (!isset($this->url)) {
-			trigger_error('Inline host directive detected. URL not set, result may be inaccurate.', E_USER_NOTICE);
+			$error_msg = 'Inline host directive detected. URL not set, result may be inaccurate.';
+			$this->log[] = $error_msg;
+			trigger_error("robots.txt: $error_msg", E_USER_NOTICE);
 			return false;
 		}
 		$url = $this->parseURL($this->url);
@@ -886,6 +893,7 @@ class RobotsTxtParser
 			$this->prepareRegexRule($url['scheme'] . '://' . $url['host']),
 			$this->prepareRegexRule($url['scheme'] . '://' . $url['host'] . ':' . $url['port'])
 		))) {
+			$this->log[] = 'Rule match: ' . self::DIRECTIVE_HOST . ' directive';
 			return true;
 		}
 		return false;
@@ -902,6 +910,7 @@ class RobotsTxtParser
 			&& $this->httpStatusCode >= 500
 			&& $this->httpStatusCode <= 599
 		) {
+			$this->log[] = 'Disallowed by HTTP status code 5xx';
 			return true;
 		}
 		return false;
@@ -914,10 +923,11 @@ class RobotsTxtParser
 	 */
 	public function getHost()
 	{
-		if (isset($this->host)) {
-			return $this->host;
+		if (!isset($this->host)) {
+			$this->log[] = 'Host directive: No hosts found';
+			return null;
 		}
-		return null;
+		return $this->host;
 	}
 
 	/**
@@ -927,6 +937,9 @@ class RobotsTxtParser
 	 */
 	public function getSitemaps()
 	{
+		if (empty($this->sitemap)) {
+			$this->log[] = self::DIRECTIVE_SITEMAP . ' directive: No sitemaps found';
+		}
 		return $this->sitemap;
 	}
 
@@ -953,9 +966,10 @@ class RobotsTxtParser
 			// return delay for requested directive
 			return $this->rules[$this->userAgent_match][$directive];
 		} elseif (isset($this->rules[$this->userAgent_match][self::DIRECTIVE_CRAWL_DELAY])) {
-			// requested directive not found, fallback to default
+			$this->log[] = "Unofficial $directive directive: Not found, fallback to the standardized " . self::DIRECTIVE_CRAWL_DELAY . " directive";
 			return $this->rules[$this->userAgent_match][self::DIRECTIVE_CRAWL_DELAY];
 		}
+		$this->log[] = "$directive directive: Not found";
 		return 0;
 	}
 
@@ -975,6 +989,7 @@ class RobotsTxtParser
         if (isset($this->rules[$this->userAgent_match])) {
 	        return $this->rules[$this->userAgent_match];
         }
+		$this->log[] = 'Rules not found for the given User-Agent';
         return array();
     }
 
@@ -985,6 +1000,9 @@ class RobotsTxtParser
 	 */
 	public function getCleanParam()
 	{
+		if (empty($this->cleanparam)) {
+			$this->log[] = self::DIRECTIVE_CLEAN_PARAM . ' directive: Not found';
+		}
 		return $this->cleanparam;
 	}
 
@@ -996,5 +1014,15 @@ class RobotsTxtParser
 	public function getContent()
 	{
 		return $this->content;
+	}
+
+	/**
+	 * Get the log
+	 *
+	 * @return array
+	 */
+	public function getLog()
+	{
+		return $this->log;
 	}
 }

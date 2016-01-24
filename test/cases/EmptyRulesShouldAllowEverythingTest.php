@@ -13,6 +13,7 @@ class EmptyRulesShouldAllowEverythingTest extends \PHPUnit_Framework_TestCase
 	public function testEmptyRulesAllow()
 	{
 		$parser = new RobotsTxtParser('');
+		$this->assertInstanceOf('RobotsTxtParser', $parser);
 		$this->assertTrue($parser->isAllowed('/foo'));
 		$this->assertFalse($parser->isDisallowed('/foo'));
 		$this->assertNull($parser->getHost());
