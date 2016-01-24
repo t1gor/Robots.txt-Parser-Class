@@ -11,7 +11,7 @@
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
 			$this->assertEquals(0, $parser->getDelay());
-			$this->contains('crawl-delay directive: Not found', $parser->getLog());
+			$this->assertContains('crawl-delay directive: Not found', $parser->getLog());
 			$this->assertEquals(0.9, $parser->getDelay('GoogleBot'));
 			$this->assertEquals(1.5, $parser->getDelay('AhrefsBot'));
 		}

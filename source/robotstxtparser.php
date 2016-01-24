@@ -966,7 +966,7 @@ class RobotsTxtParser
 			// return delay for requested directive
 			return $this->rules[$this->userAgent_match][$directive];
 		} elseif (isset($this->rules[$this->userAgent_match][self::DIRECTIVE_CRAWL_DELAY])) {
-			$this->log[] = "Unofficial $directive directive: Not found, fallback to the standardized " . self::DIRECTIVE_CRAWL_DELAY . " directive";
+			$this->log[] = "$directive directive (unofficial): Not found, fallback to " . self::DIRECTIVE_CRAWL_DELAY . " directive";
 			return $this->rules[$this->userAgent_match][self::DIRECTIVE_CRAWL_DELAY];
 		}
 		$this->log[] = "$directive directive: Not found";
