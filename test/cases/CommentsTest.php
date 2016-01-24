@@ -26,11 +26,10 @@
 		{
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertInstanceOf('RobotsTxtParser', $parser);
-			$rules = $parser->getRules('*');
-			$this->assertNotEmpty($rules, 'expected data');
-			$this->assertArrayHasKey('disallow', $rules);
-			$this->assertNotEmpty($rules['disallow'], 'disallow expected');
-			$this->assertEquals($expectedDisallowValue, $rules['disallow'][0]);
+			$this->assertNotEmpty($parser->getRules('*'), 'expected data');
+			$this->assertArrayHasKey('disallow', $parser->getRules('*'));
+			$this->assertNotEmpty($parser->getRules('*')['disallow'], 'disallow expected');
+			$this->assertEquals($expectedDisallowValue, $parser->getRules('*')['disallow'][0]);
 		}
 
 		/**

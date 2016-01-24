@@ -15,7 +15,7 @@ class ApplyToAll extends \PHPUnit_Framework_TestCase
 			User-Agent: *
 			Disallow: /
 		");
-
+		$this->assertInstanceOf('RobotsTxtParser', $parser);
 		// asserts
 		$this->assertTrue($parser->isDisallowed("/index"));
 		$this->assertFalse($parser->isAllowed("/index"));
@@ -31,7 +31,7 @@ class ApplyToAll extends \PHPUnit_Framework_TestCase
 			User-agent: *
 			Allow: /
 		");
-
+		$this->assertInstanceOf('RobotsTxtParser', $parser);
 		// asserts
 		$this->assertFalse($parser->isDisallowed("/index"));
 		$this->assertFalse($parser->isDisallowed("/"));

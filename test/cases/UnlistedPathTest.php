@@ -15,7 +15,7 @@ class UnlistedPath extends \PHPUnit_Framework_TestCase
 			User-Agent: *
 			Disallow: /admin/
 		");
-
+        $this->assertInstanceOf('RobotsTxtParser', $parser);
         // asserts
         $this->assertTrue($parser->isAllowed("/"));
         $this->assertFalse($parser->isDisallowed("/"));
