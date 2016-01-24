@@ -18,10 +18,11 @@ class CleanParamTest extends \PHPUnit_Framework_TestCase
 
 		$this->assertTrue($parser->isDisallowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 		$this->assertFalse($parser->isAllowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
-		$this->contains('Rule match: clean-param directive', $parser->getLog());
+		$this->assertEquals('Rule match: clean-param directive', end($parser->getLog()));
 
 		$this->assertTrue($parser->isAllowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
 		$this->assertFalse($parser->isDisallowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
+		$this->assertEquals('Rule match: Path', end($parser->getLog()));
 
 		$this->assertArrayHasKey('/forum/showthread.php', $parser->getCleanParam());
 		$this->assertEquals(array('abc'), $parser->getCleanParam()['/forum/showthread.php']);

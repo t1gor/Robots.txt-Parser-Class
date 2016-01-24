@@ -839,7 +839,7 @@ class RobotsTxtParser
 					return true;
 				}
 			} else {
-				$this->log[] = "Rule match: Path $rule";
+				$this->log[] = "Rule match: Path";
 				return true;
 			}
 		}
