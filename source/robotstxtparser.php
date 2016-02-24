@@ -74,7 +74,7 @@ class RobotsTxtParser
 	protected $log = array();
 
 	// internally used variables
-	protected $current_UserAgent = "";
+	protected $current_UserAgent = [];
 		protected $current_word = "";
 		protected $current_char = "";
 		protected $char_index = 0;
@@ -370,11 +370,15 @@ class RobotsTxtParser
 	 */
 	private function setCurrentUserAgent()
 	{
-		$this->current_UserAgent = mb_strtolower(trim($this->current_word));
+		$ua = mb_strtolower(trim($this->current_word));
+		if ($this->previous_directive !== self::DIRECTIVE_USERAGENT) {
+			$this->current_UserAgent = [];
+		}
+		$this->current_UserAgent[] = $ua;
 
 		// create empty array if not there yet
-		if (empty($this->rules[$this->current_UserAgent])) {
-			$this->rules[$this->current_UserAgent] = array();
+		if (empty($this->rules[$ua])) {
+			$this->rules[$ua] = [];
 		}
 	}
 
@@ -437,10 +441,12 @@ class RobotsTxtParser
 		if (empty($this->current_word)){
 			return;
 		}
-		if ($append === true) {
-			$this->rules[$this->current_UserAgent][$this->current_directive][] = $this->current_word;
-		} else {
-			$this->rules[$this->current_UserAgent][$this->current_directive] = $this->current_word;
+		foreach ($this->current_UserAgent as $ua) {
+			if ($append === true) {
+				$this->rules[$ua][$this->current_directive][] = $this->current_word;
+				continue;
+			}
+            		$this->rules[$ua][$this->current_directive] = $this->current_word;
 		}
 	}
 
