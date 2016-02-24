@@ -22,6 +22,11 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 		$this->assertFalse($parser->isDisallowed("/article"));
 		$this->assertFalse($parser->isAllowed("/temp"));
 
+		$this->assertTrue($parser->isDisallowed("/foo", "agentV"));
+		$this->assertTrue($parser->isAllowed("/foo", "agentV"));
+		$this->assertTrue($parser->isDisallowed("/foo", "agentW"));
+		$this->assertTrue($parser->isAllowed("/foo", "agentW"));
+
 		$this->assertTrue($parser->isAllowed("/temp", "spiderX/1.0"));
 		$this->assertTrue($parser->isDisallowed("/assets", "spiderX/1.0"));
 		$this->assertTrue($parser->isAllowed("/forum", "spiderX/1.0"));
@@ -61,6 +66,11 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
 				Disallow: /admin
 				Disallow: /temp
 				Disallow: /forum
+				
+				User-agent: agentV
+				User-agent: agentW
+				Disallow: /foo
+				Allow: /bar
 				
 				User-agent: spiderX
 				Disallow:
