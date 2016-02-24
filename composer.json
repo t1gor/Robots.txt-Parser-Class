@@ -10,7 +10,7 @@
     "require-dev": {
         "php": ">=5.4.0",
         "phpunit/phpunit": ">=3.7",
-        "codeclimate/php-test-reporter": "0.2.0"
+        "codeclimate/php-test-reporter": ">=0.2"
     },
     "authors": [
         {
