@@ -341,6 +341,9 @@ class RobotsTxtParser
 		if (empty($this->userAgent)) {
 			$this->userAgent = '*';
 		}
+		if (preg_match('/\s/', $this->userAgent)) {
+			trigger_error("Unsupported User-agent string. Supported formats are `name/version`, with or without the version number. eg. `mybot/1.0` or just `mybot`.", E_USER_WARNING);
+		}
 		$this->explodeUserAgent();
 	}
 
@@ -348,7 +351,7 @@ class RobotsTxtParser
 	 * Set the HTTP status code
 	 *
 	 * @param int $code
-	 * @return void
+	 * @return bool
 	 */
 	public function setHttpStatusCode($code)
 	{
@@ -358,9 +361,10 @@ class RobotsTxtParser
 			$code > 599
 		) {
 			trigger_error('Invalid HTTP status code, not taken into account.', E_USER_WARNING);
-			return;
+			return false;
 		}
 		$this->httpStatusCode = $code;
+		return true;
 	}
 
 	/**
