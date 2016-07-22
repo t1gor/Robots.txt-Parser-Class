@@ -32,7 +32,7 @@ You can find out more about Composer here: https://getcomposer.org/
 ### Usage example
 ````php
 <?php
-require_once('source/robotstxtparser.php');
+require_once 'source/robotstxtparser.php';
 
 $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
 $parser->setUserAgent('MySimpleBot');
