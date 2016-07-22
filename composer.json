@@ -25,5 +25,8 @@
     ],
     "autoload": {
         "classmap": [ "source/robotstxtparser.php" ]
+    },
+    "scripts": {
+        "test": "phpunit"
     }
 }
