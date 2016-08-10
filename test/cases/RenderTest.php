@@ -69,6 +69,7 @@ Allow: /public
 Crawl-delay: 5
 Cache-delay: 10
 
+Host: example.com
 Sitemap: http://example.com/sitemap.xml
 Sitemap: http://example.com/sitemap.xml.gz
 
