@@ -938,20 +938,6 @@ class RobotsTxtParser
     }
 
     /**
-     * Get host wrapper
-     *
-     * @return string|null
-     */
-    public function getHost()
-    {
-        if (!isset($this->host)) {
-            $this->log[] = 'Host directive: No hosts found';
-            return null;
-        }
-        return $this->host;
-    }
-
-    /**
      * Get delay
      *
      * @param  string|null $userAgent - which robot to check for
@@ -1020,31 +1006,36 @@ class RobotsTxtParser
      * @param string $eol
      * @return string
      */
-    public function render($eol = "\r\r")
+    public function render($eol = "\r\n")
     {
-        $robots = $this->getRules();
-        krsort($robots);
+        $input = $this->getRules();
+        krsort($input);
         $output = [];
-        foreach ($robots as $ua => $rules) {
-            $output[] = 'User-agent: ' . $ua;
-            foreach ($rules as $name => $value) {
+        foreach ($input as $userAgent => $rules) {
+            $output[] = 'User-agent: ' . $userAgent;
+            foreach ($rules as $directive => $value) {
                 // Not multibyte
-                $nice_name = ucfirst($name);
+                $directive = ucfirst($directive);
                 if (is_array($value)) {
                     // Shorter paths later
                     usort($value, function ($a, $b) {
                         return mb_strlen($a) < mb_strlen($b);
                     });
-                    foreach ($value as $elem) {
-                        $output[] = $nice_name . ': ' . $elem;
+                    foreach ($value as $subValue) {
+                        $output[] = $directive . ': ' . $subValue;
                     }
                 } else {
-                    $output[] = $nice_name . ': ' . $value;
+                    $output[] = $directive . ': ' . $value;
                 }
             }
             $output[] = '';
         }
 
+        $host = $this->getHost();
+        if ($host !== null) {
+            $output[] = 'Host: ' . $host;
+        }
+        
         $sitemaps = $this->getSitemaps();
         foreach ($sitemaps as $sitemap) {
             $output[] = 'Sitemap: ' . $sitemap;
@@ -1072,6 +1063,20 @@ class RobotsTxtParser
         }
         $this->log[] = 'Rules not found for the given User-Agent';
         return array();
+    }
+
+    /**
+     * Get host wrapper
+     *
+     * @return string|null
+     */
+    public function getHost()
+    {
+        if (!isset($this->host)) {
+            $this->log[] = 'Host directive: No hosts found';
+            return null;
+        }
+        return $this->host;
     }
 
     /**
