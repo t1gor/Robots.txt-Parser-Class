@@ -1,7 +1,6 @@
 <?php
-use PHPUnit\Framework\TestCase;
 
-class RenderTest extends TestCase
+class RenderTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @dataProvider generateDataForTest
