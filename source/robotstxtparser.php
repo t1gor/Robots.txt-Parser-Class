@@ -75,8 +75,7 @@ class RobotsTxtParser
 
     // UserAgent
     private $userAgent = '*';
-    private $userAgent_groups = array('*');
-    private $userAgent_match = '*';
+    private $userAgentMatch = '*';
 
     // robots.txt file content
     private $content = '';
@@ -363,7 +362,6 @@ class RobotsTxtParser
                 break;
             case self::DIRECTIVE_ALLOW:
             case self::DIRECTIVE_DISALLOW:
-                //$this->convert('self::prepareRegexRule');
                 $this->addRule();
                 break;
         }
@@ -625,7 +623,7 @@ class RobotsTxtParser
     {
         $this->setUserAgent($userAgent);
         $url = $this->encode_url($url);
-        return $this->checkRules(self::DIRECTIVE_ALLOW, $this->getPath($url), $this->userAgent_match);
+        return $this->checkRules(self::DIRECTIVE_ALLOW, $this->getPath($url), $this->userAgentMatch);
     }
 
     /**
@@ -636,46 +634,11 @@ class RobotsTxtParser
      */
     public function setUserAgent($userAgent)
     {
-        $this->userAgent = mb_strtolower(trim($userAgent));
-        if (empty($this->userAgent)) {
-            $this->userAgent = '*';
+        if (empty($userAgent)) {
+            $userAgent = '*';
         }
-        if (preg_match('/\s/', $this->userAgent)) {
-            trigger_error('Unsupported User-agent string. Supported formats are `name/version`, with or without the version number. eg. `mybot/1.0` or just `mybot`.', E_USER_WARNING);
-        }
-        $this->explodeUserAgent();
-    }
-
-    /**
-     *  Parses all possible userAgent groups to an array
-     *
-     * @return array
-     */
-    private function explodeUserAgent()
-    {
-        $this->userAgent_groups = array($this->userAgent);
-        $this->userAgent_groups[] = $this->stripUserAgentVersion($this->userAgent);
-        while (strpos(end($this->userAgent_groups), '-') !== false) {
-            $current = end($this->userAgent_groups);
-            $this->userAgent_groups[] = substr($current, 0, strrpos($current, '-'));
-        }
-        $this->userAgent_groups[] = '*';
-        $this->userAgent_groups = array_unique($this->userAgent_groups);
+        $this->userAgent = $userAgent;
         $this->determineUserAgentGroup();
-    }
-
-    /**
-     *  Removes the userAgent version
-     *
-     * @param  string $userAgent
-     * @return string
-     */
-    private static function stripUserAgentVersion($userAgent)
-    {
-        if (strpos($userAgent, '/') !== false) {
-            return explode('/', $userAgent, 2)[0];
-        }
-        return $userAgent;
     }
 
     /**
@@ -685,13 +648,11 @@ class RobotsTxtParser
      */
     protected function determineUserAgentGroup()
     {
-        foreach ($this->userAgent_groups as $group) {
-            if (isset($this->rules[$group])) {
-                $this->userAgent_match = $group;
-                return;
-            }
+        $uaParser = new vipnytt\UserAgentParser($this->userAgent);
+        $this->userAgentMatch = $uaParser->getMostSpecific(array_keys($this->rules));
+        if (!$this->userAgentMatch) {
+            $this->userAgentMatch = '*';
         }
-        $this->userAgent_match = '*';
     }
 
     /**
@@ -819,8 +780,7 @@ class RobotsTxtParser
      */
     private function checkBasicRule($rule, $path)
     {
-        $rule = $this->encode_url($rule);
-        $rule = $this->prepareRegexRule($rule);
+        $rule = $this->prepareRegexRule($this->encode_url($rule));
         // change @ to \@
         $escaped = strtr($rule, array('@' => '\@'));
         // match result
@@ -934,7 +894,7 @@ class RobotsTxtParser
     {
         $this->setUserAgent($userAgent);
         $url = $this->encode_url($url);
-        return $this->checkRules(self::DIRECTIVE_DISALLOW, $this->getPath($url), $this->userAgent_match);
+        return $this->checkRules(self::DIRECTIVE_DISALLOW, $this->getPath($url), $this->userAgentMatch);
     }
 
     /**
@@ -956,12 +916,12 @@ class RobotsTxtParser
             default:
                 $directive = self::DIRECTIVE_CRAWL_DELAY;
         }
-        if (isset($this->rules[$this->userAgent_match][$directive])) {
+        if (isset($this->rules[$this->userAgentMatch][$directive])) {
             // return delay for requested directive
-            return $this->rules[$this->userAgent_match][$directive];
-        } elseif (isset($this->rules[$this->userAgent_match][self::DIRECTIVE_CRAWL_DELAY])) {
+            return $this->rules[$this->userAgentMatch][$directive];
+        } elseif (isset($this->rules[$this->userAgentMatch][self::DIRECTIVE_CRAWL_DELAY])) {
             $this->log[] = "$directive directive (unofficial): Not found, fallback to " . self::DIRECTIVE_CRAWL_DELAY . ' directive';
-            return $this->rules[$this->userAgent_match][self::DIRECTIVE_CRAWL_DELAY];
+            return $this->rules[$this->userAgentMatch][self::DIRECTIVE_CRAWL_DELAY];
         }
         $this->log[] = "$directive directive: Not found";
         return 0;
@@ -1035,7 +995,7 @@ class RobotsTxtParser
         if ($host !== null) {
             $output[] = 'Host: ' . $host;
         }
-        
+
         $sitemaps = $this->getSitemaps();
         foreach ($sitemaps as $sitemap) {
             $output[] = 'Sitemap: ' . $sitemap;
@@ -1058,8 +1018,8 @@ class RobotsTxtParser
             return $this->rules;
         }
         $this->setUserAgent($userAgent);
-        if (isset($this->rules[$this->userAgent_match])) {
-            return $this->rules[$this->userAgent_match];
+        if (isset($this->rules[$this->userAgentMatch])) {
+            return $this->rules[$this->userAgentMatch];
         }
         $this->log[] = 'Rules not found for the given User-Agent';
         return array();

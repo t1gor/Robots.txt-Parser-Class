@@ -22,12 +22,8 @@ class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($parser->isDisallowed("/article"));
         $this->assertFalse($parser->isAllowed("/temp"));
 
-        /**
-         * Asserts currently disabled due to issues
-         * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/72
-         */
-        //$this->assertTrue($parser->isAllowed("/foo", "agentU/2.0.1"));
-        //$this->assertTrue($parser->isDisallowed("/bar", "agentU/2.0.1"));
+        $this->assertTrue($parser->isAllowed("/foo", "agentU/2.0.1"));
+        $this->assertTrue($parser->isDisallowed("/bar", "agentU/2.0.1"));
 
         $this->assertTrue($parser->isDisallowed("/foo", "agentV"));
         $this->assertTrue($parser->isAllowed("/bar", "agentV"));
