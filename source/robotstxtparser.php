@@ -89,11 +89,15 @@ class RobotsTxtParser
     public function __construct($content, $encoding = self::DEFAULT_ENCODING)
     {
         // convert encoding
-        $encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
-        mb_internal_encoding($encoding);
+        if ($encoding !== self::DEFAULT_ENCODING) {
+            $encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
+            mb_internal_encoding($encoding);
 
-        // set content
-        $this->content = iconv($encoding, 'UTF-8//IGNORE', $content);
+            // set content
+            $this->content = iconv($encoding, 'UTF-8//IGNORE', $content);
+        } else {
+            $this->content = $content;
+        }
 
         // Ensure that there's a newline at the end of the file, otherwise the
         // last line is ignored
@@ -113,6 +117,8 @@ class RobotsTxtParser
      */
     protected function prepareRules()
     {
+        $this->log(__METHOD__);
+
         $contentLength = mb_strlen($this->content);
         while ($this->char_index <= $contentLength) {
             $this->step();
@@ -134,6 +140,8 @@ class RobotsTxtParser
      */
     protected function step()
     {
+        $this->log(__METHOD__ . ' :: Current state: '. $this->state);
+
         switch ($this->state) {
             case self::STATE_ZERO_POINT:
                 $this->zeroPoint();
@@ -221,12 +229,15 @@ class RobotsTxtParser
      */
     protected function newLine()
     {
-        return in_array(
-            PHP_EOL, array(
-                $this->current_char,
-                $this->current_word
-            )
-        );
+        $lineBreaks = ["\n", "\r\n", "\r"];
+        $isLineBreak = in_array($this->current_char, $lineBreaks)
+            || in_array($this->current_word, $lineBreaks);
+
+        $this->log(strtr(__METHOD__ . ' :: is line break: {break}', [
+            '{break}' => $isLineBreak ? 'true' : 'false'
+        ]));
+
+        return $isLineBreak;
     }
 
     /**
@@ -251,6 +262,8 @@ class RobotsTxtParser
     {
         $this->previous_directive = $this->current_directive;
         $this->current_directive = mb_strtolower(trim($this->current_word));
+
+        $this->log(__METHOD__ . ' :: Current directive: '.$this->current_directive);
 
         $this->increment();
 
@@ -323,6 +336,11 @@ class RobotsTxtParser
      */
     protected function readValue()
     {
+        $this->log(strtr(__METHOD__ . ':: Is new line: {new}, is sharp: {sharp}', [
+            '{new}' => $this->newLine() ? 'true' : 'false',
+            '{sharp}' => $this->sharp() ? 'true' : 'false',
+        ]));
+
         if ($this->newLine()) {
             $this->addValueToDirective();
         } elseif ($this->sharp()) {
@@ -696,7 +714,7 @@ class RobotsTxtParser
             && $this->httpStatusCode >= 500
             && $this->httpStatusCode <= 599
         ) {
-            $this->log[] = 'Disallowed by HTTP status code 5xx';
+            $this->log('Disallowed by HTTP status code 5xx');
             return true;
         }
         return false;
@@ -767,7 +785,7 @@ class RobotsTxtParser
                 return false;
             }
         }
-        $this->log[] = 'Rule match: ' . self::DIRECTIVE_CLEAN_PARAM . ' directive';
+        $this->log('Rule match: ' . self::DIRECTIVE_CLEAN_PARAM . ' directive');
         return true;
     }
 
@@ -790,7 +808,7 @@ class RobotsTxtParser
                     return true;
                 }
             } else {
-                $this->log[] = 'Rule match: Path';
+                $this->log('Rule match: Path');
                 return true;
             }
         }
@@ -846,7 +864,7 @@ class RobotsTxtParser
     {
         if (!isset($this->url)) {
             $error_msg = 'Inline host directive detected. URL not set, result may be inaccurate.';
-            $this->log[] = $error_msg;
+            $this->log($error_msg);
             trigger_error("robots.txt: $error_msg", E_USER_NOTICE);
             return false;
         }
@@ -860,7 +878,7 @@ class RobotsTxtParser
                 $url['scheme'] . '://' . $url['host'] . ':' . $url['port']
             )
         )) {
-            $this->log[] = 'Rule match: ' . self::DIRECTIVE_HOST . ' directive';
+            $this->log('Rule match: ' . self::DIRECTIVE_HOST . ' directive');
             return true;
         }
         return false;
@@ -935,7 +953,7 @@ class RobotsTxtParser
     public function getCleanParam()
     {
         if (empty($this->cleanparam)) {
-            $this->log[] = self::DIRECTIVE_CLEAN_PARAM . ' directive: Not found';
+            $this->log(self::DIRECTIVE_CLEAN_PARAM . ' directive: Not found');
         }
         return $this->cleanparam;
     }
@@ -1021,7 +1039,7 @@ class RobotsTxtParser
         if (isset($this->rules[$this->userAgentMatch])) {
             return $this->rules[$this->userAgentMatch];
         }
-        $this->log[] = 'Rules not found for the given User-Agent';
+        $this->log('Rules not found for the given User-Agent');
         return array();
     }
 
@@ -1033,7 +1051,7 @@ class RobotsTxtParser
     public function getHost()
     {
         if (!isset($this->host)) {
-            $this->log[] = 'Host directive: No hosts found';
+            $this->log('Host directive: No hosts found');
             return null;
         }
         return $this->host;
@@ -1047,8 +1065,19 @@ class RobotsTxtParser
     public function getSitemaps()
     {
         if (empty($this->sitemap)) {
-            $this->log[] = self::DIRECTIVE_SITEMAP . ' directive: No sitemaps found';
+            $this->log(self::DIRECTIVE_SITEMAP . ' directive: No sitemaps found');
         }
         return $this->sitemap;
+    }
+
+    /**
+     * @param string $msg
+     */
+    protected function log($msg)
+    {
+        $this->log[] = strtr("{ts} - {msg}", [
+            '{ts}' => (new \DateTime())->format('i:s.u'),
+            '{msg}' => $msg
+        ]);
     }
 }

@@ -14,8 +14,7 @@ class RenderTest extends \PHPUnit\Framework\TestCase
     {
         $parser = new RobotsTxtParser($robotsTxtContent);
         $this->assertInstanceOf('RobotsTxtParser', $parser);
-
-        $this->assertEquals($rendered, $parser->render());
+        $this->assertEquals($rendered, $parser->render("\n"));
     }
 
     /**
