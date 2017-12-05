@@ -1,6 +1,8 @@
 <?php
 
-class CleanParamTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class CleanParamTest extends TestCase
 {
 	/**
 	 * @link https://help.yandex.ru/webmaster/controlling-robot/robots-txt.xml#clean-param

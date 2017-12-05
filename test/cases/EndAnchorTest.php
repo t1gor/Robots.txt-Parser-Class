@@ -1,6 +1,8 @@
 <?php
 
-class EndAnchorTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class EndAnchorTest extends TestCase
 {
 	/**
 	 * @dataProvider generateDataForTest

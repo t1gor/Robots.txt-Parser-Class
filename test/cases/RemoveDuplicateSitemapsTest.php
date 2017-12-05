@@ -1,6 +1,6 @@
 <?php
 
-class RemoveDuplicateSitemaps extends \PHPUnit_Framework_TestCase
+class RemoveDuplicateSitemapsTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider generateDataForTest

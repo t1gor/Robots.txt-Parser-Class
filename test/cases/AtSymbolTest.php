@@ -1,5 +1,8 @@
 <?php
-	class AtSymbolTest extends \PHPUnit_Framework_TestCase
+
+use PHPUnit\Framework\TestCase;
+
+class AtSymbolTest extends TestCase
 	{
 		/**
 		 * @dataProvider generateDataForTest

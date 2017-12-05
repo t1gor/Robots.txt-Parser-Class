@@ -1,0 +1,24 @@
+User-agent: yahoo! slurp
+Disallow: /
+
+User-agent: duckduckgo
+Disallow: /
+
+User-agent: bingbot
+Disallow: /
+
+User-agent: *
+Disallow: Clean-param: token /public/users
+Disallow: Clean-param: uid /public/users
+Disallow: Host: www.example.com
+Disallow: /admin/test/
+Disallow: /admin/te*
+Disallow: /forum
+Disallow: /temp
+Allow: /public
+Crawl-delay: 5
+Cache-delay: 10
+
+Host: example.com
+Sitemap: http://example.com/sitemap.xml
+Sitemap: http://example.com/sitemap.xml.gz

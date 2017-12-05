@@ -1,6 +1,6 @@
 <?php
 
-class httpStatusCodeTest extends \PHPUnit_Framework_TestCase
+class HttpStatusCodeTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider generateDataForTest

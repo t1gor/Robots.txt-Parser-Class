@@ -1,6 +1,6 @@
 <?php
 
-class EmptyDisallowTest extends \PHPUnit_Framework_TestCase
+class EmptyDisallowTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @dataProvider generateDataForTest

@@ -1,6 +1,6 @@
 <?php
 
-class HostTest extends \PHPUnit_Framework_TestCase
+class HostTest extends \PHPUnit\Framework\TestCase
 {
 	/**
 	 * @dataProvider generateDataForTest

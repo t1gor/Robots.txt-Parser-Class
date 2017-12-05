@@ -84,7 +84,7 @@ class RobotsTxtParser
      * Constructor
      *
      * @param string $content - file content
-     * @param string $encoding - encoding
+     * [@param string $encoding] - encoding
      */
     public function __construct($content, $encoding = self::DEFAULT_ENCODING)
     {
@@ -963,10 +963,10 @@ class RobotsTxtParser
     /**
      * Render
      *
-     * @param string $eol
+     * [@param string $eol]
      * @return string
      */
-    public function render($eol = "\r\n")
+    public function render($eol = PHP_EOL)
     {
         $input = $this->getRules();
         krsort($input);

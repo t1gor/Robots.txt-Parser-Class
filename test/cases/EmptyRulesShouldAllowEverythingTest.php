@@ -1,9 +1,11 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 /**
  * @group empty
  */
-class EmptyRulesShouldAllowEverythingTest extends \PHPUnit_Framework_TestCase
+class EmptyRulesShouldAllowEverythingTest extends TestCase
 {
 	/**
 	 * @cover RobotsTxtParser::checkRule

@@ -1,5 +1,8 @@
 <?php
-class DisallowUppercasePathTest extends \PHPUnit_Framework_TestCase
+
+use PHPUnit\Framework\TestCase;
+
+class DisallowUppercasePathTest extends TestCase
 {
     /**
      * @dataProvider generateDataForTest

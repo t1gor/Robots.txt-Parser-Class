@@ -1,6 +1,8 @@
 <?php
 
-class CacheDelayTest extends \PHPUnit_Framework_TestCase
+use PHPUnit\Framework\TestCase;
+
+class CacheDelayTest extends TestCase
 {
 	/**
 	 * @dataProvider generateDataForTest
