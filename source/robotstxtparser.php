@@ -785,14 +785,8 @@ class RobotsTxtParser
         $escaped = strtr($rule, array('@' => '\@'));
         // match result
         if (preg_match('@' . $escaped . '@', $path)) {
-            if (strpos($escaped, '$') !== false) {
-                if (mb_strlen($escaped) - 1 == mb_strlen($path)) {
-                    return true;
-                }
-            } else {
-                $this->log[] = 'Rule match: Path';
-                return true;
-            }
+	        $this->log[] = 'Rule match: Path';
+	        return true;
         }
         return false;
     }
@@ -818,6 +812,10 @@ class RobotsTxtParser
         ) {
             $value .= '.*';
         }
+
+	    if (substr($value, 0, 2) != '.*') {
+		    $value = '^' . $value;
+	    }
         return $value;
     }
 
