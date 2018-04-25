@@ -7,20 +7,23 @@ class EndAnchorTest extends \PHPUnit_Framework_TestCase
 	 * @covers       RobotsTxtParser::isAllowed
 	 * @covers       RobotsTxtParser::isDisallowed
 	 * @covers       RobotsTxtParser::checkRules
+	 * @param string $path
 	 * @param string $robotsTxtContent
+	 * @param bool   $assertAllowed
 	 */
-	public function testEndAnchor($robotsTxtContent)
+	public function testEndAnchor($path, $robotsTxtContent, $assertAllowed)
 	{
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
 		$this->assertInstanceOf('RobotsTxtParser', $parser);
 
-		$this->assertTrue($parser->isAllowed("/"));
-		$this->assertTrue($parser->isDisallowed("/asd"));
-		$this->assertTrue($parser->isDisallowed("/asd/"));
-		$this->assertFalse($parser->isDisallowed("/"));
-		$this->assertFalse($parser->isAllowed("/asd"));
-		$this->assertFalse($parser->isAllowed("/asd/"));
+		if ($assertAllowed) {
+			$this->assertTrue($parser->isAllowed($path));
+			$this->assertFalse($parser->isDisallowed($path));
+		} else {
+			$this->assertTrue($parser->isDisallowed($path));
+			$this->assertFalse($parser->isAllowed($path));
+		}
 	}
 
 	/**
@@ -29,12 +32,60 @@ class EndAnchorTest extends \PHPUnit_Framework_TestCase
 	 */
 	public function generateDataForTest()
 	{
-		return array(
-			array("
-				User-Agent: *
-				Disallow: /*
-				Allow: /$
-			")
-		);
+		// Data provider defined in format:
+		// [tested path, robotsTxtContent, true when allowed / false when disallowed]
+		return [
+			[
+				"/",
+				"
+					User-Agent: *
+					Disallow: /*
+					Allow: /$
+				",
+				true,
+			],
+			[
+				"/asd",
+				"
+					User-Agent: *
+					Disallow: /*
+					Allow: /$
+				",
+				false,
+			],
+			[
+				"/asd/",
+				"
+					User-Agent: *
+					Disallow: /*
+					Allow: /$
+				",
+				false,
+			],
+			[
+				"/deny_all/",
+				"
+					User-Agent: *
+					Disallow: *deny_all/$
+				",
+				false,
+			],
+			[
+				"/deny_all/",
+				"
+					User-Agent: *
+					Disallow: /deny_all/$
+				",
+				false,
+			],
+			[
+				"/deny_all/",
+				"
+					User-Agent: *
+					Disallow: deny_all/$
+				",
+				true,
+			],
+		];
 	}
 }
