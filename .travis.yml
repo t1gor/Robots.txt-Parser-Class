@@ -9,6 +9,7 @@ php:
   - hhvm
 matrix: 
   allow_failures:
+    - 7.2
     - php: hhvm
 before_install:
   - composer selfupdate
