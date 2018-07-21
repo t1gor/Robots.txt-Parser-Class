@@ -15,7 +15,7 @@
   "require": {
     "php": ">=5.5.0",
     "ext-mbstring": "*",
-    "vipnytt/useragentparser": "~1.0"
+    "vipnytt/useragentparser": "^1.0"
   },
   "require-dev": {
     "phpunit/phpunit": "~3.7",
@@ -29,7 +29,7 @@
     },
     {
       "name": "Jan-Petter Gundersen",
-      "email": "europe.jpg@gmail.com",
+      "email": "jpg@vipnytt.no",
       "role": "contributor"
     }
   ],

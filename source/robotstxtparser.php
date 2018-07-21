@@ -621,7 +621,9 @@ class RobotsTxtParser
      */
     public function isAllowed($url, $userAgent = null)
     {
-        $this->setUserAgent($userAgent);
+        if ($userAgent !== null) {
+            $this->setUserAgent($userAgent);
+        }
         $url = $this->encode_url($url);
         return $this->checkRules(self::DIRECTIVE_ALLOW, $this->getPath($url), $this->userAgentMatch);
     }
@@ -634,21 +636,8 @@ class RobotsTxtParser
      */
     public function setUserAgent($userAgent)
     {
-        if (empty($userAgent)) {
-            $userAgent = '*';
-        }
         $this->userAgent = $userAgent;
-        $this->determineUserAgentGroup();
-    }
-
-    /**
-     *  Determine the correct user agent group
-     *
-     * @return void
-     */
-    protected function determineUserAgentGroup()
-    {
-        $uaParser = new vipnytt\UserAgentParser($this->userAgent);
+        $uaParser = new \vipnytt\UserAgentParser($this->userAgent);
         $this->userAgentMatch = $uaParser->getMostSpecific(array_keys($this->rules));
         if (!$this->userAgentMatch) {
             $this->userAgentMatch = '*';
@@ -890,7 +879,9 @@ class RobotsTxtParser
      */
     public function isDisallowed($url, $userAgent = null)
     {
-        $this->setUserAgent($userAgent);
+        if ($userAgent !== null) {
+            $this->setUserAgent($userAgent);
+        }
         $url = $this->encode_url($url);
         return $this->checkRules(self::DIRECTIVE_DISALLOW, $this->getPath($url), $this->userAgentMatch);
     }
@@ -904,7 +895,9 @@ class RobotsTxtParser
      */
     public function getDelay($userAgent = null, $type = 'crawl-delay')
     {
-        $this->setUserAgent($userAgent);
+        if ($userAgent !== null) {
+            $this->setUserAgent($userAgent);
+        }
         switch (mb_strtolower($type)) {
             case 'cache':
             case 'cache-delay':
@@ -1012,7 +1005,7 @@ class RobotsTxtParser
     public function getRules($userAgent = null)
     {
         // return all rules
-        if (empty($userAgent)) {
+        if ($userAgent === null) {
             return $this->rules;
         }
         $this->setUserAgent($userAgent);
