@@ -788,7 +788,7 @@ class RobotsTxtParser
      */
     protected function prepareRegexRule($value)
     {
-        $escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*'];
+        $escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*', '[' => '\[', ']' => '\]'];
         foreach ($escape as $search => $replace) {
             $value = str_replace($search, $replace, $value);
         }
