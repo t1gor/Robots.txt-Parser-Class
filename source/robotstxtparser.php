@@ -222,7 +222,7 @@ class RobotsTxtParser
     protected function newLine()
     {
         return in_array(
-            PHP_EOL, array(
+            "\n", array(
                 $this->current_char,
                 $this->current_word
             )
