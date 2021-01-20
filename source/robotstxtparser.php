@@ -79,14 +79,18 @@ class RobotsTxtParser
 
     // robots.txt file content
     private $content = '';
-
+    /**
+     * @var array
+     */
+    private $regExpPatternReplace;
+    
     /**
      * Constructor
      *
      * @param string $content - file content
      * @param string $encoding - encoding
      */
-    public function __construct($content, $encoding = self::DEFAULT_ENCODING)
+    public function __construct($content, $encoding = self::DEFAULT_ENCODING, array $regExpPatternReplace = array())
     {
         // convert encoding
         $encoding = !empty($encoding) ? $encoding : mb_detect_encoding($content);
@@ -104,6 +108,10 @@ class RobotsTxtParser
 
         // parse rules - default state
         $this->prepareRules();
+        
+        $this->regExpPatternReplace = empty($regExpPatternReplace)
+            ? array('@' => '\@')
+            : $regExpPatternReplace;
     }
 
     /**
@@ -771,7 +779,7 @@ class RobotsTxtParser
     {
         $rule = $this->prepareRegexRule($this->encode_url($rule));
         // change @ to \@
-        $escaped = strtr($rule, array('@' => '\@'));
+        $escaped = strtr($rule, $this->regExpPatternReplace);
         // match result
         if (preg_match('@' . $escaped . '@', $path)) {
 	        $this->log[] = 'Rule match: Path';
