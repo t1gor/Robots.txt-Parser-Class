@@ -1,0 +1,12 @@
+Useragent: GoogleBot
+Crawl-delay: 0.3 # valid
+Crawl-delay: 0.599 # valid
+Crawl-delay: 8888 # valid
+Crawl-delay: 8888
+Crawl-delay: ngfsngdndag
+Crawl-delay: ngfsn.gdndag # invalid
+Crawl-delay: 0.vfsbfsb # invalid
+Request-rate: 100/854000 # valid
+Request-rate: 100/bgdndgnd # invalid
+Request-rate: 15686 # invalid
+Request-rate: ngdndganda # invalid

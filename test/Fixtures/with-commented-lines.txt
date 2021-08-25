@@ -1,0 +1,5 @@
+User-agent: *
+# Disallow: /tech
+# this is a commented line
+# it should not be in the iterator
+Allow: /some

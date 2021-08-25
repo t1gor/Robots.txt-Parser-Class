@@ -1,0 +1,6 @@
+
+
+                                        User-Agent: GoogleBot
+                                        Crawl-Delay: 0.9
+                                        User-Agent: AhrefsBot
+                                        Crawl-Delay: 1.5

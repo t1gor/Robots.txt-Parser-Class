@@ -10,29 +10,27 @@ Full list of supported specifications (and what's not supported, yet) are availa
 ### Installation
 The library is available for install via Composer package. To install via Composer, please add the requirement to your `composer.json` file, like this:
 
-```json
-{
-    "require": {
-        "t1gor/robots-txt-parser": "dev-master"
-    }
-}
+```sh
+composer require t1gor/robots-txt-parser
 ```
 
 and then use composer to load the lib:
 
 ```php
 <?php
-    require 'vendor/autoload.php';
-    $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
-    ...
+require_once('./vendor/autoload.php');
+    
+$parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
+...
 ```
 
 You can find out more about Composer here: https://getcomposer.org/
 
 ### Usage example
+
 ````php
 <?php
-require_once 'source/robotstxtparser.php';
+require_once('./vendor/autoload.php');
 
 $parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
 $parser->setUserAgent('MySimpleBot');

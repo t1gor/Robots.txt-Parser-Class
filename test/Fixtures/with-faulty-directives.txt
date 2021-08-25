@@ -1,0 +1,28 @@
+User-agent: google1 #specifies the robots that the directives are set for
+Disallow: /bin/ # prohibits links from the Shopping Cart.
+Disallow: /search/ # prohibits page links of the search embedded on the site
+Disallow: /admin/ # prohibits links from the admin panel
+Disallow /admin/ # prohibits links from the admin panel
+Sitemap: http://example.com/sitemap # specifies the path to the site's Sitemap file for the robot
+Clean-param: ref /some_dir/get_book.pl
+
+user-agent: google2 #specifies the robots that the directives are set for
+disallow: /bin/ # prohibits links from the Shopping Cart.
+disallow: /search/ # prohibits page links of the search embedded on the site
+disallow: /admin/ # prohibits links from the admin panel
+sitemap: http://example.com/sitemap # specifies the path to the site's Sitemap file for the robot
+clean-param: ref /some_dir/get_book.pl
+
+user-Agent: google3 #specifies the robots that the directives are set for
+disaLLow: /bin/ # prohibits links from the Shopping Cart.
+diSallow: /search/ # prohibits page links of the search embedded on the site
+dis@llow: /admin/ # prohibits links from the admin panel
+sitEmap: http://example.com/sitemap # specifies the path to the site's Sitemap file for the robot
+cleanParam: ref /some_dir/get_book.pl
+
+User#agent: google4 #specifies the robots that the directives are set for
+Disa#low: /bin/ # prohibits links from the Shopping Cart.
+Disa#low: /search/ # prohibits page links of the search embedded on the site
+Disa#low: /admin/ # prohibits links from the admin panel
+Site#ap: http://example.com/sitemap # specifies the path to the site's Sitemap file for the robot
+Clean#param: ref /some_dir/get_book.pl

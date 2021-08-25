@@ -1,0 +1,11 @@
+User-agent: *
+Disal # low: /tech
+
+User-agent: google-bot
+Disallow: #/tech
+
+User-agent: yahoo-bot
+Disallow: /tech # ds
+
+User-agent: yandex-bot
+Disallow#: /tech # ds
