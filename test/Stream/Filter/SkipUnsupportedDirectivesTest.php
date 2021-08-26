@@ -2,7 +2,10 @@
 
 namespace Stream\Filter;
 
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipUnsupportedDirectivesFilter;
 
 class SkipUnsupportedDirectivesTest extends TestCase {
@@ -35,6 +38,30 @@ class SkipUnsupportedDirectivesTest extends TestCase {
 		$this->assertStringNotContainsString('Disa#low: /admin/ # prohibits links from the admin panel', $contents);
 		$this->assertStringNotContainsString('Site#ap: http://example.com/sitemap # specifies the path to the site\'s Sitemap file for the robot', $contents);
 		$this->assertStringNotContainsString('Clean#param: ref /some_dir/get_book.pl', $contents);
+
+		fclose($stream);
+	}
+
+	public function testFilterWithLogger() {
+		$log = new Logger(static::class);
+		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
+
+		$stream = fopen(__DIR__ . '/../../Fixtures/with-faulty-directives.txt', 'r');
+
+		// apply filter
+		stream_filter_append($stream, SkipUnsupportedDirectivesFilter::NAME, STREAM_FILTER_READ, ['logger' => $log]);
+
+		$fstat = fstat($stream);
+		$contents = fread($stream, $fstat['size']);
+
+		/** @var TestHandler $handler */
+		$handler = $log->getHandlers()[0];
+
+		$this->assertNotEmpty($contents);
+		$this->assertTrue(
+			$handler->hasRecord('9 lines skipped as un-supported', LogLevel::DEBUG),
+			json_encode($handler->getRecords())
+		);
 
 		fclose($stream);
 	}

@@ -2,7 +2,10 @@
 
 namespace Stream\Filter;
 
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipEmptyLinesFilter;
 
 class SkipEmptyLinesFilterTest extends TestCase {
@@ -61,6 +64,32 @@ class SkipEmptyLinesFilterTest extends TestCase {
 		$this->assertNotEmpty($lines);
 		$this->assertNotEmpty($lines[0]);
 
+		fclose($stream);
+	}
+
+	public function testFilterWithLogger() {
+		$log = new Logger(static::class);
+		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
+
+		$stream = fopen(__DIR__ . '/../../Fixtures/with-empty-lines.txt','r');
+
+		// apply filter
+		stream_filter_append($stream, SkipEmptyLinesFilter::NAME, STREAM_FILTER_READ, ['logger' => $log]);
+
+		// do read
+		$lines = [];
+		while (!feof($stream)) {
+			$lines[] = fgets($stream);
+		}
+
+		/** @var TestHandler $handler */
+		$handler = $log->getHandlers()[0];
+
+		$this->assertNotEmpty($lines);
+		$this->assertTrue(
+			$handler->hasRecord('3 lines skipped as empty.', LogLevel::DEBUG),
+			json_encode($handler->getRecords())
+		);
 		fclose($stream);
 	}
 }

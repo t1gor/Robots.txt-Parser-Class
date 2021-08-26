@@ -2,9 +2,9 @@
 
 namespace t1gor\RobotsTxtParser\Stream;
 
-use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
+use t1gor\RobotsTxtParser\RobotsTxtParser;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipDirectivesWithInvalidValuesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipEndOfCommentedLineFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
@@ -13,7 +13,7 @@ use t1gor\RobotsTxtParser\Stream\Filters\SkipUnsupportedDirectivesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\TrimSpacesLeftFilter;
 use t1gor\RobotsTxtParser\WarmingMessages;
 
-class Reader implements LoggerAwareInterface {
+class GeneratorBasedReader implements ReaderInterface {
 
 	use LogsIfAvailableTrait;
 
@@ -22,7 +22,8 @@ class Reader implements LoggerAwareInterface {
 	/**
 	 * @var string[]
 	 */
-	private array $filters;
+	private array  $filters;
+	private string $encoding;
 
 	protected function __construct() {
 		/** @note order matters */
@@ -60,7 +61,7 @@ class Reader implements LoggerAwareInterface {
 	 * @return static
 	 */
 	public static function fromString(string $input = ''): self {
-		$reader = new Reader();
+		$reader = new GeneratorBasedReader();
 		$stream = tmpfile();
 
 		fwrite($stream, $input);
@@ -77,13 +78,13 @@ class Reader implements LoggerAwareInterface {
 			throw new \InvalidArgumentException($error);
 		}
 
-		$reader = new Reader();
+		$reader = new GeneratorBasedReader();
 		rewind($stream);
 
 		return $reader->setStream($stream);
 	}
 
-	protected function setStream($stream): Reader {
+	protected function setStream($stream): GeneratorBasedReader {
 		$this->stream = $stream;
 
 		foreach ($this->filters as $filterClass => & $filter) {
@@ -97,6 +98,14 @@ class Reader implements LoggerAwareInterface {
 		}
 
 		return $this;
+	}
+
+	public function setEncoding(string $encoding) {
+		$this->encoding = $encoding;
+
+		if (strtoupper($encoding) !== RobotsTxtParser::DEFAULT_ENCODING) {
+			$this->log(WarmingMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
+		}
 	}
 
 	public function getContent(): \Generator {

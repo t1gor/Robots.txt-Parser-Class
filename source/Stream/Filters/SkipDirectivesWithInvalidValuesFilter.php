@@ -2,6 +2,7 @@
 
 namespace t1gor\RobotsTxtParser\Stream\Filters;
 
+use Psr\Log\LoggerInterface;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Stream\CustomFilterInterface;
 
@@ -16,10 +17,23 @@ class SkipDirectivesWithInvalidValuesFilter extends \php_user_filter implements 
 
 	public function filter($in, $out, &$consumed, $closing) {
 		while ($bucket = stream_bucket_make_writeable($in)) {
-			$bucket->data = preg_replace(Directive::getRequestRateRegex(), '', $bucket->data);
-			$bucket->data = preg_replace(Directive::getCrawlDelayRegex(), '', $bucket->data);
+			$skippedRequestRateValues = 0;
+			$skippedCrawlDelayValues = 0;
+
+			$bucket->data = preg_replace(Directive::getRequestRateRegex(), '', $bucket->data, -1, $skippedRequestRateValues);
+			$bucket->data = preg_replace(Directive::getCrawlDelayRegex(), '', $bucket->data, -1, $skippedCrawlDelayValues);
+
 			$consumed += $bucket->datalen;
 			stream_bucket_append($out, $bucket);
+
+			if (isset($this->params['logger']) && $this->params['logger'] instanceof LoggerInterface) {
+				if ($skippedRequestRateValues > 0) {
+					$this->params['logger']->debug($skippedRequestRateValues . ' char(s) dropped as invalid Request-rate value.');
+				}
+				if ($skippedCrawlDelayValues > 0) {
+					$this->params['logger']->debug($skippedCrawlDelayValues . ' char(s) dropped as invalid Crawl-delay value.');
+				}
+			}
 		}
 
 		return PSFS_PASS_ON;

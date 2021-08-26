@@ -14,7 +14,8 @@ use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\SitemapProcessor;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\UserAgentProcessor;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
 use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
-use t1gor\RobotsTxtParser\Stream\Reader;
+use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
+use t1gor\RobotsTxtParser\Stream\ReaderInterface;
 use vipnytt\UserAgentParser;
 
 /**
@@ -86,20 +87,28 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// robots.txt file content
 	private $content = '';
 
-	private Reader $reader;
-	private array $tree = [];
+	private GeneratorBasedReader  $reader;
+	private array                 $tree = [];
 	private ?TreeBuilderInterface $treeBuilder;
 
 	public function __construct(
 		$content,
 		string $encoding = self::DEFAULT_ENCODING,
-		?TreeBuilderInterface $treeBuilder = null
+		?TreeBuilderInterface $treeBuilder = null,
+		?ReaderInterface $reader = null
 	) {
-		$this->reader = is_resource($content)
-			? Reader::fromStream($content)
-			: Reader::fromString($content);
-
 		$this->treeBuilder = $treeBuilder;
+		$this->reader      = $reader;
+
+		if (is_null($this->reader)) {
+			$this->log('Reader is not passed, using a default one...');
+
+			$this->reader = is_resource($content)
+				? GeneratorBasedReader::fromStream($content)
+				: GeneratorBasedReader::fromString($content);
+		}
+
+		$this->reader->setEncoding($encoding);
 	}
 
 	private function buildTree() {

@@ -2,7 +2,10 @@
 
 namespace Stream\Filter;
 
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
 
 class SkipCommentedLinesFilterTest extends TestCase {
@@ -45,6 +48,34 @@ class SkipCommentedLinesFilterTest extends TestCase {
 
 		// check commented not there
 		$this->assertStringNotContainsString('# Lorem ipsum dolor sit amet,', $contents);
+
+		fclose($stream);
+	}
+
+	public function testFilterWithLogger() {
+		$log = new Logger(static::class);
+		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
+
+		$stream = fopen(__DIR__ . '/../../Fixtures/large-commented-lines.txt','r');
+
+		// apply filter
+		stream_filter_append($stream, SkipCommentedLinesFilter::NAME, STREAM_FILTER_READ, ['logger' => $log]);
+
+		$fstat = fstat($stream);
+		$contents = fread($stream, $fstat['size']);
+
+		/** @var TestHandler $handler */
+		$handler = $log->getHandlers()[0];
+
+		$messagesOnly = array_map(
+			function(array $record) { return $record['message']; },
+			$handler->getRecords()
+		);
+
+		$expected = require __DIR__ . '/../../Fixtures/expected-skipped-lines-log.php';
+
+		$this->assertNotEmpty($contents);
+		$this->assertEquals($messagesOnly, $expected);
 
 		fclose($stream);
 	}

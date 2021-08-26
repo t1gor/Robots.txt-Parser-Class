@@ -3,6 +3,7 @@
 namespace t1gor\RobotsTxtParser;
 
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 
 trait LogsIfAvailableTrait {
 
@@ -12,9 +13,9 @@ trait LogsIfAvailableTrait {
 		$this->logger = $logger;
 	}
 
-	protected function log(string $message, array $context = []) {
+	protected function log(string $message, array $context = [], string $level = LogLevel::DEBUG) {
 		if (!is_null($this->logger)) {
-			$this->logger->debug($message, $context);
+			$this->logger->log($level, $message, $context);
 		}
 	}
 }

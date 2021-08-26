@@ -3,12 +3,12 @@
 namespace Stream;
 
 use PHPUnit\Framework\TestCase;
-use t1gor\RobotsTxtParser\Stream\Reader;
+use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 
 class ReaderTest extends TestCase {
 
 	public function testGetContentWiki() {
-		$reader = Reader::fromStream(fopen(__DIR__ . './../Fixtures/wikipedia-org.txt', 'r'));
+		$reader = GeneratorBasedReader::fromStream(fopen(__DIR__ . './../Fixtures/wikipedia-org.txt', 'r'));
 		$generator = $reader->getContent();
 
 		foreach ($generator as $line) {
@@ -18,7 +18,7 @@ class ReaderTest extends TestCase {
 	}
 
 	public function testGetContentYaMarket() {
-		$reader = Reader::fromStream(fopen(__DIR__ . './../Fixtures/market-yandex-ru.txt', 'r'));
+		$reader = GeneratorBasedReader::fromStream(fopen(__DIR__ . './../Fixtures/market-yandex-ru.txt', 'r'));
 		$generator = $reader->getContent();
 
 		foreach ($generator as $idx => $line) {
