@@ -4,14 +4,7 @@ namespace t1gor\RobotsTxtParser;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\AllowProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CacheDelayProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CleanParamProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CrawlDelayProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\DisallowProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\HostProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\SitemapProcessor;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\UserAgentProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessorsFactory;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
 use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
@@ -87,8 +80,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// robots.txt file content
 	private $content = '';
 
-	private GeneratorBasedReader  $reader;
 	private array                 $tree = [];
+	private ?ReaderInterface      $reader;
 	private ?TreeBuilderInterface $treeBuilder;
 
 	public function __construct(
@@ -120,18 +113,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		if (is_null($this->treeBuilder)) {
 			$this->log('Creating a default tree builder as none passed...');
 
-			$processors = [
-				new UserAgentProcessor($this->logger),
-				new CrawlDelayProcessor($this->logger),
-				new CacheDelayProcessor($this->logger),
-				new HostProcessor($this->logger),
-				new CleanParamProcessor($this->logger),
-				new SitemapProcessor($this->logger),
-				new AllowProcessor($this->logger),
-				new DisallowProcessor($this->logger),
-			];
-
-			$this->treeBuilder = new TreeBuilder($processors, $this->logger);
+			$this->treeBuilder = new TreeBuilder(
+				DirectiveProcessorsFactory::getDefault($this->logger),
+				$this->logger
+			);
 		}
 
 		$this->treeBuilder->setContent($this->reader->getContent());

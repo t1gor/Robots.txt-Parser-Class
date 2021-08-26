@@ -100,11 +100,23 @@ class GeneratorBasedReader implements ReaderInterface {
 		return $this;
 	}
 
+	/**
+	 * @param string $encoding
+	 * @TODO check on composer install if we have filters available
+	 */
 	public function setEncoding(string $encoding) {
 		$this->encoding = $encoding;
 
 		if (strtoupper($encoding) !== RobotsTxtParser::DEFAULT_ENCODING) {
 			$this->log(WarmingMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
+		}
+
+		if ($this->encoding !== RobotsTxtParser::DEFAULT_ENCODING) {
+			$filterName = 'convert.iconv.' . $this->encoding . '/utf-8';
+			$this->log('Adding encoding filter ' . $filterName);
+
+			// convert encoding
+			$this->filters['iconv'] = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
 		}
 	}
 

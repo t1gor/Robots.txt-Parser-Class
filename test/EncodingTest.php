@@ -1,6 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 class EncodingTest extends TestCase
@@ -30,20 +33,32 @@ class EncodingTest extends TestCase
     {
         return [
             [
-                'UTF9' //invalid
+                'UTF9' // invalid
             ],
             [
-                'ASCI' //invalid
+                'ASCI' // invalid
             ],
             [
-                'ISO8859' //invalid
+                'ISO8859' // invalid
             ],
             [
-                'OSF10020402' //iconv
+                'OSF10020402' // iconv
             ],
             [
-                'UTF-16' //mbstring/iconv
+                'UTF-16' // mbstring / iconv
             ],
         ];
+    }
+
+	public function testWindows1251Readable() {
+		$log = new Logger(static::class);
+		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
+
+		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
+		$parser->setLogger($log);
+
+		$allRules = $parser->getRules();
+
+		$this->assertCount(5, $allRules, json_encode(array_keys($allRules)));
     }
 }
