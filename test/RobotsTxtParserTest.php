@@ -62,6 +62,18 @@ class RobotsTxtParserTest extends TestCase {
 	}
 
 	public function testTreeBuildOnlyOnce() {
-		
+		$this->parser->getRules();
+		$this->parser->getRules();
+		$this->parser->getRules();
+		$this->parser->getRules();
+
+		/** @var TestHandler $handler */
+		$handler = $this->parser->getLogger()->getHandlers()[0];
+
+		$treeCreateRecords = array_filter($handler->getRecords(), function(array $log) {
+			return $log['message'] === 'Building directives tree...';
+		});
+
+		$this->assertCount(1, $treeCreateRecords);
 	}
 }

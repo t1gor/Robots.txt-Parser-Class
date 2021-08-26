@@ -4,7 +4,16 @@ namespace t1gor\RobotsTxtParser;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\AllowProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CacheDelayProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CleanParamProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CrawlDelayProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\DisallowProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\HostProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\SitemapProcessor;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\UserAgentProcessor;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
+use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
 use t1gor\RobotsTxtParser\Stream\Reader;
 use vipnytt\UserAgentParser;
 
@@ -79,17 +88,18 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 	private Reader $reader;
 	private array $tree = [];
+	private ?TreeBuilderInterface $treeBuilder;
 
-	/**
-	 * Constructor
-	 *
-	 * @param string | resource $content  - file content
-	 * @param string            $encoding - encoding
-	 */
-	public function __construct($content, string $encoding = self::DEFAULT_ENCODING) {
+	public function __construct(
+		$content,
+		string $encoding = self::DEFAULT_ENCODING,
+		?TreeBuilderInterface $treeBuilder = null
+	) {
 		$this->reader = is_resource($content)
 			? Reader::fromStream($content)
 			: Reader::fromString($content);
+
+		$this->treeBuilder = $treeBuilder;
 	}
 
 	private function buildTree() {
@@ -97,7 +107,26 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			return;
 		}
 
-		$this->tree = TreeBuilder::build($this->reader->getContent());
+		// construct a tree builder if not passed
+		if (is_null($this->treeBuilder)) {
+			$this->log('Creating a default tree builder as none passed...');
+
+			$processors = [
+				new UserAgentProcessor($this->logger),
+				new CrawlDelayProcessor($this->logger),
+				new CacheDelayProcessor($this->logger),
+				new HostProcessor($this->logger),
+				new CleanParamProcessor($this->logger),
+				new SitemapProcessor($this->logger),
+				new AllowProcessor($this->logger),
+				new DisallowProcessor($this->logger),
+			];
+
+			$this->treeBuilder = new TreeBuilder($processors, $this->logger);
+		}
+
+		$this->treeBuilder->setContent($this->reader->getContent());
+		$this->tree = $this->treeBuilder->build();
 	}
 
 	public function getLogger(): ?LoggerInterface {
@@ -957,7 +986,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 	public function getSitemaps(?string $userAgent = null): array {
 		$this->buildTree();
-
 		$maps = [];
 
 		if (!is_null($userAgent)) {

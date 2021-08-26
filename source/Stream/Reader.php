@@ -46,10 +46,10 @@ class Reader implements LoggerAwareInterface {
 					stream_filter_remove($instance);
 				}
 			} catch (\Throwable $throwable) {
-				$this->log(
-					sprintf("Failed to remove filter '%s': %s", $class, $throwable->getMessage()),
-					LogLevel::WARNING
-				);
+				$this->log('Failed to remove filter "{class}": {message}', [
+					'class' => $class,
+					'message' => $throwable->getMessage()
+				]);
 			}
 		}
 	}
@@ -66,7 +66,7 @@ class Reader implements LoggerAwareInterface {
 		fwrite($stream, $input);
 		fseek($stream, 0);
 
-		$reader->log(WarmingMessages::STRING_INIT_DEPRECATE, LogLevel::WARNING);
+		$reader->log(WarmingMessages::STRING_INIT_DEPRECATE);
 
 		return $reader->setStream($stream);
 	}

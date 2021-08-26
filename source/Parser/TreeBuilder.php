@@ -2,110 +2,105 @@
 
 namespace t1gor\RobotsTxtParser\Parser;
 
+use Psr\Log\LoggerInterface;
 use t1gor\RobotsTxtParser\Directive;
+use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\InvokableProcessorInterface;
 
-abstract class TreeBuilder {
+class TreeBuilder implements TreeBuilderInterface {
 
-	protected static function processMultipleDirectives(string $directive, string $line, array & $root, string $currentUserAgent) {
-		$parts = explode(':', $line);
-		$entry = trim($parts[1]);
+	use LogsIfAvailableTrait;
 
-		if (empty($entry)) {
-			return;
+	protected array     $processors;
+	protected \Iterator $content;
+
+	/**
+	 * @param InvokableProcessorInterface[] $processors
+	 * @param LoggerInterface|null          $logger
+	 */
+	public function __construct(array $processors, ?LoggerInterface $logger) {
+		$this->logger = $logger;
+
+		if (empty($processors)) {
+			$this->log("Seems like you've passed an empty processors array.");
 		}
 
-		if (!isset($root[$currentUserAgent][$directive])) {
-			$root[$currentUserAgent][$directive] = [];
-		}
-
-		if (!in_array($entry, $root[$currentUserAgent][$directive])) {
-			$root[$currentUserAgent][$directive][] = $entry;
+		// reformat processors
+		foreach ($processors as $processor) {
+			$this->processors[$processor->getDirectiveName()] = $processor;
 		}
 	}
 
-	public static function build(\Generator $content): array {
-		$root = [];
-		$currentUserAgent = '*';
+	/**
+	 * Wrapper to check that processor is available
+	 */
+	protected function processDirective(string $directive, string $line, &$tree, string &$userAgent) {
+		if (!isset($this->processors[$directive])) {
+			$this->log('{directive} met, but no processor found for it. Skipping.', [
+				'{directive}' => $directive,
+			]);
+			return;
+		}
 
-		foreach ($content as $line) {
+		$this->processors[$directive]($line, $tree, $userAgent);
+	}
+
+	/**
+	 * @return \Iterator
+	 */
+	public function getContent(): \Iterator {
+		return $this->content;
+	}
+
+	/**
+	 * @param \Iterator $content
+	 */
+	public function setContent(\Iterator $content): void {
+		$this->content = $content;
+	}
+
+	public function build(): array {
+		$currentUserAgent = '*';
+		$tree             = [];
+
+		$this->log('Building directives tree...');
+
+		foreach ($this->content as $line) {
 			switch (true) {
 				case preg_match('/^' . Directive::USERAGENT . '\s*:\s+/isu', $line):
-					$parts = explode(':', $line);
-					$newUserAgent = trim($parts[1]);
-
-					if (empty($root) && $newUserAgent === '*') {
-						$root[$newUserAgent] = [];
-					}
-
-					if ($newUserAgent !== $currentUserAgent) {
-						$currentUserAgent = trim($parts[1]);
-
-						if (!isset($root[$currentUserAgent])) {
-							$root[$currentUserAgent] = [];
-						}
-					}
+					$this->processDirective(Directive::USERAGENT, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::CRAWL_DELAY . '\s*:\s+/isu', $line):
-					$parts = explode(':', $line);
-					$root[$currentUserAgent][Directive::CRAWL_DELAY] = filter_var(
-						$parts[1],
-						FILTER_SANITIZE_NUMBER_FLOAT,
-						FILTER_FLAG_ALLOW_FRACTION
-					);
+					$this->processDirective(Directive::CRAWL_DELAY, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::CACHE_DELAY . '\s*:\s+/isu', $line):
-					$parts = explode(':', $line);
-					$root[$currentUserAgent][Directive::CACHE_DELAY] = filter_var(
-						$parts[1],
-						FILTER_SANITIZE_NUMBER_FLOAT,
-						FILTER_FLAG_ALLOW_FRACTION
-					);
+					$this->processDirective(Directive::CACHE_DELAY, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::ALLOW . '\s*:\s+/isu', $line):
-					static::processMultipleDirectives(Directive::ALLOW, $line, $root, $currentUserAgent);
+					$this->processDirective(Directive::ALLOW, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::DISALLOW . '\s*:\s+/isu', $line):
-					static::processMultipleDirectives(Directive::DISALLOW, $line, $root, $currentUserAgent);
+					$this->processDirective(Directive::DISALLOW, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::HOST . '\s*:\s+/isu', $line):
-					$parts = explode(':', $line);
-					$filtered = filter_var(trim($parts[1]), FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
-
-					if (false !== $filtered) {
-						$root[$currentUserAgent][Directive::HOST] = $filtered;
-					}
+					$this->processDirective(Directive::HOST, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::SITEMAP . '\s*:\s+/isu', $line):
-					$parts = explode(':', $line);
-					array_shift($parts);
-					$trimmed = array_map('trim', $parts);
-					$entry = implode(':', $trimmed);
-
-					if (!isset($root[$currentUserAgent][Directive::SITEMAP])) {
-						$root[$currentUserAgent][Directive::SITEMAP] = [];
-					}
-
-					if (!in_array($entry, $root[$currentUserAgent][Directive::SITEMAP])) {
-						$root[$currentUserAgent][Directive::SITEMAP][] = $entry;
-					}
-
+					$this->processDirective(Directive::SITEMAP, $line, $tree, $currentUserAgent);
 					break;
 
 				case preg_match('/^' . Directive::CLEAN_PARAM . '\s*:\s+/isu', $line):
-					$parts = explode(':', $line);
-					$cleanParams = explode(' ', trim($parts[1]));
-					$path = $cleanParams[1] ?? '/*';
-					$root[Directive::CLEAN_PARAM][$path] = explode('&', $cleanParams[0]);
+					$this->processDirective(Directive::CLEAN_PARAM, $line, $tree, $currentUserAgent);
 					break;
 			}
 		}
 
-		return $root;
+		return $tree;
 	}
 }
