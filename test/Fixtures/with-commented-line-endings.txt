@@ -9,3 +9,6 @@ Disallow: /tech # ds
 
 User-agent: yandex-bot
 Disallow#: /tech # ds
+
+User-agent: *
+Disallow: /comment-after #comment

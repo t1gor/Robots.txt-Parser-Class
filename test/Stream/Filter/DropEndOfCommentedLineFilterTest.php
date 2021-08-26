@@ -31,6 +31,9 @@ class DropEndOfCommentedLineFilterTest extends TestCase {
 		$this->assertStringNotContainsString('# low: /tech', $contents);
 		$this->assertStringNotContainsString('#: /tech # ds', $contents);
 
+		// should keep valid entries
+		$this->assertStringContainsString('Disallow: /comment-after', $contents);
+
 		fclose($stream);
 	}
 }

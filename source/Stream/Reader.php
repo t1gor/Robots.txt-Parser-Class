@@ -10,6 +10,7 @@ use t1gor\RobotsTxtParser\Stream\Filters\SkipEndOfCommentedLineFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipEmptyLinesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipUnsupportedDirectivesFilter;
+use t1gor\RobotsTxtParser\Stream\Filters\TrimSpacesLeftFilter;
 use t1gor\RobotsTxtParser\WarmingMessages;
 
 class Reader implements LoggerAwareInterface {
@@ -24,13 +25,14 @@ class Reader implements LoggerAwareInterface {
 	private array $filters;
 
 	protected function __construct() {
-		// order matters
+		/** @note order matters */
 		$this->filters = [
-			SkipCommentedLinesFilter::class => false,
-			SkipEndOfCommentedLineFilter::class => false,
-			SkipUnsupportedDirectivesFilter::class => false,
+			SkipCommentedLinesFilter::class              => false,
+			SkipEndOfCommentedLineFilter::class          => false,
+			TrimSpacesLeftFilter::class                  => false,
+			SkipUnsupportedDirectivesFilter::class       => false,
 			SkipDirectivesWithInvalidValuesFilter::class => false,
-			SkipEmptyLinesFilter::class => false,
+			SkipEmptyLinesFilter::class                  => false,
 		];
 	}
 
@@ -53,8 +55,6 @@ class Reader implements LoggerAwareInterface {
 	}
 
 	/**
-	 * @FIXME
-	 *
 	 * @param string $input
 	 *
 	 * @return static

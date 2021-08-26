@@ -42,7 +42,7 @@ class CrawlDelayTest extends TestCase {
 
 		$this->assertTrue($handler->hasRecord(
 			'cache-delay directive (unofficial): Not found, fallback to crawl-delay directive',
-			LogLevel::INFO
+			LogLevel::DEBUG
 		));
 	}
 
@@ -54,7 +54,7 @@ class CrawlDelayTest extends TestCase {
 
 		$this->assertTrue($handler->hasRecord(
 			'cache-delay directive: Not found',
-			LogLevel::INFO
+			LogLevel::DEBUG
 		));
 	}
 }

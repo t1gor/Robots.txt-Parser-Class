@@ -10,7 +10,7 @@ class SkipUnsupportedDirectivesTest extends TestCase {
 	public function setUp(): void {
 		parent::setUp();
 
-		stream_filter_register(SkipUnsupportedDirectivesFilter::NAME, SkipEmptyLinesFilter::class);
+		stream_filter_register(SkipUnsupportedDirectivesFilter::NAME, SkipUnsupportedDirectivesFilter::class);
 	}
 
 	public function testRegister() {

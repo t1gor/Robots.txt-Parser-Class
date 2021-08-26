@@ -58,11 +58,11 @@ abstract class Directive {
 	}
 
 	public static function getRegex(): string {
-		return "/^(?!(" . implode('|', Directive::getAll()) . "):+).+/mui";
+		return "/^(?!(" . implode('|', Directive::getAll()) . ")\s*:+).+/mui";
 	}
 
 	public static function getRequestRateRegex(): string {
-		return "/^" . self::REQUEST_RATE . ":+(\s)*(?![0-9]+\/[0-9]+).*/mui";
+		return "/^" . self::REQUEST_RATE . ":+\s*(?![0-9]+\/[0-9]+).*/mui";
 	}
 
 	public static function getCrawlDelayRegex(): string {

@@ -44,12 +44,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// rules set
 	protected $rules = [];
 
-	// clean param set
-	protected $cleanparam = [];
-
-	// sitemap set
-	protected $sitemap = [];
-
 	// host set
 	protected $host = null;
 
@@ -302,27 +296,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	private function addValueToDirective() {
 		$this->convert('trim');
 		switch ($this->current_directive) {
-			case Directive::USERAGENT:
-				$this->setCurrentUserAgent();
-				break;
-
-			case Directive::CACHE_DELAY:
-			case Directive::CRAWL_DELAY:
-				$this->convert('floatval');
-				$this->addRule(false);
-				break;
-
-			case Directive::HOST:
-				$this->addHost();
-				break;
-
-			case Directive::SITEMAP:
-				$this->addSitemap();
-				break;
-
-			case Directive::CLEAN_PARAM:
-				$this->addCleanParam();
-				break;
 
 			case Directive::ALLOW:
 			case Directive::DISALLOW:
@@ -343,24 +316,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 */
 	private function convert($convert) {
 		$this->current_word = call_user_func($convert, $this->current_word);
-	}
-
-	/**
-	 * Set current user agent, for internal usage only
-	 *
-	 * @return void
-	 */
-	private function setCurrentUserAgent() {
-		$ua = mb_strtolower(trim($this->current_word));
-		if ($this->previous_directive !== Directive::USERAGENT) {
-			$this->current_UserAgent = [];
-		}
-		$this->current_UserAgent[] = $ua;
-
-		// create empty array if not there yet
-		if (empty($this->rules[$ua])) {
-			$this->rules[$ua] = [];
-		}
 	}
 
 	/**
@@ -868,24 +823,20 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return 0;
 	}
 
-	/**
-	 * Get Clean-Param
-	 *
-	 * @return array
-	 */
-	public function getCleanParam() {
-		if (empty($this->cleanparam)) {
-			$this->log[] = Directive::CLEAN_PARAM . ' directive: Not found';
+	public function getCleanParam(): array {
+		$this->buildTree();
+
+		if (!isset($this->tree[Directive::CLEAN_PARAM]) || empty($this->tree[Directive::CLEAN_PARAM])) {
+			$this->log(Directive::CLEAN_PARAM . ' directive: Not found');
 		}
-		return $this->cleanparam;
+
+		return $this->tree[Directive::CLEAN_PARAM];
 	}
 
 	/**
-	 * Get the robots.txt content
-	 *
-	 * @return string
+	 * @deprecated
 	 */
-	public function getContent() {
+	public function getContent(): string {
 		return $this->content;
 	}
 
@@ -968,27 +919,67 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Get host wrapper
+	 * @param ?string $userAgent
 	 *
-	 * @return string|null
+	 * @note NULL is returned to public API compatibility reasons. Will be removed in the future.
+	 *
+	 * @return string[]|string|null
 	 */
-	public function getHost() {
-		if (!isset($this->host)) {
-			$this->log[] = 'Host directive: No hosts found';
+	public function getHost(?string $userAgent = null) {
+		$this->buildTree();
+
+		if (!is_null($userAgent)) {
+			if (isset($this->tree[$userAgent][Directive::HOST]) && !empty($this->tree[$userAgent][Directive::HOST])) {
+				return $this->tree[$userAgent][Directive::HOST];
+			}
+
+			$this->log(sprintf('Failed for find host for %s, checking for * ...', $userAgent));
+
+			if (isset($this->tree['*'][Directive::HOST]) && !empty($this->tree['*'][Directive::HOST])) {
+				return $this->tree['*'][Directive::HOST];
+			}
+
+			$this->log('Failed for find host for *');
+
 			return null;
 		}
-		return $this->host;
+
+		$hosts = [];
+
+		foreach ($this->tree as $userAgentBased) {
+			if (isset($userAgentBased[Directive::HOST]) && !empty($userAgentBased[Directive::HOST])) {
+				array_push($hosts, $userAgentBased[Directive::HOST]);
+			}
+		}
+
+		return !empty($hosts) ? $hosts : null;
 	}
 
-	/**
-	 * Get sitemaps wrapper
-	 *
-	 * @return array
-	 */
-	public function getSitemaps() {
-		if (empty($this->sitemap)) {
-			$this->log[] = Directive::SITEMAP . ' directive: No sitemaps found';
+	public function getSitemaps(?string $userAgent = null): array {
+		$this->buildTree();
+
+		$maps = [];
+
+		if (!is_null($userAgent)) {
+			if (isset($this->tree[$userAgent][Directive::SITEMAP]) && !empty($this->tree[$userAgent][Directive::SITEMAP])) {
+				return $this->tree[$userAgent][Directive::SITEMAP];
+			}
+
+			$this->log(sprintf('Failed for find sitemap for %s, checking for * ...', $userAgent));
+
+			if (isset($this->tree['*'][Directive::SITEMAP]) && !empty($this->tree['*'][Directive::SITEMAP])) {
+				return $this->tree['*'][Directive::SITEMAP];
+			}
+
+			$this->log('Failed for find sitemap for *');
+		} else {
+			foreach ($this->tree as $userAgentBased) {
+				if (isset($userAgentBased[Directive::SITEMAP]) && !empty($userAgentBased[Directive::SITEMAP])) {
+					$maps = array_merge($maps, $userAgentBased[Directive::SITEMAP]);
+				}
+			}
 		}
-		return $this->sitemap;
+
+		return $maps;
 	}
 }

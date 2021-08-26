@@ -13,7 +13,7 @@ trait LogsIfAvailableTrait {
 		$this->logger = $logger;
 	}
 
-	protected function log(string $message, string $level = LogLevel::INFO) {
+	protected function log(string $message, string $level = LogLevel::DEBUG) {
 		if (!is_null($this->logger)) {
 			$this->logger->log($level, $message);
 		}

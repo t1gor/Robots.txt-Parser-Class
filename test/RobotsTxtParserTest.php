@@ -24,6 +24,44 @@ class RobotsTxtParserTest extends TestCase {
 
 	public function testGetRulesAll() {
 		$rules = $this->parser->getRules();
-		$this->assertCount(33, $rules);
+
+		// should be all 33 UAs on top level
+		$this->assertArrayHasKey("MJ12bot", $rules);
+		$this->assertArrayHasKey("Mediapartners-Google*", $rules);
+		$this->assertArrayHasKey("IsraBot", $rules);
+		$this->assertArrayHasKey("Orthogaffe", $rules);
+		$this->assertArrayHasKey("UbiCrawler", $rules);
+		$this->assertArrayHasKey("DOC", $rules);
+		$this->assertArrayHasKey("Zao", $rules);
+		$this->assertArrayHasKey("sitecheck.internetseer.com", $rules);
+		$this->assertArrayHasKey("Zealbot", $rules);
+		$this->assertArrayHasKey("MSIECrawler", $rules);
+		$this->assertArrayHasKey("SiteSnagger", $rules);
+		$this->assertArrayHasKey("WebStripper", $rules);
+		$this->assertArrayHasKey("WebCopier", $rules);
+		$this->assertArrayHasKey("Fetch", $rules);
+		$this->assertArrayHasKey("Offline Explorer", $rules);
+		$this->assertArrayHasKey("Teleport", $rules);
+		$this->assertArrayHasKey("TeleportPro", $rules);
+		$this->assertArrayHasKey("WebZIP", $rules);
+		$this->assertArrayHasKey("linko", $rules);
+		$this->assertArrayHasKey("HTTrack", $rules);
+		$this->assertArrayHasKey("Microsoft.URL.Control", $rules);
+		$this->assertArrayHasKey("Xenu", $rules);
+		$this->assertArrayHasKey("larbin", $rules);
+		$this->assertArrayHasKey("libwww", $rules);
+		$this->assertArrayHasKey("ZyBORG", $rules);
+		$this->assertArrayHasKey("Download Ninja", $rules);
+		$this->assertArrayHasKey("fast", $rules);
+		$this->assertArrayHasKey("wget", $rules);
+		$this->assertArrayHasKey("grub-client", $rules);
+		$this->assertArrayHasKey("k2spider", $rules);
+		$this->assertArrayHasKey("NPBot", $rules);
+		$this->assertArrayHasKey("WebReaper", $rules);
+		$this->assertArrayHasKey("*", $rules);
+	}
+
+	public function testTreeBuildOnlyOnce() {
+		
 	}
 }

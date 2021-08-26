@@ -20,6 +20,7 @@
 		"psr/log": "^1.1"
 	},
 	"require-dev": {
+		"ext-json": "*",
 		"codeclimate/php-test-reporter": ">=0.2",
 		"phpunit/phpunit": "^9",
 		"monolog/monolog": "^2.3"

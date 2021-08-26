@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 class CommentsTest extends TestCase
@@ -29,9 +30,9 @@ class CommentsTest extends TestCase
 		{
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertNotEmpty($parser->getRules('*'), 'expected data');
-			$this->assertArrayHasKey('disallow', $parser->getRules('*'));
-			$this->assertNotEmpty($parser->getRules('*')['disallow'], 'disallow expected');
-			$this->assertEquals($expectedDisallowValue, $parser->getRules('*')['disallow'][0]);
+			$this->assertArrayHasKey(Directive::DISALLOW, $parser->getRules('*'));
+			$this->assertNotEmpty($parser->getRules('*')[Directive::DISALLOW], 'disallow expected');
+			$this->assertEquals($expectedDisallowValue, $parser->getRules('*')[Directive::DISALLOW][0]);
 		}
 
 		/**
@@ -68,7 +69,7 @@ class CommentsTest extends TestCase
 		{
 			return array(
 				array(
-					"User-agent: *
+					"User-agent: * 
 					Disallow: /tech #comment",
 					'disallowValue' => '/tech',
 				),
