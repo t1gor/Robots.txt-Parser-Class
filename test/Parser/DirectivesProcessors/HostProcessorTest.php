@@ -52,7 +52,7 @@ class HostProcessorTest extends TestCase {
 				'host with value 192.168.0.1 dropped for * as invalid (IP address is not a valid hostname)',
 				LogLevel::DEBUG
 			),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 	}
 
@@ -73,7 +73,7 @@ class HostProcessorTest extends TestCase {
 				'host with value bndgang!!!@#$da12345ngda]] dropped for * as invalid',
 				LogLevel::DEBUG
 			),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

@@ -6,5 +6,6 @@ use Psr\Log\LoggerAwareInterface;
 
 interface ReaderInterface extends LoggerAwareInterface {
 	public function setEncoding(string $encoding);
-	public function getContent(): \Iterator;
+	public function getContentIterated(): \Iterator;
+	public function getContentRaw(): string;
 }

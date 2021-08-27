@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
@@ -13,8 +13,6 @@ class AtSymbolTest extends TestCase
 		 */
 		public function testContainingAtChar($robotsTxtContent)
 		{
-			$this->markTestSkipped('@TODO');
-
 			$parser = new RobotsTxtParser($robotsTxtContent);
 			$this->assertTrue($parser->isAllowed("/peanuts"));
 			$this->assertFalse($parser->isDisallowed("/peanuts"));

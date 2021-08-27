@@ -9,7 +9,7 @@ class ReaderTest extends TestCase {
 
 	public function testGetContentWiki() {
 		$reader = GeneratorBasedReader::fromStream(fopen(__DIR__ . './../Fixtures/wikipedia-org.txt', 'r'));
-		$generator = $reader->getContent();
+		$generator = $reader->getContentIterated();
 
 		foreach ($generator as $line) {
 			$this->assertNotEmpty($line);
@@ -19,7 +19,7 @@ class ReaderTest extends TestCase {
 
 	public function testGetContentYaMarket() {
 		$reader = GeneratorBasedReader::fromStream(fopen(__DIR__ . './../Fixtures/market-yandex-ru.txt', 'r'));
-		$generator = $reader->getContent();
+		$generator = $reader->getContentIterated();
 
 		foreach ($generator as $idx => $line) {
 			$this->assertNotEmpty($line);

@@ -8,9 +8,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-/**
- * @TODO finish this
- */
 class CleanParamTest extends TestCase
 {
 	protected ?RobotsTxtParser $parser;
@@ -39,8 +36,6 @@ class CleanParamTest extends TestCase
 	}
 
 	public function testCleanParamsAppliedForAllowDisallow() {
-		$this->markTestSkipped('@TODO');
-
 		$this->assertTrue($this->parser->isDisallowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 		$this->assertFalse($this->parser->isAllowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 
@@ -49,7 +44,7 @@ class CleanParamTest extends TestCase
 
 		$this->assertTrue(
 			$handler->hasRecord('Rule match: clean-param directive', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 
 		$this->assertTrue($this->parser->isAllowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
@@ -57,7 +52,7 @@ class CleanParamTest extends TestCase
 
 		$this->assertTrue(
 			$handler->hasRecord('Rule match: Path', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

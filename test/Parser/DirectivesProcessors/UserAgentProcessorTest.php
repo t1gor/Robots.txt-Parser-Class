@@ -52,7 +52,7 @@ class UserAgentProcessorTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasRecord('New useragent is equal to current one, skipping ...', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

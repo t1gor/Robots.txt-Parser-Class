@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
@@ -13,8 +13,6 @@ class DisallowUppercasePathTest extends TestCase
      */
     public function testDisallowUppercasePath($robotsTxtContent)
     {
-	    $this->markTestSkipped('@TODO');
-
         // init parser
         $parser = new RobotsTxtParser($robotsTxtContent);
         $this->assertTrue($parser->isDisallowed("/Admin"));

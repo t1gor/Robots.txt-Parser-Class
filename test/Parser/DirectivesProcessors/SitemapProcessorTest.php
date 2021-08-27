@@ -66,7 +66,7 @@ class SitemapProcessorTest extends TestCase {
 
 		$this->assertTrue(
 			$handler->hasRecord('sitemap with value https://www.example.com/sitemap.xml skipped as already exists for Google', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

@@ -60,7 +60,7 @@ class SkipUnsupportedDirectivesTest extends TestCase {
 		$this->assertNotEmpty($contents);
 		$this->assertTrue(
 			$handler->hasRecord('9 lines skipped as un-supported', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 
 		fclose($stream);

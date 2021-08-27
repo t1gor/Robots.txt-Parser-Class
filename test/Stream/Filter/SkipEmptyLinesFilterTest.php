@@ -88,7 +88,7 @@ class SkipEmptyLinesFilterTest extends TestCase {
 		$this->assertNotEmpty($lines);
 		$this->assertTrue(
 			$handler->hasRecord('3 lines skipped as empty.', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 		fclose($stream);
 	}

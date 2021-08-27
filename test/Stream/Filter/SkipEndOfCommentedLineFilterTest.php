@@ -61,7 +61,7 @@ class SkipEndOfCommentedLineFilterTest extends TestCase {
 		$this->assertNotEmpty($lines);
 		$this->assertTrue(
 			$handler->hasRecord('5 char(s) dropped as commented out', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 		fclose($stream);
 	}

@@ -62,7 +62,7 @@ class CrawlDelayProcessorTest extends TestCase {
 				'crawl-delay with value thisIsNotANumber dropped as invalid for *',
 				LogLevel::DEBUG
 			),
-			json_encode($handler->getRecords())
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

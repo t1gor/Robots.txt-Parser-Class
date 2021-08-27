@@ -14,7 +14,6 @@ use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcher;
 use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcherInterface;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 use t1gor\RobotsTxtParser\Stream\ReaderInterface;
-use vipnytt\UserAgentParser;
 
 /**
  * Class for parsing robots.txt files
@@ -42,13 +41,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// default encoding
 	const DEFAULT_ENCODING = 'UTF-8';
 
-	// states
-	const STATE_ZERO_POINT     = 'zero-point';
-	const STATE_READ_DIRECTIVE = 'read-directive';
-	const STATE_SKIP_SPACE     = 'skip-space';
-	const STATE_SKIP_LINE      = 'skip-line';
-	const STATE_READ_VALUE     = 'read-value';
-
 	// rules set
 	protected $rules = [];
 
@@ -58,20 +50,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// robots.txt http status code
 	protected ?int $httpStatusCode;
 
-	protected $current_char       = '';
-	protected $char_index         = 0;
-	protected $current_directive  = '';
-	protected $previous_directive = '';
-
-	// current state
-	private $state = '';
-
 	// url
 	private $url = null;
 
 	// UserAgent
 	private $userAgent      = '*';
-	private $userAgentMatch = '*';
 
 	// robots.txt file content
 	private        $content  = '';
@@ -128,7 +111,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			);
 		}
 
-		$this->treeBuilder->setContent($this->reader->getContent());
+		$this->treeBuilder->setContent($this->reader->getContentIterated());
 		$this->tree = $this->treeBuilder->build();
 	}
 
@@ -145,255 +128,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
 			$this->userAgentMatcher->setLogger($this->logger);
-		}
-	}
-
-	/**
-	 * Machine step
-	 *
-	 * @return void
-	 */
-	protected function step() {
-		switch ($this->state) {
-			case self::STATE_ZERO_POINT:
-				$this->zeroPoint();
-				break;
-
-			case self::STATE_READ_DIRECTIVE:
-				$this->readDirective();
-				break;
-
-			case self::STATE_SKIP_SPACE:
-				$this->skipSpace();
-				break;
-
-			case self::STATE_SKIP_LINE:
-				$this->skipLine();
-				break;
-
-			case self::STATE_READ_VALUE:
-				$this->readValue();
-				break;
-		}
-	}
-
-	/**
-	 * Process state ZERO_POINT
-	 *
-	 * @return RobotsTxtParser
-	 */
-	protected function zeroPoint() {
-		if ($this->shouldSwitchToZeroPoint()) {
-			$this->switchState(self::STATE_READ_DIRECTIVE);
-		} elseif ($this->newLine()) {
-			// unknown directive - skip it
-			$this->current_word = '';
-			$this->increment();
-		} else {
-			$this->increment();
-		}
-		return $this;
-	}
-
-	/**
-	 * Check if we should switch
-	 *
-	 * @return bool
-	 */
-	protected function shouldSwitchToZeroPoint() {
-		return in_array(mb_strtolower($this->current_word), Directive::getAll(), true);
-	}
-
-	/**
-	 * Change state
-	 *
-	 * @param string $stateTo - state that should be set
-	 *
-	 * @return void
-	 */
-	protected function switchState($stateTo = self::STATE_SKIP_LINE) {
-		$this->state = $stateTo;
-	}
-
-	/**
-	 * Move to new line signal
-	 */
-	protected function newLine() {
-		return in_array(
-			"\n", [
-				$this->current_char,
-				$this->current_word,
-			]
-		);
-	}
-
-	/**
-	 * Move to the following step
-	 *
-	 * @return void
-	 */
-	protected function increment() {
-		$this->current_char = mb_substr($this->content, $this->char_index, 1);
-		$this->current_word .= $this->current_char;
-		$this->current_word = ltrim($this->current_word);
-		$this->char_index++;
-	}
-
-	/**
-	 * Read directive
-	 *
-	 * @return RobotsTxtParser
-	 */
-	protected function readDirective() {
-		$this->previous_directive = $this->current_directive;
-		$this->current_directive  = mb_strtolower(trim($this->current_word));
-
-		$this->increment();
-
-		if ($this->lineSeparator()) {
-			$this->current_word = '';
-			$this->switchState(self::STATE_READ_VALUE);
-		} else {
-			if ($this->space()) {
-				$this->switchState(self::STATE_SKIP_SPACE);
-			}
-			if ($this->sharp()) {
-				$this->switchState(self::STATE_SKIP_LINE);
-			}
-		}
-		return $this;
-	}
-
-	/**
-	 * Key : value pair separator signal
-	 */
-	protected function lineSeparator() {
-		return ($this->current_char == ':');
-	}
-
-	/**
-	 * "Space" signal
-	 */
-	protected function space() {
-		return ($this->current_char == "\s");
-	}
-
-	/**
-	 * Comment signal (#)
-	 */
-	protected function sharp() {
-		return ($this->current_char == '#');
-	}
-
-	/**
-	 * Skip space
-	 *
-	 * @return RobotsTxtParser
-	 */
-	protected function skipSpace() {
-		$this->char_index++;
-		$this->current_word = mb_substr($this->current_word, -1);
-		return $this;
-	}
-
-	/**
-	 * Skip line
-	 *
-	 * @return RobotsTxtParser
-	 */
-	protected function skipLine() {
-		$this->char_index++;
-		$this->switchState(self::STATE_ZERO_POINT);
-		return $this;
-	}
-
-	/**
-	 * Read value
-	 *
-	 * @return RobotsTxtParser
-	 */
-	protected function readValue() {
-		if ($this->newLine()) {
-			$this->addValueToDirective();
-		} elseif ($this->sharp()) {
-			$this->current_word = mb_substr($this->current_word, 0, -1);
-			$this->addValueToDirective();
-		} else {
-			$this->increment();
-		}
-		return $this;
-	}
-
-	/**
-	 * Add value to directive
-	 *
-	 * @return void
-	 */
-	private function addValueToDirective() {
-		$this->convert('trim');
-		switch ($this->current_directive) {
-
-			case Directive::ALLOW:
-			case Directive::DISALLOW:
-				$this->addRule();
-				break;
-		}
-		// clean-up
-		$this->current_word = '';
-		$this->switchState(self::STATE_ZERO_POINT);
-	}
-
-	/**
-	 * Convert wrapper
-	 *
-	 * @param array|string $convert
-	 *
-	 * @return void
-	 */
-	private function convert($convert) {
-		$this->current_word = call_user_func($convert, $this->current_word);
-	}
-
-	/**
-	 * Add group-member rule
-	 *
-	 * @param bool $append
-	 *
-	 * @return void
-	 */
-	private function addRule($append = true) {
-		if (empty($this->current_word)) {
-			return;
-		}
-		foreach ($this->current_UserAgent as $ua) {
-			if ($append === true) {
-				$this->rules[$ua][$this->current_directive][] = $this->current_word;
-				continue;
-			}
-			$this->rules[$ua][$this->current_directive] = $this->current_word;
-		}
-	}
-
-	/**
-	 * Add Host
-	 *
-	 * @return void
-	 */
-	private function addHost() {
-		$parsed = parse_url($this->encode_url($this->current_word));
-		if (isset($this->host) || $parsed === false) {
-			return;
-		}
-		$host = isset($parsed['host']) ? $parsed['host'] : $parsed['path'];
-		if (!$this->isValidHostName($host)) {
-			return;
-		} elseif (isset($parsed['scheme']) && !$this->isValidScheme($parsed['scheme'])) {
-			return;
-		}
-		$scheme = isset($parsed['scheme']) ? $parsed['scheme'] . '://' : '';
-		$port   = isset($parsed['port']) ? ':' . $parsed['port'] : '';
-		if ($this->current_word == $scheme . $host . $port) {
-			$this->host = $this->current_word;
 		}
 	}
 
@@ -499,12 +233,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @deprecated please check rules for exact user agent instead
 	 */
 	public function setUserAgent(string $userAgent) {
-		$this->userAgent      = $userAgent;
-		$uaParser             = new UserAgentParser($this->userAgent);
-		$this->userAgentMatch = $uaParser->getMostSpecific(array_keys($this->rules));
-		if (!$this->userAgentMatch) {
-			$this->userAgentMatch = '*';
-		}
+		throw new \RuntimeException(WarmingMessages::SET_UA_DEPRECATED);
 	}
 
 	/**

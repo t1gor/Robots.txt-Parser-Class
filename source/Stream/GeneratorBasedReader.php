@@ -22,8 +22,7 @@ class GeneratorBasedReader implements ReaderInterface {
 	/**
 	 * @var string[]
 	 */
-	private array  $filters;
-	private string $encoding;
+	private array $filters;
 
 	protected function __construct() {
 		/** @note order matters */
@@ -48,10 +47,14 @@ class GeneratorBasedReader implements ReaderInterface {
 				}
 			} catch (\Throwable $throwable) {
 				$this->log('Failed to remove filter "{class}": {message}', [
-					'class' => $class,
-					'message' => $throwable->getMessage()
+					'class'   => $class,
+					'message' => $throwable->getMessage(),
 				]);
 			}
+		}
+
+		if (is_resource($this->stream)) {
+			fclose($this->stream);
 		}
 	}
 
@@ -102,25 +105,24 @@ class GeneratorBasedReader implements ReaderInterface {
 
 	/**
 	 * @param string $encoding
+	 *
 	 * @TODO check on composer install if we have filters available
 	 */
 	public function setEncoding(string $encoding) {
-		$this->encoding = $encoding;
-
-		if (strtoupper($encoding) !== RobotsTxtParser::DEFAULT_ENCODING) {
-			$this->log(WarmingMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
+		if (strtoupper($encoding) === RobotsTxtParser::DEFAULT_ENCODING) {
+			return;
 		}
 
-		if ($this->encoding !== RobotsTxtParser::DEFAULT_ENCODING) {
-			$filterName = 'convert.iconv.' . $this->encoding . '/utf-8';
-			$this->log('Adding encoding filter ' . $filterName);
+		$this->log(WarmingMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
 
-			// convert encoding
-			$this->filters['iconv'] = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
-		}
+		$filterName = 'convert.iconv.' . $encoding . '/utf-8';
+		$this->log('Adding encoding filter ' . $filterName);
+
+		// convert encoding
+		$this->filters['iconv'] = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
 	}
 
-	public function getContent(): \Generator {
+	public function getContentIterated(): \Generator {
 		rewind($this->stream);
 
 		while (!feof($this->stream)) {
@@ -130,5 +132,10 @@ class GeneratorBasedReader implements ReaderInterface {
 				yield $line;
 			}
 		}
+	}
+
+	public function getContentRaw(): string {
+		rewind($this->stream);
+		return stream_get_contents($this->stream);
 	}
 }
