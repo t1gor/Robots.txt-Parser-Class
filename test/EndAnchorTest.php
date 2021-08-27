@@ -1,23 +1,21 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-class EndAnchorTest extends TestCase
-{
+class EndAnchorTest extends TestCase {
+
 	/**
 	 * @dataProvider generateDataForTest
 	 * @covers       RobotsTxtParser::isAllowed
 	 * @covers       RobotsTxtParser::isDisallowed
 	 * @covers       RobotsTxtParser::checkRules
+	 *
 	 * @param string $path
 	 * @param string $robotsTxtContent
 	 * @param bool   $assertAllowed
 	 */
-	public function testEndAnchor($path, $robotsTxtContent, $assertAllowed)
-	{
-		$this->markTestSkipped('@TODO');
-
+	public function testEndAnchor(string $path, string $robotsTxtContent, bool $assertAllowed) {
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
 
@@ -34,8 +32,7 @@ class EndAnchorTest extends TestCase
 	 * Generate test case data
 	 * @return array
 	 */
-	public function generateDataForTest()
-	{
+	public function generateDataForTest() {
 		// Data provider defined in format:
 		// [tested path, robotsTxtContent, true when allowed / false when disallowed]
 		return [
@@ -72,7 +69,10 @@ class EndAnchorTest extends TestCase
 					User-Agent: *
 					Disallow: *deny_all/$
 				",
-				false,
+				/**
+				 * @see InvalidPathTest for details why this is changed
+				 */
+				true,
 			],
 			[
 				"/deny_all/",

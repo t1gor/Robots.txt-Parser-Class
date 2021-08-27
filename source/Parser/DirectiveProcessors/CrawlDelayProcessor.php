@@ -4,13 +4,13 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use t1gor\RobotsTxtParser\Directive;
 
-class CrawlDelayProcessor extends AbstractInvokableProcessor implements InvokableProcessorInterface {
+class CrawlDelayProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
 		return Directive::CRAWL_DELAY;
 	}
 
-	public function __invoke(string $line, array &$root, string &$currentUserAgent = '*') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
 		$parts              = explode(':', $line);
 		$entry              = trim($parts[1]);
 		$filteredCrawlDelay = filter_var($entry, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_FRACTION);

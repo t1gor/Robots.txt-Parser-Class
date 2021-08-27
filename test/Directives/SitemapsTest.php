@@ -53,9 +53,9 @@ class SitemapsTest extends TestCase {
 		/** @var TestHandler $handler */
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
-		$this->assertTrue($handler->hasRecord(
-			'Failed for find sitemap for Yandex, checking for * ...',
-			LogLevel::DEBUG
-		));
+		$this->assertTrue(
+			$handler->hasRecord("Failed to match user agent 'Yandex', falling back to '*'", LogLevel::DEBUG),
+			stringifyLogs($handler->getRecords())
+		);
 	}
 }

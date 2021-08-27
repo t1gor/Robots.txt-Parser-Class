@@ -1,124 +1,88 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-class AllowTest extends TestCase
-{
-    /**
-     * @dataProvider generateDataForTest
-     * @param string $robotsTxtContent
-     */
-    public function testDisAllow($robotsTxtContent)
-    {
-	    $this->markTestSkipped('@TODO');
+class AllowTest extends TestCase {
 
-        /**
-         * Test currently disabled due to issues
-         * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/68
-         */
-        $parser = new RobotsTxtParser($robotsTxtContent, 'UTF-8');
+	private ?RobotsTxtParser $parser;
 
-        $parser->setUserAgent('*');
-        $this->assertTrue($parser->isAllowed("/"));
-        $this->assertTrue($parser->isAllowed("/article"));
-        $this->assertTrue($parser->isDisallowed("/temp"));
-        $this->assertTrue($parser->isDisallowed("/Admin"));
-        $this->assertTrue($parser->isDisallowed("/admin"));
-        $this->assertTrue($parser->isDisallowed("/admin/cp/test/"));
-        $this->assertFalse($parser->isDisallowed("/"));
-        $this->assertFalse($parser->isDisallowed("/article"));
-        $this->assertFalse($parser->isAllowed("/temp"));
-        $this->assertFalse($parser->isDisallowed("/article"));
+	public function setUp(): void {
+		$this->parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
+	}
 
-        $parser->setUserAgent('agentU/2.0.1');
-        $this->assertTrue($parser->isAllowed("/foo"));
-        $this->assertTrue($parser->isDisallowed("/bar"));
+	public function tearDown(): void {
+		$this->parser = null;
+	}
 
-        $parser->setUserAgent('agentV');
-        $this->assertTrue($parser->isDisallowed("/foo"));
-        $this->assertTrue($parser->isAllowed("/bar"));
-        $this->assertTrue($parser->isAllowed("/Foo"));
+	public function testForCrawlerZ() {
+		$this->assertTrue($this->parser->isAllowed('/', 'crawlerZ'));
+		$this->assertTrue($this->parser->isDisallowed('/forum', 'crawlerZ'));
+		$this->assertTrue($this->parser->isDisallowed('/public', 'crawlerZ'));
+		$this->assertFalse($this->parser->isDisallowed('/', 'crawlerZ'));
+		$this->assertFalse($this->parser->isAllowed('/forum', 'crawlerZ'));
+		$this->assertFalse($this->parser->isAllowed('/public', 'crawlerZ'));
+	}
 
-        $parser->setUserAgent('agentW');
-        $this->assertTrue($parser->isDisallowed("/foo"));
-        $this->assertTrue($parser->isAllowed("/bar"));
-        $this->assertTrue($parser->isAllowed("/Foo"));
+	public function testForDefaultUserAgent() {
+		$this->assertTrue($this->parser->isAllowed('/'));
+		$this->assertTrue($this->parser->isAllowed('/article'));
+		$this->assertTrue($this->parser->isDisallowed('/temp'));
+		$this->assertTrue($this->parser->isDisallowed('/Admin'));
+		$this->assertTrue($this->parser->isDisallowed('/admin'));
+		$this->assertTrue($this->parser->isDisallowed('/admin/cp/test/'));
+		$this->assertFalse($this->parser->isDisallowed('/'));
+		$this->assertFalse($this->parser->isDisallowed('/article'));
+		$this->assertFalse($this->parser->isAllowed('/temp'));
+		$this->assertFalse($this->parser->isDisallowed('/article'));
+	}
 
-        $parser->setUserAgent('spiderX/1.0');
-        $this->assertTrue($parser->isAllowed("/temp"));
-        $this->assertTrue($parser->isDisallowed("/assets"));
-        $this->assertTrue($parser->isAllowed("/forum"));
-        $this->assertFalse($parser->isDisallowed("/temp"));
-        $this->assertFalse($parser->isAllowed("/assets"));
-        $this->assertFalse($parser->isDisallowed("/forum"));
+	public function testForAgentV() {
+		$this->assertTrue($this->parser->isDisallowed('/foo', 'agentV'));
+		$this->assertTrue($this->parser->isAllowed('/bar', 'agentV'));
+		$this->assertTrue($this->parser->isAllowed('/Foo', 'agentV'));
+	}
 
-        $parser->setUserAgent('botY-test');
-        $this->assertTrue($parser->isDisallowed("/"));
-        $this->assertTrue($parser->isDisallowed("/forum"));
-        $this->assertTrue($parser->isAllowed("/forum/"));
-        $this->assertTrue($parser->isDisallowed("/forum/topic"));
-        $this->assertTrue($parser->isDisallowed("/public"));
-        $this->assertFalse($parser->isAllowed("/"));
-        $this->assertFalse($parser->isAllowed("/forum"));
-        $this->assertFalse($parser->isDisallowed("/forum/"));
-        $this->assertFalse($parser->isAllowed("/forum/topic"));
-        $this->assertFalse($parser->isAllowed("/public"));
+	public function testForAgentW() {
+		$this->assertTrue($this->parser->isDisallowed('/foo', 'agentW'));
+		$this->assertTrue($this->parser->isAllowed('/bar', 'agentW'));
+		$this->assertTrue($this->parser->isAllowed('/Foo', 'agentW'));
+	}
 
-        $parser->setUserAgent('crawlerZ');
-        $this->assertTrue($parser->isAllowed("/"));
-        $this->assertTrue($parser->isDisallowed("/forum"));
-        $this->assertTrue($parser->isDisallowed("/public"));
-        $this->assertFalse($parser->isDisallowed("/"));
-        $this->assertFalse($parser->isAllowed("/forum"));
-        $this->assertFalse($parser->isAllowed("/public"));
-    }
+	public function testForBotY() {
+		$this->assertTrue($this->parser->isDisallowed('/', 'botY-test'));
+		$this->assertTrue($this->parser->isDisallowed('/forum', 'botY-test'));
+		$this->assertTrue($this->parser->isAllowed('/forum/', 'botY-test'));
+		$this->assertTrue($this->parser->isDisallowed('/forum/topic', 'botY-test'));
+		$this->assertTrue($this->parser->isDisallowed('/public', 'botY-test'));
+		$this->assertFalse($this->parser->isAllowed('/', 'botY-test'));
+		$this->assertFalse($this->parser->isAllowed('/forum', 'botY-test'));
+		$this->assertFalse($this->parser->isDisallowed('/forum/', 'botY-test'));
+		$this->assertFalse($this->parser->isAllowed('/forum/topic', 'botY-test'));
+		$this->assertFalse($this->parser->isAllowed('/public', 'botY-test'));
+	}
 
-    /**
-     * Generate test data
-     *
-     * @return array
-     */
-    public function generateDataForTest()
-    {
-        return [
-            [
-                <<<ROBOTS
-User-agent: anyone
-User-agent: *
-Disallow: /admin
-Disallow: /admin
-Disallow: /Admin
-Disallow: /temp#comment
-Disallow: /forum
-Disallow: /admin/cp/test/
+	/**
+	 * @param string $url
+	 * @param bool   $isAllowed
+	 *
+	 * @dataProvider generateDataForSpiderX
+	 */
+	public function testForSpiderX(string $url, bool $isAllowed) {
+		if ($isAllowed) {
+			$this->assertTrue($this->parser->isAllowed($url, 'spiderX/1.0'));
+			$this->assertFalse($this->parser->isDisallowed($url, 'spiderX/1.0'));
+		} else {
+			$this->assertTrue($this->parser->isDisallowed($url, 'spiderX/1.0'));
+			$this->assertFalse($this->parser->isAllowed($url, 'spiderX/1.0'));
+		}
+	}
 
-User-agent: agentU/2.0
-Disallow: /bar
-Allow: /foo
-
-User-agent: agentV
-User-agent: agentW
-Disallow: /foo
-Allow: /bar #comment
-
-User-agent: spiderX
-Disallow:
-Disallow: /admin#
-Disallow: /assets
-
-User-agent: botY
-Disallow: /
-Allow: &&/1@| #invalid
-Allow: /forum/$
-Allow: /article
-
-User-agent: crawlerZ
-Disallow:
-Disallow: /
-Allow: /$
-ROBOTS
-            ]
-        ];
-    }
+	public function generateDataForSpiderX(): array {
+		return [
+			['/temp', true],
+			['/assets', false],
+			['/forum', true],
+		];
+	}
 }

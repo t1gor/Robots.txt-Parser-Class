@@ -68,4 +68,31 @@ abstract class Directive {
 	public static function getCrawlDelayRegex(): string {
 		return "/^" . self::CRAWL_DELAY . ":+\s*(\D+)$/mui";
 	}
+
+	/**
+	 * @TODO finish me
+	 * @return string
+	 */
+	public static function getAllowDisallowRegex(): string {
+		return "/^(" . self::ALLOW . "|" . self::DISALLOW . "):+\s*\\{1}.*$/mui";
+	}
+
+	public static function attemptGetInline(string $rule) {
+		foreach (static::getAll() as $directive) {
+			if (0 === strpos(mb_strtolower($rule), $directive . ':')) {
+				return $directive;
+			}
+		}
+		return false;
+	}
+
+	public static function stripInline(string $rule): string {
+		$directive = static::attemptGetInline($rule);
+
+		if ($directive !== false) {
+			$rule = trim(str_ireplace($directive . ':', '', $rule));
+		}
+
+		return $rule;
+	}
 }

@@ -4,13 +4,13 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use t1gor\RobotsTxtParser\Directive;
 
-class CleanParamProcessor extends AbstractInvokableProcessor implements InvokableProcessorInterface {
+class CleanParamProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
 		return Directive::CLEAN_PARAM;
 	}
 
-	public function __invoke(string $line, array & $root, string & $currentUserAgent = '*') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
 		$parts                               = explode(':', $line);
 		$cleanParams                         = explode(' ', trim($parts[1]));
 		$path                                = $cleanParams[1] ?? '/*';

@@ -8,4 +8,6 @@ abstract class WarmingMessages {
 	const ENCODING_NOT_UTF8 = 'Encoding you are passing is different from UTF-8. '
 		. 'Google might be ignoring some parts of the file.'
 		. 'See https://developers.google.com/search/reference/robots_txt#file-format for more info.';
+
+	const INLINED_HOST = 'Inline host directive detected. URL not set, result may be inaccurate.';
 }

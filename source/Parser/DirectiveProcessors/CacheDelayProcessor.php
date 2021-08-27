@@ -4,13 +4,13 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use t1gor\RobotsTxtParser\Directive;
 
-class CacheDelayProcessor extends AbstractInvokableProcessor implements InvokableProcessorInterface {
+class CacheDelayProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
 		return Directive::CACHE_DELAY;
 	}
 
-	public function __invoke(string $line, array & $root, string & $currentUserAgent = '*') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
 		$parts              = explode(':', $line);
 		$filteredCacheDelay = filter_var($parts[1], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 

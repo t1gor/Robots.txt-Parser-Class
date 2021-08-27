@@ -1,41 +1,52 @@
-<?php
+<?php declare(strict_types=1);
 
+use Monolog\Handler\TestHandler;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-class HttpStatusCodeTest extends TestCase
-{
-	/**
-	 * @dataProvider generateDataForTest
-	 * @param string $robotsTxtContent
-	 */
-	public function testHttpStatusCode($robotsTxtContent)
-	{
-		$this->markTestSkipped('@TODO');
+class HttpStatusCodeTest extends TestCase {
 
-		// init parser
-		$parser = new RobotsTxtParser($robotsTxtContent);
-		$parser->setHttpStatusCode(200);
-		$this->assertTrue($parser->isAllowed("/"));
-		$this->assertFalse($parser->isDisallowed("/"));
-		$this->assertContains('Rule match: Path', $parser->getLog());
-		$parser->setHttpStatusCode(503);
-		$this->assertTrue($parser->isDisallowed("/"));
-		$this->assertFalse($parser->isAllowed("/"));
-		$this->assertContains('Disallowed by HTTP status code 5xx', $parser->getLog());
+	private ?RobotsTxtParser $parser;
+
+	public function setUp(): void {
+		$log = new Logger(static::class);
+		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
+
+		$this->parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/allow-all.txt', 'r'));
+		$this->parser->setLogger($log);
 	}
 
-	/**
-	 * Generate test case data
-	 * @return array
-	 */
-	public function generateDataForTest()
-	{
-		return array(
-			array("
-					User-agent: *
-					Allow: /
-				")
+	public function tearDown(): void {
+		$this->parser = null;
+	}
+
+	public function testHttpStatusCodeValid() {
+		$this->parser->setHttpStatusCode(200);
+		$this->assertTrue($this->parser->isAllowed("/"));
+		$this->assertFalse($this->parser->isDisallowed("/"));
+
+		/** @var TestHandler $handler */
+		$handler = $this->parser->getLogger()->getHandlers()[0];
+
+		$this->assertTrue(
+			$handler->hasRecord("Rule match: Path", LogLevel::DEBUG),
+			stringifyLogs($handler->getRecords())
+		);
+	}
+
+	public function testHttpStatusCodeInvalid() {
+		$this->parser->setHttpStatusCode(503);
+		$this->assertTrue($this->parser->isDisallowed("/"));
+		$this->assertFalse($this->parser->isAllowed("/"));
+
+		/** @var TestHandler $handler */
+		$handler = $this->parser->getLogger()->getHandlers()[0];
+
+		$this->assertTrue(
+			$handler->hasRecord("Disallowed by HTTP status code 503", LogLevel::DEBUG),
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

@@ -30,8 +30,7 @@ class UserAgentProcessorTest extends TestCase {
 			$currentAgent => [],
 		];
 
-		$func = $this->processor;
-		$func($line, $tree, $currentAgent);
+		$this->processor->process($line, $tree, $currentAgent);
 
 		$this->assertArrayHasKey('Google', $tree);
 		$this->assertEquals('Google', $currentAgent);
@@ -44,8 +43,7 @@ class UserAgentProcessorTest extends TestCase {
 			$currentAgent => [],
 		];
 
-		$func = $this->processor;
-		$func($line, $tree, $currentAgent);
+		$this->processor->process($line, $tree, $currentAgent);
 
 		$this->assertCount(1, array_keys($tree));
 

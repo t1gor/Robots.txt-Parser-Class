@@ -26,10 +26,9 @@ class CrawlDelayProcessorTest extends TestCase {
 
 	public function testSavesValidCrawlDelayInteger() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Crawl-delay: 25';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
 		$this->assertArrayHasKey(Directive::CRAWL_DELAY, $tree['*']);
@@ -38,10 +37,9 @@ class CrawlDelayProcessorTest extends TestCase {
 
 	public function testSavesValidCrawlDelayDecimal() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Crawl-delay: 0.5';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
 		$this->assertArrayHasKey(Directive::CRAWL_DELAY, $tree['*']);
@@ -50,10 +48,9 @@ class CrawlDelayProcessorTest extends TestCase {
 
 	public function testSkipsInvalidAndLogs() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Crawl-delay: thisIsNotANumber';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayNotHasKey('*', $tree, json_encode($tree));
 

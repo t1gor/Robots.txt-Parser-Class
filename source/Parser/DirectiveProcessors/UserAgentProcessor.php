@@ -4,9 +4,13 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use t1gor\RobotsTxtParser\Directive;
 
-class UserAgentProcessor extends AbstractInvokableProcessor implements InvokableProcessorInterface {
+class UserAgentProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
-	public function __invoke(string $line, array & $root, string & $currentUserAgent = '*') {
+	public function getDirectiveName(): string {
+		return Directive::USERAGENT;
+	}
+
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
 		$parts = explode(':', $line);
 		$newUserAgent = trim($parts[1]);
 
@@ -24,9 +28,13 @@ class UserAgentProcessor extends AbstractInvokableProcessor implements Invokable
 		if (!isset($root[$currentUserAgent])) {
 			$root[$currentUserAgent] = [];
 		}
-	}
 
-	public function getDirectiveName(): string {
-		return Directive::USERAGENT;
+		// if one user-agent is followed by another one - just link them
+		if ($this->matches($prevLine)) {
+			$prevParts = explode(':', $prevLine);
+			$pervLineUserAgent = trim($prevParts[1]);
+
+			$root[$pervLineUserAgent] = & $root[$currentUserAgent];
+		}
 	}
 }

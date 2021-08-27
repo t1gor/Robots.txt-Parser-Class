@@ -19,9 +19,11 @@ class SkipDirectivesWithInvalidValuesFilter extends \php_user_filter implements 
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			$skippedRequestRateValues = 0;
 			$skippedCrawlDelayValues = 0;
+			$skippedAllowanceValues = 0;
 
 			$bucket->data = preg_replace(Directive::getRequestRateRegex(), '', $bucket->data, -1, $skippedRequestRateValues);
 			$bucket->data = preg_replace(Directive::getCrawlDelayRegex(), '', $bucket->data, -1, $skippedCrawlDelayValues);
+//			$bucket->data = preg_replace(Directive::getAllowDisallowRegex(), '', $bucket->data, -1, $skippedAllowanceValues);
 
 			$consumed += $bucket->datalen;
 			stream_bucket_append($out, $bucket);
@@ -32,6 +34,9 @@ class SkipDirectivesWithInvalidValuesFilter extends \php_user_filter implements 
 				}
 				if ($skippedCrawlDelayValues > 0) {
 					$this->params['logger']->debug($skippedCrawlDelayValues . ' char(s) dropped as invalid Crawl-delay value.');
+				}
+				if ($skippedAllowanceValues > 0) {
+					$this->params['logger']->debug($skippedAllowanceValues . ' char(s) dropped as invalid allow/disallow value.');
 				}
 			}
 		}

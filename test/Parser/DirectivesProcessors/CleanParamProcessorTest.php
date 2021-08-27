@@ -26,10 +26,9 @@ class CleanParamProcessorTest extends TestCase {
 
 	public function testProcessesCorrectlyWithPath() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Clean-param: some&someMore /only/here';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey(Directive::CLEAN_PARAM, $tree);
 		$this->assertArrayHasKey('/only/here', $tree[Directive::CLEAN_PARAM], json_encode($tree[Directive::CLEAN_PARAM]));
@@ -39,10 +38,9 @@ class CleanParamProcessorTest extends TestCase {
 
 	public function testProcessesCorrectlyWithNoPath() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Clean-param: some&someMore';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey(Directive::CLEAN_PARAM, $tree);
 		$this->assertArrayHasKey('/*', $tree[Directive::CLEAN_PARAM], json_encode($tree[Directive::CLEAN_PARAM]));

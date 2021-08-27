@@ -4,9 +4,14 @@ namespace t1gor\RobotsTxtParser;
 
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessorsFactory;
+use t1gor\RobotsTxtParser\Parser\HostName;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
 use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
+use t1gor\RobotsTxtParser\Parser\Url;
+use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcher;
+use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcherInterface;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 use t1gor\RobotsTxtParser\Stream\ReaderInterface;
 use vipnytt\UserAgentParser;
@@ -51,17 +56,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	protected $host = null;
 
 	// robots.txt http status code
-	protected $httpStatusCode = null;
+	protected ?int $httpStatusCode;
 
-	/**
-	 * @var array
-	 * @deprecated
-	 */
-	protected array $log = [];
-
-	// internally used variables
-	protected $current_UserAgent  = [];
-	protected $current_word       = '';
 	protected $current_char       = '';
 	protected $char_index         = 0;
 	protected $current_directive  = '';
@@ -78,20 +74,25 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	private $userAgentMatch = '*';
 
 	// robots.txt file content
-	private $content = '';
+	private        $content  = '';
+	private string $encoding = '';
 
-	private array                 $tree = [];
-	private ?ReaderInterface      $reader;
-	private ?TreeBuilderInterface $treeBuilder;
+	private array                      $tree = [];
+	private ?ReaderInterface           $reader;
+	private ?TreeBuilderInterface      $treeBuilder;
+	private ?UserAgentMatcherInterface $userAgentMatcher;
 
 	public function __construct(
 		$content,
 		string $encoding = self::DEFAULT_ENCODING,
 		?TreeBuilderInterface $treeBuilder = null,
-		?ReaderInterface $reader = null
+		?ReaderInterface $reader = null,
+		?UserAgentMatcherInterface $userAgentMatcher = null
 	) {
-		$this->treeBuilder = $treeBuilder;
-		$this->reader      = $reader;
+		$this->treeBuilder      = $treeBuilder;
+		$this->reader           = $reader;
+		$this->encoding         = $encoding;
+		$this->userAgentMatcher = $userAgentMatcher;
 
 		if (is_null($this->reader)) {
 			$this->log('Reader is not passed, using a default one...');
@@ -101,12 +102,20 @@ class RobotsTxtParser implements LoggerAwareInterface {
 				: GeneratorBasedReader::fromString($content);
 		}
 
-		$this->reader->setEncoding($encoding);
+		if (is_null($this->userAgentMatcher)) {
+			$this->log('UserAgentMatcher is not passed, using a default one...');
+
+			$this->userAgentMatcher = new UserAgentMatcher();
+		}
 	}
 
 	private function buildTree() {
 		if (!empty($this->tree)) {
 			return;
+		}
+
+		if ($this->encoding !== static::DEFAULT_ENCODING) {
+			$this->reader->setEncoding($this->encoding);
 		}
 
 		// construct a tree builder if not passed
@@ -130,8 +139,12 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function setLogger(LoggerInterface $logger): void {
 		$this->logger = $logger;
 
-		if ($this->reader) {
+		if ($this->reader instanceof LoggerAwareInterface) {
 			$this->reader->setLogger($this->logger);
+		}
+
+		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
+			$this->userAgentMatcher->setLogger($this->logger);
 		}
 	}
 
@@ -384,56 +397,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		}
 	}
 
-	/**
-	 * URL encoder according to RFC 3986
-	 * Returns a string containing the encoded URL with disallowed characters converted to their percentage encodings.
-	 *
-	 * @link http://publicmind.in/blog/url-encoding/
-	 *
-	 * @param string $url
-	 *
-	 * @return string string
-	 */
-	protected static function encode_url($url) {
-		$reserved = [
-			':' => '!%3A!ui',
-			'/' => '!%2F!ui',
-			'?' => '!%3F!ui',
-			'#' => '!%23!ui',
-			'[' => '!%5B!ui',
-			']' => '!%5D!ui',
-			'@' => '!%40!ui',
-			'!' => '!%21!ui',
-			'$' => '!%24!ui',
-			'&' => '!%26!ui',
-			"'" => '!%27!ui',
-			'(' => '!%28!ui',
-			')' => '!%29!ui',
-			'*' => '!%2A!ui',
-			'+' => '!%2B!ui',
-			',' => '!%2C!ui',
-			';' => '!%3B!ui',
-			'=' => '!%3D!ui',
-			'%' => '!%25!ui',
-		];
-		$url      = preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
-		return $url;
-	}
-
-	/**
-	 * Validate host name
-	 *
-	 * @link   http://stackoverflow.com/questions/1755144/how-to-validate-domain-name-in-php
-	 *
-	 * @param string $host
-	 *
-	 * @return bool
-	 */
-	private static function isValidHostName($host) {
-		return (preg_match('/^([a-z\d](-*[a-z\d])*)(\.([a-z\d](-*[a-z\d])*))*$/i', $host) // valid chars check
-			&& preg_match('/^.{1,253}$/', $host) // overall length check
-			&& preg_match('/^[^\.]{1,63}(\.[^\.]{1,63})*$/', $host) // length of each label
-			&& !filter_var($host, FILTER_VALIDATE_IP)); // is not an IP address
+	private static function isValidHostName(string $host): bool {
+		return HostName::isValid($host);
 	}
 
 	/**
@@ -444,27 +409,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @return bool
 	 */
 	private static function isValidScheme($scheme) {
-		return in_array(
-			$scheme, [
-				'http',
-				'https',
-				'ftp',
-				'sftp',
-			]
-		);
-	}
-
-	/**
-	 * Add Sitemap
-	 *
-	 * @return void
-	 */
-	private function addSitemap() {
-		$parsed = $this->parseURL($this->encode_url($this->current_word));
-		if ($parsed !== false) {
-			$this->sitemap[] = $this->current_word;
-			$this->sitemap   = array_unique($this->sitemap);
-		}
+		return Url::isValidScheme($scheme);
 	}
 
 	/**
@@ -497,19 +442,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Add Clean-Param record
-	 *
-	 * @return void
-	 */
-	private function addCleanParam() {
-		$cleanParam = $this->explodeCleanParamRule($this->current_word);
-		foreach ($cleanParam['param'] as $param) {
-			$this->cleanparam[$cleanParam['path']][] = $param;
-			$this->cleanparam[$cleanParam['path']]   = array_unique($this->cleanparam[$cleanParam['path']]);
-		}
-	}
-
-	/**
 	 * Explode Clean-Param rule
 	 *
 	 * @param string $rule
@@ -538,33 +470,24 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return bool
 	 */
-	public function setHttpStatusCode($code) {
-		$code = intval($code);
-		if (!is_int($code)
-			|| $code < 100
-			|| $code > 599
-		) {
-			trigger_error('Invalid HTTP status code, not taken into account.', E_USER_WARNING);
+	public function setHttpStatusCode(int $code): bool {
+		if (!is_int($code) || $code < 100 || $code > 599) {
+			$this->log('Invalid HTTP status code, not taken into account.', ['code' => $code], LogLevel::WARNING);
 			return false;
 		}
+
 		$this->httpStatusCode = $code;
+
 		return true;
 	}
 
-	/**
-	 * Check url wrapper
-	 *
-	 * @param string      $url       - url to check
-	 * @param string|null $userAgent - which robot to check for
-	 *
-	 * @return bool
-	 */
-	public function isAllowed($url, $userAgent = null) {
-		if ($userAgent !== null) {
-			$this->setUserAgent($userAgent);
-		}
-		$url = $this->encode_url($url);
-		return $this->checkRules(Directive::ALLOW, $this->getPath($url), $this->userAgentMatch);
+	public function isAllowed(string $url, ?string $userAgent = '*'): bool {
+		$this->buildTree();
+
+		$url = new Url($url);
+		!is_null($this->logger) && $url->setLogger($this->logger);
+
+		return $this->checkRules(Directive::ALLOW, $url->getPath(), $userAgent);
 	}
 
 	/**
@@ -573,8 +496,9 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @param string $userAgent
 	 *
 	 * @return void
+	 * @deprecated please check rules for exact user agent instead
 	 */
-	public function setUserAgent($userAgent) {
+	public function setUserAgent(string $userAgent) {
 		$this->userAgent      = $userAgent;
 		$uaParser             = new UserAgentParser($this->userAgent);
 		$this->userAgentMatch = $uaParser->getMostSpecific(array_keys($this->rules));
@@ -592,24 +516,30 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return bool
 	 */
-	protected function checkRules($rule, $path, $userAgent) {
+	protected function checkRules(string $rule, string $path, string $userAgent = '*'): bool {
 		// check for disallowed http status code
 		if ($this->checkHttpStatusCodeRule()) {
 			return ($rule === Directive::DISALLOW);
 		}
+
 		// Check each directive for rules, allowed by default
-		$result = ($rule === Directive::ALLOW);
+		$result    = ($rule === Directive::ALLOW);
+		$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+
 		foreach ([Directive::DISALLOW, Directive::ALLOW] as $directive) {
-			if (isset($this->rules[$userAgent][$directive])) {
-				foreach ($this->rules[$userAgent][$directive] as $robotRule) {
-					// check rule
-					if ($this->checkRuleSwitch($robotRule, $path)) {
-						// rule match
-						$result = ($rule === $directive);
-					}
+			if (!isset($this->tree[$userAgent][$directive])) {
+				continue;
+			}
+
+			foreach ($this->tree[$userAgent][$directive] as $robotRule) {
+				// check rule
+				if ($this->checkRuleSwitch($robotRule, $path)) {
+					// rule match
+					$result = ($rule === $directive);
 				}
 			}
 		}
+
 		return $result;
 	}
 
@@ -618,59 +548,33 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return bool
 	 */
-	private function checkHttpStatusCodeRule() {
-		if (isset($this->httpStatusCode)
-			&& $this->httpStatusCode >= 500
-			&& $this->httpStatusCode <= 599
-		) {
-			$this->log[] = 'Disallowed by HTTP status code 5xx';
+	private function checkHttpStatusCodeRule(): bool {
+		if (isset($this->httpStatusCode) && $this->httpStatusCode >= 500 && $this->httpStatusCode <= 599) {
+			$this->log("Disallowed by HTTP status code {$this->httpStatusCode}");
 			return true;
 		}
+
 		return false;
 	}
 
-	/**
-	 * Check rule switch
-	 *
-	 * @param string $rule - rule to check
-	 * @param string $path - path to check
-	 *
-	 * @return bool
-	 */
-	protected function checkRuleSwitch($rule, $path) {
-		switch ($this->isInlineDirective($rule)) {
+	protected function checkRuleSwitch(string $rule, string $path): bool {
+		switch (Directive::attemptGetInline($rule)) {
+
 			case Directive::CLEAN_PARAM:
-				if ($this->checkCleanParamRule($this->stripInlineDirective($rule), $path)) {
+				if ($this->checkCleanParamRule(Directive::stripInline($rule), $path)) {
 					return true;
 				}
 				break;
-			case Directive::HOST;
-				if ($this->checkHostRule($this->stripInlineDirective($rule))) {
-					return true;
-				}
-				break;
-			default:
-				if ($this->checkBasicRule($rule, $path)) {
-					return true;
-				}
-		}
-		return false;
-	}
 
-	/**
-	 * Check if the rule contains a inline directive
-	 *
-	 * @param string $rule
-	 *
-	 * @return string|false
-	 */
-	protected function isInlineDirective($rule) {
-		foreach (Directive::getAll() as $directive) {
-			if (0 === strpos(mb_strtolower($rule), $directive . ':')) {
-				return $directive;
-			}
+			case Directive::HOST;
+				if ($this->checkHostRule(Directive::stripInline($rule))) {
+					return true;
+				}
+				break;
+
+			default:
+				return $this->checkBasicRule($rule, $path);
 		}
-		return false;
 	}
 
 	/**
@@ -694,45 +598,34 @@ class RobotsTxtParser implements LoggerAwareInterface {
 				return false;
 			}
 		}
-		$this->log[] = 'Rule match: ' . Directive::CLEAN_PARAM . ' directive';
+		$this->log('Rule match: ' . Directive::CLEAN_PARAM . ' directive');
 		return true;
 	}
 
 	/**
 	 * Check basic rule
-	 *
-	 * @param string $rule
-	 * @param string $path
-	 *
-	 * @return bool
 	 */
-	private function checkBasicRule($rule, $path) {
-		$rule = $this->prepareRegexRule($this->encode_url($rule));
+	private function checkBasicRule(string $rule, string $path): bool {
 		// change @ to \@
-		$escaped = strtr($rule, ['@' => '\@']);
+		$escaped = strtr($this->prepareRegexRule($rule), ['@' => '\@']);
+
 		// match result
 		if (preg_match('@' . $escaped . '@', $path)) {
-			$this->log[] = 'Rule match: Path';
+			$this->log('Rule match: Path');
 			return true;
 		}
+
 		return false;
 	}
 
-	/**
-	 * Convert robots.txt rules to php regex
-	 *
-	 * @param string $value
-	 *
-	 * @return string
-	 */
-	protected function prepareRegexRule($value) {
+	protected function prepareRegexRule(string $value): string {
 		$escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*', '[' => '\[', ']' => '\]'];
-		foreach ($escape as $search => $replace) {
-			$value = str_replace($search, $replace, $value);
-		}
+		$value  = str_replace(array_keys($escape), array_values($escape), $value);
+
 		if (mb_strlen($value) > 2 && mb_substr($value, -2) == '\$') {
 			$value = substr($value, 0, -2) . '$';
 		}
+
 		if (mb_strrpos($value, '/') == (mb_strlen($value) - 1)
 			|| mb_strrpos($value, '=') == (mb_strlen($value) - 1)
 			|| mb_strrpos($value, '?') == (mb_strlen($value) - 1)
@@ -747,21 +640,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Strip inline directive prefix
-	 *
-	 * @param string $rule
-	 *
-	 * @return string
-	 */
-	protected function stripInlineDirective($rule) {
-		$directive = $this->isInlineDirective($rule);
-		if ($directive !== false) {
-			$rule = trim(str_ireplace($directive . ':', '', $rule));
-		}
-		return $rule;
-	}
-
-	/**
 	 * Check Host rule
 	 *
 	 * @param string $rule
@@ -770,11 +648,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 */
 	private function checkHostRule($rule) {
 		if (!isset($this->url)) {
-			$error_msg   = 'Inline host directive detected. URL not set, result may be inaccurate.';
-			$this->log[] = $error_msg;
-			trigger_error("robots.txt: $error_msg", E_USER_NOTICE);
+			$error_msg = WarmingMessages::INLINED_HOST;
+			$this->log($error_msg, [], LogLevel::ERROR);
 			return false;
 		}
+
 		$url  = $this->parseURL($this->url);
 		$host = trim(str_ireplace(Directive::HOST . ':', '', mb_strtolower($rule)));
 		if (in_array(
@@ -785,27 +663,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 				$url['scheme'] . '://' . $url['host'] . ':' . $url['port'],
 			]
 		)) {
-			$this->log[] = 'Rule match: ' . Directive::HOST . ' directive';
+			$this->log('Rule match: ' . Directive::HOST . ' directive');
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Get path
-	 *
-	 * @param string $url
-	 *
-	 * @return string
-	 */
-	private function getPath($url) {
-		$url    = trim($url);
-		$parsed = $this->parseURL($url);
-		if ($parsed !== false) {
-			$this->url = $url;
-			return $parsed['custom'];
-		}
-		return $url;
 	}
 
 	/**
@@ -816,12 +677,13 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return bool
 	 */
-	public function isDisallowed($url, $userAgent = null) {
-		if ($userAgent !== null) {
-			$this->setUserAgent($userAgent);
-		}
-		$url = $this->encode_url($url);
-		return $this->checkRules(Directive::DISALLOW, $this->getPath($url), $this->userAgentMatch);
+	public function isDisallowed(string $url, string $userAgent = '*'): bool {
+		$this->buildTree();
+
+		$url = new Url($url);
+		!is_null($this->logger) && $url->setLogger($this->logger);
+
+		return $this->checkRules(Directive::DISALLOW, $url->getPath(), $userAgent);
 	}
 
 	public function getDelay(string $userAgent = "*", string $type = Directive::CRAWL_DELAY) {
@@ -869,7 +731,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @see RobotsTxtParser::getLogger()
 	 */
 	public function getLog(): array {
-		return $this->log;
+		return [];
 	}
 
 	/**
@@ -925,6 +787,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			return $this->tree;
 		}
 
+		$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+
 		// direct match
 		if (isset($this->tree[$userAgent])) {
 			return $this->tree[$userAgent];
@@ -952,17 +816,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->buildTree();
 
 		if (!is_null($userAgent)) {
+			$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+
 			if (isset($this->tree[$userAgent][Directive::HOST]) && !empty($this->tree[$userAgent][Directive::HOST])) {
 				return $this->tree[$userAgent][Directive::HOST];
 			}
-
-			$this->log(sprintf('Failed for find host for %s, checking for * ...', $userAgent));
-
-			if (isset($this->tree['*'][Directive::HOST]) && !empty($this->tree['*'][Directive::HOST])) {
-				return $this->tree['*'][Directive::HOST];
-			}
-
-			$this->log('Failed for find host for *');
 
 			return null;
 		}
@@ -983,17 +841,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$maps = [];
 
 		if (!is_null($userAgent)) {
+			$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+
 			if (isset($this->tree[$userAgent][Directive::SITEMAP]) && !empty($this->tree[$userAgent][Directive::SITEMAP])) {
 				return $this->tree[$userAgent][Directive::SITEMAP];
 			}
-
-			$this->log(sprintf('Failed for find sitemap for %s, checking for * ...', $userAgent));
-
-			if (isset($this->tree['*'][Directive::SITEMAP]) && !empty($this->tree['*'][Directive::SITEMAP])) {
-				return $this->tree['*'][Directive::SITEMAP];
-			}
-
-			$this->log('Failed for find sitemap for *');
 		} else {
 			foreach ($this->tree as $userAgentBased) {
 				if (isset($userAgentBased[Directive::SITEMAP]) && !empty($userAgentBased[Directive::SITEMAP])) {

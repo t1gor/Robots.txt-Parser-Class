@@ -3,26 +3,29 @@
 namespace t1gor\RobotsTxtParser\Parser;
 
 use Psr\Log\LoggerInterface;
-use t1gor\RobotsTxtParser\Directive;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
-use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\InvokableProcessorInterface;
+use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\DirectiveProcessorInterface;
 
 class TreeBuilder implements TreeBuilderInterface {
 
 	use LogsIfAvailableTrait;
 
+	/**
+	 * @var DirectiveProcessorInterface[]
+	 */
 	protected array     $processors;
 	protected \Iterator $content;
 
 	/**
-	 * @param InvokableProcessorInterface[] $processors
+	 * @param DirectiveProcessorInterface[] $processors
 	 * @param LoggerInterface|null          $logger
 	 */
 	public function __construct(array $processors, ?LoggerInterface $logger) {
 		$this->logger = $logger;
 
 		if (empty($processors)) {
-			$this->log("Seems like you've passed an empty processors array.");
+			$this->log("Seems like you've passed an empty processors array.", [], LogLevel::WARNING);
 		}
 
 		// reformat processors
@@ -34,15 +37,15 @@ class TreeBuilder implements TreeBuilderInterface {
 	/**
 	 * Wrapper to check that processor is available
 	 */
-	protected function processDirective(string $directive, string $line, &$tree, string &$userAgent) {
+	protected function processDirective(string $directive, string $line, &$tree, string &$userAgent, string $prevLine = '') {
 		if (!isset($this->processors[$directive])) {
-			$this->log('{directive} met, but no processor found for it. Skipping.', [
+			$this->log(strtr('{directive} met, but no processor found for it. Skipping.', [
 				'{directive}' => $directive,
-			]);
+			]));
 			return;
 		}
 
-		$this->processors[$directive]($line, $tree, $userAgent);
+		$this->processors[$directive]->process($line, $tree, $userAgent, $prevLine);
 	}
 
 	/**
@@ -59,46 +62,33 @@ class TreeBuilder implements TreeBuilderInterface {
 		$this->content = $content;
 	}
 
+	/**
+	 * @return array
+	 * @todo check for multibyte support?
+	 */
 	public function build(): array {
 		$currentUserAgent = '*';
 		$tree             = [];
+		$prevLine         = '';
 
 		$this->log('Building directives tree...');
 
 		foreach ($this->content as $line) {
-			switch (true) {
-				case preg_match('/^' . Directive::USERAGENT . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::USERAGENT, $line, $tree, $currentUserAgent);
+			foreach ($this->processors as $processor) {
+				if ($processor->matches($line)) {
+					$this->processDirective(
+						$processor->getDirectiveName(),
+						$line,
+						$tree,
+						$currentUserAgent,
+						$prevLine
+					);
 					break;
-
-				case preg_match('/^' . Directive::CRAWL_DELAY . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::CRAWL_DELAY, $line, $tree, $currentUserAgent);
-					break;
-
-				case preg_match('/^' . Directive::CACHE_DELAY . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::CACHE_DELAY, $line, $tree, $currentUserAgent);
-					break;
-
-				case preg_match('/^' . Directive::ALLOW . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::ALLOW, $line, $tree, $currentUserAgent);
-					break;
-
-				case preg_match('/^' . Directive::DISALLOW . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::DISALLOW, $line, $tree, $currentUserAgent);
-					break;
-
-				case preg_match('/^' . Directive::HOST . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::HOST, $line, $tree, $currentUserAgent);
-					break;
-
-				case preg_match('/^' . Directive::SITEMAP . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::SITEMAP, $line, $tree, $currentUserAgent);
-					break;
-
-				case preg_match('/^' . Directive::CLEAN_PARAM . '\s*:\s+/isu', $line):
-					$this->processDirective(Directive::CLEAN_PARAM, $line, $tree, $currentUserAgent);
-					break;
+				}
 			}
+
+			// override
+			$prevLine = $line;
 		}
 
 		return $tree;

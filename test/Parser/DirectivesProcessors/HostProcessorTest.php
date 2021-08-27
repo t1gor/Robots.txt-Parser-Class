@@ -26,10 +26,9 @@ class HostProcessorTest extends TestCase {
 
 	public function testAddsHostIfCorrect() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Host: www.example.com';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
 		$this->assertArrayHasKey(Directive::HOST, $tree['*']);
@@ -38,10 +37,9 @@ class HostProcessorTest extends TestCase {
 
 	public function testSkipsAndLogsIfIpAddressPassed() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Host: 192.168.0.1';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayNotHasKey('*', $tree);
 		$this->assertArrayNotHasKey(Directive::HOST, $tree);
@@ -60,10 +58,9 @@ class HostProcessorTest extends TestCase {
 
 	public function testSkipsAndLogsIfNotValidHost() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Host: bndgang!!!@#$da12345ngda]]';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayNotHasKey('*', $tree);
 		$this->assertArrayNotHasKey(Directive::HOST, $tree);

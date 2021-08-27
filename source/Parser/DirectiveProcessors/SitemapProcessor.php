@@ -4,13 +4,13 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use t1gor\RobotsTxtParser\Directive;
 
-class SitemapProcessor extends AbstractInvokableProcessor implements InvokableProcessorInterface {
+class SitemapProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
 		return Directive::SITEMAP;
 	}
 
-	public function __invoke(string $line, array & $root, string & $currentUserAgent = '*') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
 		$parts = explode(':', $line);
 		array_shift($parts);
 		$trimmed = array_map('trim', $parts);

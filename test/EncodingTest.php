@@ -3,62 +3,50 @@
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
+use t1gor\RobotsTxtParser\WarmingMessages;
 
-class EncodingTest extends TestCase
-{
-    /**
-     * @dataProvider generateDataForTest
-     * @param string $encoding
-     */
-    public function testEncoding($encoding)
-    {
-    	$this->markTestSkipped('@TODO');
+class EncodingTest extends TestCase {
 
-        /**
-         * Test currently disabled due to issues
-         * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/70
-         */
-        // Invalid encodings are ignored, and the default encoding is used, without warning.
-        $parser = new RobotsTxtParser('', $encoding);
-    }
+	private ?LoggerInterface $logger;
 
-    /**
-     * Generate test data
-     *
-     * @return array
-     */
-    public function generateDataForTest()
-    {
-        return [
-            [
-                'UTF9' // invalid
-            ],
-            [
-                'ASCI' // invalid
-            ],
-            [
-                'ISO8859' // invalid
-            ],
-            [
-                'OSF10020402' // iconv
-            ],
-            [
-                'UTF-16' // mbstring / iconv
-            ],
-        ];
-    }
+	protected function setUp(): void {
+		$this->logger = new Logger(static::class);
+		$this->logger->pushHandler(new TestHandler(LogLevel::DEBUG));
+	}
+
+	public function testLogsNonStandardEncoding() {
+		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
+		$parser->setLogger($this->logger);
+		$parser->getRules();
+
+		/** @var TestHandler $handler */
+		$handler = $parser->getLogger()->getHandlers()[0];
+
+		$this->assertTrue(
+			$handler->hasRecord(WarmingMessages::ENCODING_NOT_UTF8, LogLevel::WARNING),
+			stringifyLogs($handler->getRecords())
+		);
+
+		$this->assertTrue(
+			$handler->hasRecord('Adding encoding filter convert.iconv.Windows-1251/utf-8', LogLevel::DEBUG),
+			stringifyLogs($handler->getRecords())
+		);
+	}
 
 	public function testWindows1251Readable() {
-		$log = new Logger(static::class);
-		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
-
 		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
-		$parser->setLogger($log);
+		$parser->setLogger($this->logger);
 
 		$allRules = $parser->getRules();
-
 		$this->assertCount(5, $allRules, json_encode(array_keys($allRules)));
-    }
+	}
+
+	public function testShouldNotChangeInternalEncoding() {
+		$this->assertEquals('UTF-8', mb_internal_encoding());
+		$parser = new RobotsTxtParser('', 'iso-8859-1');
+		$this->assertEquals('UTF-8', mb_internal_encoding());
+	}
 }

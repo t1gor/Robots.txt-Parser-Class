@@ -3,9 +3,10 @@
 namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use Psr\Log\LoggerInterface;
+use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 
-abstract class AbstractInvokableProcessor {
+abstract class AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	use LogsIfAvailableTrait;
 
@@ -15,5 +16,9 @@ abstract class AbstractInvokableProcessor {
 
 	public function getLogger(): ?LoggerInterface {
 		return $this->logger;
+	}
+
+	public function matches(string $line): bool {
+		return (bool) preg_match('/^' . $this->getDirectiveName() . '\s*:\s+/isu', $line);
 	}
 }

@@ -26,10 +26,9 @@ class SitemapProcessorTest extends TestCase {
 
 	public function testAddsSitemapDirectiveForDefaultUserAgent() {
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Sitemap: https://www.example.com/sitemap.xml';
 
-		$func($line, $tree);
+		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
 		$this->assertArrayHasKey(Directive::SITEMAP, $tree['*']);
@@ -38,10 +37,9 @@ class SitemapProcessorTest extends TestCase {
 	public function testAddsSitemapDirectiveForCustomUserAgent() {
 		$userAgent = 'Google';
 		$tree = [];
-		$func = $this->processor;
 		$line = 'Sitemap: https://www.example.com/sitemap.xml';
 
-		$func($line, $tree, $userAgent);
+		$this->processor->process($line, $tree, $userAgent);
 
 		$this->assertArrayHasKey('Google', $tree);
 		$this->assertArrayHasKey(Directive::SITEMAP, $tree[$userAgent]);
@@ -56,10 +54,9 @@ class SitemapProcessorTest extends TestCase {
 				]
 			]
 		];
-		$func = $this->processor;
 		$line = 'Sitemap: https://www.example.com/sitemap.xml';
 
-		$func($line, $tree, $userAgent);
+		$this->processor->process($line, $tree, $userAgent);
 
 		$this->assertArrayHasKey('Google', $tree);
 		$this->assertArrayHasKey(Directive::SITEMAP, $tree[$userAgent]);

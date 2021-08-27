@@ -3,23 +3,22 @@
 namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use t1gor\RobotsTxtParser\Directive;
+use t1gor\RobotsTxtParser\Parser\HostName;
 
-class HostProcessor extends AbstractInvokableProcessor implements InvokableProcessorInterface {
+class HostProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
 		return Directive::HOST;
 	}
 
-	public function __invoke(string $line, array &$root, string &$currentUserAgent = '*') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
 		$parts = explode(':', $line);
 		array_shift($parts);
 		$trimmed     = array_map('trim', $parts);
 		$entry       = implode(':', $trimmed);
-		$filtered    = filter_var($entry, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
-		$isIpAddress = false !== $filtered && $filtered === filter_var($filtered, FILTER_VALIDATE_IP);
 
-		if (false !== $filtered && !$isIpAddress) {
-			$root[$currentUserAgent][Directive::HOST] = $filtered;
+		if (HostName::isValid($entry)) {
+			$root[$currentUserAgent][Directive::HOST] = $entry;
 			return;
 		}
 
@@ -27,7 +26,7 @@ class HostProcessor extends AbstractInvokableProcessor implements InvokableProce
 			'{directive}' => Directive::HOST,
 			'{faulty}'    => $entry,
 			'{useragent}' => $currentUserAgent,
-			'{ipAddress}' => $isIpAddress ? ' (IP address is not a valid hostname)' : '',
+			'{ipAddress}' => HostName::isIpAddress($entry) ? ' (IP address is not a valid hostname)' : '',
 		]));
 	}
 }

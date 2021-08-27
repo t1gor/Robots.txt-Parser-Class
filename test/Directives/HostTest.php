@@ -43,8 +43,8 @@ class HostTest extends TestCase {
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord('Failed for find host for Google, checking for * ...', LogLevel::DEBUG),
-			json_encode($handler->getRecords())
+			$handler->hasRecord("Failed to match user agent 'Google', falling back to '*'", LogLevel::DEBUG),
+			stringifyLogs($handler->getRecords())
 		);
 	}
 }

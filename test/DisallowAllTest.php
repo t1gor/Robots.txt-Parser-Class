@@ -1,43 +1,22 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 /**
  * @group disallow-all
+ * @link  https://github.com/t1gor/Robots.txt-Parser-Class/issues/22
  */
-class DisallowAllTest extends TestCase
-{
-	/**
-	 * @link https://github.com/t1gor/Robots.txt-Parser-Class/issues/22
-	 */
-	public function testDisallowWildcard()
-	{
-		$this->markTestSkipped('@TODO');
+class DisallowAllTest extends TestCase {
 
-		// init parser
-		$parser = new RobotsTxtParser("
-			User-Agent: *
-			Disallow: /
-		");
-		// asserts
+	public function testDisallowWildcard() {
+		$parser = new RobotsTxtParser(file_get_contents(__DIR__ . '/Fixtures/disallow-all.txt'));
 		$this->assertTrue($parser->isDisallowed("/index"));
 		$this->assertFalse($parser->isAllowed("/index"));
 	}
 
-	/**
-	 * @link https://github.com/t1gor/Robots.txt-Parser-Class/issues/22
-	 */
-	public function testAllowWildcard()
-	{
-		$this->markTestSkipped('@TODO');
-
-		// init parser
-		$parser = new RobotsTxtParser("
-			User-agent: *
-			Allow: /
-		");
-		// asserts
+	public function testAllowWildcard() {
+		$parser = new RobotsTxtParser(file_get_contents(__DIR__ . '/Fixtures/allow-all.txt'));
 		$this->assertFalse($parser->isDisallowed("/index"));
 		$this->assertFalse($parser->isDisallowed("/"));
 		$this->assertTrue($parser->isAllowed("/index"));

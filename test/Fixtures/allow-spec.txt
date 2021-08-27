@@ -1,0 +1,33 @@
+User-agent: anyone
+User-agent: *
+Disallow: /admin
+Disallow: /admin
+Disallow: /Admin
+Disallow: /temp#comment
+Disallow: /forum
+Disallow: /admin/cp/test/
+
+User-agent: agentU/2.0
+Disallow: /bar
+Allow: /foo
+
+User-agent: agentV
+User-agent: agentW
+Disallow: /foo
+Allow: /bar #comment
+
+User-agent: spiderX
+Disallow:
+Disallow: /admin#
+Disallow: /assets
+
+User-agent: botY
+Disallow: /
+Allow: &&/1@| #invalid
+Allow: /forum/$
+Allow: /article
+
+User-agent: crawlerZ
+Disallow:
+Disallow: /
+Allow: /$

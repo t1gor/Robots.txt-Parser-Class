@@ -4,11 +4,13 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use Psr\Log\LoggerInterface;
 
-interface InvokableProcessorInterface {
+interface DirectiveProcessorInterface {
 
 	public function __construct(?LoggerInterface $logger = null);
 
 	public function getDirectiveName(): string;
 
-	public function __invoke(string $line, array & $root, string & $currentUserAgent = '*');
+	public function matches(string $line): bool;
+
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '');
 }

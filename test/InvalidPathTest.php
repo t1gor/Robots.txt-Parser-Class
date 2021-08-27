@@ -1,43 +1,20 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-class InvalidPathTest extends TestCase
-{
-    /**
-     * @dataProvider generateDataForTest
-     * @param string $robotsTxtContent
-     */
-    public function testInvalidPathAllowed($robotsTxtContent)
-    {
-	    $this->markTestSkipped('@TODO');
+/**
+ * @note those paths are invalid and there is no point for checking those.
+ *       This would only overcomplicate the code and has no potential use case.
+ *
+ * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/69
+ */
+class InvalidPathTest extends TestCase {
 
-        /**
-         * Test currently disabled due to issues
-         * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/69
-         */
-        // init parser
-        $parser = new RobotsTxtParser($robotsTxtContent);
-        $this->assertFalse($parser->isAllowed('*wildcard'));
-        $this->assertTrue($parser->isDisallowed("&&1@|"));
-        $this->assertFalse($parser->isAllowed('+£€@@1¤'));
-
-    }
-
-    /**
-     * Generate test case data
-     * @return array
-     */
-    public function generateDataForTest()
-    {
-        return array(
-            array(
-                <<<ROBOTS
-                User-agent: *
-Disallow: /
-ROBOTS
-            )
-        );
-    }
+	public function testInvalidPathAllowed() {
+		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/disallow-all.txt', 'r'));
+		$this->assertTrue($parser->isAllowed('*wildcard'));
+		$this->assertFalse($parser->isDisallowed("&&1@|"));
+		$this->assertTrue($parser->isAllowed('+£€@@1¤'));
+	}
 }
