@@ -451,7 +451,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @deprecated
 	 */
 	public function getContent(): string {
-		return $this->content;
+		return $this->reader->getContentRaw();
 	}
 
 	/**

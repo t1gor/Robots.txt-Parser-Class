@@ -7,6 +7,19 @@ PHP class to parse robots.txt rules according to Google, Yandex, W3C and The Web
 
 Full list of supported specifications (and what's not supported, yet) are available in our [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Specifications).
 
+### Supported directives:
+
+- User-agent
+- Allow
+- Disallow
+- Sitemap
+- Host
+- Cache-delay
+- Clean-param
+- Crawl-delay
+- Request-rate (in progress)
+- Visit-time (in progress)
+
 ### Installation
 The library is available for install via Composer package. To install via Composer, please add the requirement to your `composer.json` file, like this:
 
@@ -14,50 +27,74 @@ The library is available for install via Composer package. To install via Compos
 composer require t1gor/robots-txt-parser
 ```
 
-and then use composer to load the lib:
-
-```php
-<?php
-require_once('./vendor/autoload.php');
-    
-$parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
-...
-```
-
 You can find out more about Composer here: https://getcomposer.org/
 
 ### Usage example
 
-````php
-<?php
-require_once('./vendor/autoload.php');
+###### Creating parser instance
 
-$parser = new RobotsTxtParser(file_get_contents('http://example.com/robots.txt'));
-$parser->setUserAgent('MySimpleBot');
+```php
+use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-if ($parser->isAllowed('/')) {
-	// Crawl of the frontpage is Allowed.
-}
-// or
-if ($parser->isDisallowed('/path/to/page.html')) {
-	// Crawl of /path/to/page.html is Disallowed
-}
-?>
-````
-Take a look at the [Wiki](https://github.com/t1gor/Robots.txt-Parser-Class/wiki/Features-and-usage-examples) for additional features and how to use them.
+# from string
+$parser = new RobotsTxtParser("User-agent: * \nDisallow: /");
+
+# from local file
+$parser = new RobotsTxtParser(fopen('some/robots.txt'));
+
+# or a remote one (make sure it's allowed in your php.ini)
+# even FTP should work (but this is not confirmed)
+$parser = new RobotsTxtParser(fopen('http://example.com/robots.txt'));
+```
+
+###### Logging parsing process
+
+We are implementing `LoggerAwareInterface` from `PSR`, so it should work out of the box with any logger supporting that standard. Please see below for Monolog example with Telegram bot:
+
+```php
+use Monolog\Handler\TelegramBotHandler;
+use Monolog\Logger;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\RobotsTxtParser;
+
+$monologLogger = new Logger('robot.txt-parser');
+$monologLogger->setHandler(new TelegramBotHandler('api-key', 'channel'));
+
+$parser = new RobotsTxtParser(fopen('some/robots.txt'));
+$parser->setLogger($monologLogger);
+```
+
+Most log entries we have are of `LogLevel::DEBUG`, but there might also be some `LogLevel::WARNINGS` where it is appropriate.
+
+###### Parsing non UTF-8 encoded files
+
+```php
+use t1gor\RobotsTxtParser\RobotsTxtParser;
+
+/** @see EncodingTest for more details */
+$parser = new RobotsTxtParser(fopen('market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
+```
+
+### Public API
+
+| Method | Params | Returns | Description |
+| ------ | ------ | ------ | ----------- |
+| `setLogger` | `Psr\Log\LoggerInterface $logger` | `void` |  |
+| `getLogger` | `-` | `Psr\Log\LoggerInterface` |  |
+| `setHttpStatusCode` | `int $code` | `void` | Set HTTP response code for allowance checks |
+| `isAllowed` | `string $url, ?string $userAgent` | `bool` | If no `$userAgent` is passed, will return for `*` |
+| `isDisallowed` | `string $url, ?string $userAgent` | `bool` | If no `$userAgent` is passed, will return for `*` |
+| `getDelay` | `string $userAgent, string $type = 'crawl-delay'` | `float` | Get any of the delays, e.g. `Crawl-delay`, `Cache-delay`, etc. |
+| `getCleanParam` | `-` | `[ string => string[] ]` | Where key is the path, and values are params |
+| `getRules` | `?string $userAgent` | `array` | Get the rules the parser read in a tree-line structure |
+| `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
+| `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
+| `getContent` | `-` | `string` | The content that was parsed. |
+| `getLog` | `-` | `[]` | **Deprecated.** Please use PSR logger as described above. |
+| `render` | `-` | `string` | **Deprecated.** Please `getContent` |
 
 Even more code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
-
-### Algorithm schema:
-**Conditions:**
-* (0) ZERO_POINT
-* (1) READ_DIRECTIVE
-* (2) SKIP_SPACE
-* (3) READ_VALUE
-* (4) SKIP_LINE
-
-![Schema](https://raw.githubusercontent.com/t1gor/Robots.txt-Parser-Class/master/assets/schema.png)
-![Components graph](https://raw.githubusercontent.com/t1gor/Robots.txt-Parser-Class/master/assets/components-graph.png)
 
 **Some useful links and materials:**
 * [Google: Robots.txt Specifications](https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt)
@@ -74,10 +111,6 @@ First of all - thank you for your interest and a desire to help! If you found an
 - Following the coding standard would also be much appreciated (4 tabs as an indent, camelCase, etc.)
 
 I would really appreciate if you could share the link to your project that is utilizing the lib.
-
-### To do:
- * [Fix open issues](https://github.com/t1gor/Robots.txt-Parser-Class/issues)
- * [Raise coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/code?sort=covered_percent&sort_direction=desc)
 
 License
 -------
