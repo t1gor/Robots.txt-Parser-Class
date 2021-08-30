@@ -13,6 +13,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: FranzDiebold/github-env-vars-action@v1.2.0
 
       - name: Cache Composer dependencies
         uses: actions/cache@v2
@@ -22,7 +23,6 @@ jobs:
 
       # @link https://docs.codeclimate.com/docs/configuring-test-coverage
       - name: Code climage (before)
-        uses: FranzDiebold/github-env-vars-action@v1.2.0
         env:
           GIT_COMMIT_SHA: $CI_SHA
           GIT_BRANCH: $CI_ACTION_REF_NAME_SLUG
