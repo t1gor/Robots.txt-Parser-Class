@@ -33,7 +33,7 @@ jobs:
         with:
           php_version: 7.4
           php_extensions: mbstring iconv json xdebug
-          bootstrap: vendor/autoload.php
+          bootstrap: test/bootstrap.php
           configuration: phpunit.xml
           args: --coverage-text
         env:

@@ -7,7 +7,6 @@ use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\UserAgentProcessor;
-use function Utils\stringifyLogs;
 
 class UserAgentProcessorTest extends TestCase {
 

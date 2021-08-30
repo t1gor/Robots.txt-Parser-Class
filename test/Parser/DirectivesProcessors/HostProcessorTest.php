@@ -8,7 +8,6 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\HostProcessor;
-use function Utils\stringifyLogs;
 
 class HostProcessorTest extends TestCase {
 

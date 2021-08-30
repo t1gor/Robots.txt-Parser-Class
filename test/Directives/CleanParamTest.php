@@ -7,7 +7,6 @@ use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
-use function Utils\stringifyLogs;
 
 class CleanParamTest extends TestCase
 {
@@ -37,6 +36,8 @@ class CleanParamTest extends TestCase
 	}
 
 	public function testCleanParamsAppliedForAllowDisallow() {
+		$this->markTestIncomplete('@TODO this needs to be finished yet.');
+
 		$this->assertTrue($this->parser->isDisallowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 		$this->assertFalse($this->parser->isAllowed("http://www.site1.com/forums/showthread.php?s=681498b9648949605&ref=parent"));
 
