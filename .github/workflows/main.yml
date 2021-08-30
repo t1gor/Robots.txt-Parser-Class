@@ -20,6 +20,12 @@ jobs:
           path: /tmp/composer-cache
           key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
 
+      - name: Code climage (before)
+        run: |
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter |
+          chmod +x ./cc-test-reporter
+          ./cc-test-reporter before-build
+
       # @link https://github.com/php-actions/composer
       - uses: php-actions/composer@v5
         with:
@@ -35,6 +41,9 @@ jobs:
           php_extensions: mbstring iconv json xdebug
           bootstrap: test/bootstrap.php
           configuration: phpunit.xml
-          args: --coverage-text
+          args: --coverage-text --coverage-clover clover.xml
         env:
           XDEBUG_MODE: coverage
+
+      - name: Code climage (after)
+        run: ./cc-test-reporter after-build -t clover --exit-code $?
