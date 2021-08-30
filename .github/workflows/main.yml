@@ -59,4 +59,4 @@ jobs:
            echo "GIT_COMMIT_SHA=$GIT_COMMIT_SHA"
            export GIT_BRANCH="$Env:CI_ACTION_REF_NAME_SLUG"
            echo "GIT_BRANCH=$GIT_BRANCH"
-          ./cc-test-reporter after-build -t clover --debug
+           ./cc-test-reporter after-build -t clover --debug
