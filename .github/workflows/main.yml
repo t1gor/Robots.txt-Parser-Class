@@ -28,9 +28,9 @@ jobs:
         run: |
           curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
           chmod +x ./cc-test-reporter
-          export CI_SHA="$CI_SHA"
-          echo "CI_SHA=$CI_SHA"
-          export GIT_BRANCH="$CI_ACTION_REF_NAME_SLUG"
+          export GIT_COMMIT_SHA="$Env:CI_SHA"
+          echo "GIT_COMMIT_SHA=$GIT_COMMIT_SHA"
+          export GIT_BRANCH="$Env:CI_ACTION_REF_NAME_SLUG"
           echo "GIT_BRANCH=$GIT_BRANCH"
           ./cc-test-reporter before-build
 
@@ -55,8 +55,8 @@ jobs:
 
       - name: Code climage (after)
         run: |
-          export CI_SHA="$CI_SHA"
-          echo "CI_SHA=$CI_SHA"
-          export GIT_BRANCH="$CI_ACTION_REF_NAME_SLUG"
-          echo "GIT_BRANCH=$GIT_BRANCH"
+           export GIT_COMMIT_SHA="$Env:CI_SHA"
+           echo "GIT_COMMIT_SHA=$GIT_COMMIT_SHA"
+           export GIT_BRANCH="$Env:CI_ACTION_REF_NAME_SLUG"
+           echo "GIT_BRANCH=$GIT_BRANCH"
           ./cc-test-reporter after-build -t clover --debug
