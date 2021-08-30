@@ -46,4 +46,4 @@ jobs:
           XDEBUG_MODE: coverage
 
       - name: Code climage (after)
-        run: ./cc-test-reporter after-build -t clover --exit-code $?
+        run: ./cc-test-reporter after-build -t clover --debug
