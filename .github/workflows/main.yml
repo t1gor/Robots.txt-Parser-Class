@@ -14,10 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Cache Composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+
       # @link https://github.com/php-actions/composer
       - uses: php-actions/composer@v5
         with:
-          php_version: 7.1
+          php_version: 7.4
+          php_extensions: mbstring iconv json
           version: 1
 
       # @link https://github.com/php-actions/example-phpunit
