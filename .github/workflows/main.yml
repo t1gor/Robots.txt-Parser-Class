@@ -31,8 +31,8 @@ jobs:
       - name: PHPUnit Tests
         uses: php-actions/phpunit@v2
         with:
-#          php_version: 7.4
-#          php_extensions: xdebug
+          php_version: 7.4
+          php_extensions: mbstring iconv json xdebug
           bootstrap: vendor/autoload.php
           configuration: phpunit.xml
           args: --coverage-text
