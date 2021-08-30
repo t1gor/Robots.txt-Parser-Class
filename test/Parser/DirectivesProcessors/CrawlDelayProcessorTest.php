@@ -8,6 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CrawlDelayProcessor;
+use function Utils\stringifyLogs;
 
 class CrawlDelayProcessorTest extends TestCase {
 

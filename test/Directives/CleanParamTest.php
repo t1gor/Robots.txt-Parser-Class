@@ -7,6 +7,7 @@ use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
+use function Utils\stringifyLogs;
 
 class CleanParamTest extends TestCase
 {

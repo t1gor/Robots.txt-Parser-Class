@@ -7,6 +7,7 @@ use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcher;
+use function Utils\stringifyLogs;
 
 /**
  * @covers \t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcher

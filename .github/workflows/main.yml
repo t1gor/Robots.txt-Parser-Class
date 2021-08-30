@@ -24,15 +24,15 @@ jobs:
       - uses: php-actions/composer@v5
         with:
           php_version: 7.4
-          php_extensions: mbstring iconv json
+          php_extensions: mbstring iconv json xdebug
           version: 1
 
       # @link https://github.com/php-actions/example-phpunit
       - name: PHPUnit Tests
         uses: php-actions/phpunit@v2
         with:
-          php_version: 7.4
-          php_extensions: xdebug
+#          php_version: 7.4
+#          php_extensions: xdebug
           bootstrap: vendor/autoload.php
           configuration: phpunit.xml
           args: --coverage-text

@@ -7,6 +7,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 use t1gor\RobotsTxtParser\WarmingMessages;
+use function Utils\stringifyLogs;
 
 class EncodingTest extends TestCase {
 
