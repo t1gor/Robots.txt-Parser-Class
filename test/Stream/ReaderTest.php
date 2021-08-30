@@ -5,6 +5,10 @@ namespace Stream;
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::fromStream
+ * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::getContentIterated
+ */
 class ReaderTest extends TestCase {
 
 	public function testGetContentWiki() {

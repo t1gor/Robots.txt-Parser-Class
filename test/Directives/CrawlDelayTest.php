@@ -9,6 +9,9 @@ use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 use Monolog\Logger;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getDelay
+ */
 class CrawlDelayTest extends TestCase {
 
 	protected ?RobotsTxtParser $parser;

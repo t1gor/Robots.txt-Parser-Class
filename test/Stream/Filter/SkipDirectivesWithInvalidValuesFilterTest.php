@@ -5,6 +5,9 @@ namespace Stream\Filter;
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipDirectivesWithInvalidValuesFilter;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Stream\Filters\SkipDirectivesWithInvalidValuesFilter::filter
+ */
 class SkipDirectivesWithInvalidValuesFilterTest  extends TestCase {
 
 	public function setUp(): void {

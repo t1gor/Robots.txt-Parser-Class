@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\UserAgentProcessor;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\UserAgentProcessor::process
+ */
 class UserAgentProcessorTest extends TestCase {
 
 	private ?UserAgentProcessor $processor;

@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter::filter
+ */
 class SkipCommentedLinesFilterTest extends TestCase {
 
 	public function setUp(): void {

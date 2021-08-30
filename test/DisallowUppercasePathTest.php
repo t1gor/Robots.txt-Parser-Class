@@ -3,15 +3,18 @@
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isDisallowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isAllowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::checkRules
+ */
 class DisallowUppercasePathTest extends TestCase
 {
     /**
      * @dataProvider generateDataForTest
-     * @covers RobotsTxtParser::isDisallowed
-     * @covers RobotsTxtParser::checkRules
      * @param string $robotsTxtContent
      */
-    public function testDisallowUppercasePath($robotsTxtContent)
+    public function testDisallowUppercasePath(string $robotsTxtContent)
     {
         // init parser
         $parser = new RobotsTxtParser($robotsTxtContent);
@@ -23,13 +26,14 @@ class DisallowUppercasePathTest extends TestCase
      * Generate test case data
      * @return array
      */
-    public function generateDataForTest()
-    {
-        return array(
-            array("
+    public function generateDataForTest(): array {
+        return [
+            [
+	            "
 					User-agent: *
 					Disallow : /Admin
-				")
-        );
+				"
+            ]
+        ];
     }
 }

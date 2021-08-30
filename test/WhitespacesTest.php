@@ -3,16 +3,16 @@
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getRules
+ */
 class WhitespacesTest extends TestCase {
 
 	/**
 	 * @dataProvider generateDataForTest
-	 * @covers       RobotsTxtParser::isDisallowed
-	 * @covers       RobotsTxtParser::checkRules
-	 *
 	 * @param string $robotsTxtContent
 	 */
-	public function testWhitespaces($robotsTxtContent) {
+	public function testWhitespaces(string $robotsTxtContent) {
 		// init parser
 		$parser = new RobotsTxtParser($robotsTxtContent);
 		$rules = $parser->getRules('*');

@@ -3,15 +3,17 @@
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isAllowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isDisallowed
+ */
 class UserAgentTest extends TestCase
 {
     /**
      * @dataProvider generateDataForTest
-     * @covers       RobotsTxtParser::isAllowed
-     * @covers       RobotsTxtParser::isDisallowed
      * @param string $robotsTxtContent
      */
-    public function testUserAgentPermission($robotsTxtContent)
+    public function testUserAgentPermission(string $robotsTxtContent)
     {
         // init parser
         $parser = new RobotsTxtParser($robotsTxtContent);

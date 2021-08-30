@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getCleanParam
+ */
 class CleanParamTest extends TestCase
 {
 	protected ?RobotsTxtParser $parser;

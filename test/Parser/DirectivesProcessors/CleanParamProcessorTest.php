@@ -9,6 +9,9 @@ use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CleanParamProcessor;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CleanParamProcessor::process
+ */
 class CleanParamProcessorTest extends TestCase {
 
 	private ?CleanParamProcessor $processor;

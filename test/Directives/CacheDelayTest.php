@@ -9,6 +9,9 @@ use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getDelay
+ */
 class CacheDelayTest extends TestCase {
 
 	protected ?RobotsTxtParser $parser;

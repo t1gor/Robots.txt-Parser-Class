@@ -4,12 +4,13 @@ use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getRules
+ */
 class CommentsTest extends TestCase
 	{
 		/**
 		 * @dataProvider generateDataForTest
-		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
 		 */
 		public function testRemoveComments($robotsTxtContent)
@@ -21,8 +22,6 @@ class CommentsTest extends TestCase
 
 		/**
 		 * @dataProvider generateDataFor2Test
-		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
 		 * @param string $expectedDisallowValue
 		 */

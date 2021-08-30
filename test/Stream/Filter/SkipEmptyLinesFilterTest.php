@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipEmptyLinesFilter;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Stream\Filters\SkipEmptyLinesFilter::filter
+ */
 class SkipEmptyLinesFilterTest extends TestCase {
 
 	public function setUp(): void {

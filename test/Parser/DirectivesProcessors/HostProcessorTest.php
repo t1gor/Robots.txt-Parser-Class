@@ -9,6 +9,9 @@ use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\HostProcessor;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\HostProcessor::process
+ */
 class HostProcessorTest extends TestCase {
 
 	private ?HostProcessor $processor;

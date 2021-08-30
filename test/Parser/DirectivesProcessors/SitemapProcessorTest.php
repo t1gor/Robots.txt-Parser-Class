@@ -9,6 +9,9 @@ use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\SitemapProcessor;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\SitemapProcessor::process
+ */
 class SitemapProcessorTest extends TestCase {
 
 	private ?SitemapProcessor $processor;

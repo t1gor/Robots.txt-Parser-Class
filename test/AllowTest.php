@@ -3,6 +3,11 @@
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isAllowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isDisallowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::checkRules
+ */
 class AllowTest extends TestCase {
 
 	private ?RobotsTxtParser $parser;

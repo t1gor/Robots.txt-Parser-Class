@@ -3,12 +3,14 @@
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isDisallowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::checkRules
+ */
 class AtSymbolTest extends TestCase
 	{
 		/**
 		 * @dataProvider generateDataForTest
-		 * @covers RobotsTxtParser::isDisallowed
-		 * @covers RobotsTxtParser::checkRules
 		 * @param string $robotsTxtContent
 		 */
 		public function testContainingAtChar($robotsTxtContent)

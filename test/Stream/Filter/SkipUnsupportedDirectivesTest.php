@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipUnsupportedDirectivesFilter;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\Stream\Filters\SkipUnsupportedDirectivesFilter::filter
+ */
 class SkipUnsupportedDirectivesTest extends TestCase {
 
 	public function setUp(): void {

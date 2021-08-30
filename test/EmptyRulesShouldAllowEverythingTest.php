@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
@@ -16,8 +16,8 @@ class EmptyRulesShouldAllowEverythingTest extends TestCase
 	public function testEmptyRulesAllow()
 	{
 		$parser = new RobotsTxtParser('');
-//		$this->assertTrue($parser->isAllowed('/foo'));
-//		$this->assertFalse($parser->isDisallowed('/foo'));
+		$this->assertTrue($parser->isAllowed('/foo'));
+		$this->assertFalse($parser->isDisallowed('/foo'));
 		$this->assertNull($parser->getHost());
 	}
 }

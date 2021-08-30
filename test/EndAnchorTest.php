@@ -3,14 +3,15 @@
 use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+/**
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isDisallowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isAllowed
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::checkRules
+ */
 class EndAnchorTest extends TestCase {
 
 	/**
 	 * @dataProvider generateDataForTest
-	 * @covers       RobotsTxtParser::isAllowed
-	 * @covers       RobotsTxtParser::isDisallowed
-	 * @covers       RobotsTxtParser::checkRules
-	 *
 	 * @param string $path
 	 * @param string $robotsTxtContent
 	 * @param bool   $assertAllowed
