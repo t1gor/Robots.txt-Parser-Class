@@ -22,7 +22,7 @@ jobs:
 
       - name: Code climage (before)
         run: |
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter |
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
           chmod +x ./cc-test-reporter
           ./cc-test-reporter before-build
 
@@ -41,7 +41,7 @@ jobs:
           php_extensions: mbstring iconv json xdebug
           bootstrap: test/bootstrap.php
           configuration: phpunit.xml
-          args: --coverage-text --coverage-clover clover.xml
+          args: --coverage-clover ./clover.xml
         env:
           XDEBUG_MODE: coverage
 
