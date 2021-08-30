@@ -7,17 +7,20 @@ on:
   pull_request:
     branches: [ master ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
-      - uses: php-actions/composer@v5
 
+      # @link https://github.com/php-actions/composer
+      - uses: php-actions/composer@v5
+        with:
+          php_version: 7.1
+          version: 1
+
+      # @link https://github.com/php-actions/example-phpunit
       - name: PHPUnit Tests
         uses: php-actions/phpunit@v2
         with:
