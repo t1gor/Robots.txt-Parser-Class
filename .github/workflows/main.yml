@@ -15,24 +15,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: FranzDiebold/github-env-vars-action@v1.2.0
 
       - name: Cache Composer dependencies
         uses: actions/cache@v2
         with:
           path: /tmp/composer-cache
           key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-
-      # @link https://docs.codeclimate.com/docs/configuring-test-coverage
-      - name: Code climage (before)
-        run: |
-          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
-          chmod +x ./cc-test-reporter
-          export GIT_COMMIT_SHA="GITHUB_SHA_SHORT"
-          echo "GIT_COMMIT_SHA=$GITHUB_SHA_SHORT"
-          export GIT_BRANCH="$GITHUB_REF_SLUG"
-          echo "GIT_BRANCH=$GIT_BRANCH"
-          ./cc-test-reporter before-build
 
       # @link https://github.com/php-actions/composer
       - uses: php-actions/composer@v5
@@ -42,21 +30,18 @@ jobs:
           version: 1
 
       # @link https://github.com/php-actions/example-phpunit
-      - name: PHPUnit Tests
+      - name: "phpunit"
         uses: php-actions/phpunit@v2
         with:
           php_version: 7.4
           php_extensions: mbstring iconv json xdebug
           bootstrap: test/bootstrap.php
           configuration: phpunit.xml
-          args: --coverage-clover ./build/logs/clover.xml
+          args: --coverage-clover clover.xml
         env:
           XDEBUG_MODE: coverage
 
-      - name: Code climage (after)
-        run: |
-          export GIT_COMMIT_SHA="GITHUB_SHA_SHORT"
-          echo "GIT_COMMIT_SHA=$GITHUB_SHA_SHORT"
-          export GIT_BRANCH="$GITHUB_REF_SLUG"
-          echo "GIT_BRANCH=$GIT_BRANCH"
-          ./cc-test-reporter after-build -t clover --debug
+      - name: "Send code coverage report to Codecov.io"
+        env:
+          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        run: "bash <(curl -s https://codecov.io/bash) || true"

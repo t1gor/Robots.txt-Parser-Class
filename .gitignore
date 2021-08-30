@@ -4,4 +4,3 @@ composer.phar
 codeclimate.json
 build/logs/*
 .phpunit.result.cache
-cc-test-reporter
