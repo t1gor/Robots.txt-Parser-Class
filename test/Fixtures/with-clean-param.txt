@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+Clean-param: s&ref /forum*/sh*wthread.php
+Clean-param: abc /forum/showthread.php
+Clean-param: sid&sort /forum/*.php
+Clean-param: someTrash&otherTrash

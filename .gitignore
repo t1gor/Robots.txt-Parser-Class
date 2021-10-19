@@ -1,5 +1,6 @@
 vendor/*
-composer.lock
+.idea/
 composer.phar
 codeclimate.json
 build/logs/*
+.phpunit.result.cache

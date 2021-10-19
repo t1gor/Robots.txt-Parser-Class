@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit backupGlobals="disabled" bootstrap="test/bootstrap.php">
-    <filter>
-        <whitelist>
-            <directory>source</directory>
-        </whitelist>
-    </filter>
-    <logging>
-        <log type="coverage-clover" target="build/logs/clover.xml"/>
-        <log type="coverage-html" target="build/logs/coverage/" charset="UTF-8" highlight="true" lowUpperBound="35" highLowerBound="70" />
-    </logging>
+<phpunit bootstrap="test/bootstrap.php">
     <testsuites>
         <testsuite name="">
-            <directory suffix="Test.php" phpVersion="5.4.0" phpVersionOperator=">=">test/cases</directory>
+            <directory suffix="Test.php">test</directory>
         </testsuite>
     </testsuites>
+    <coverage>
+        <include>
+            <directory suffix=".php">source</directory>
+        </include>
+        <report>
+            <clover outputFile="build/logs/clover.xml" />
+            <html outputDirectory="build/logs/coverage/" lowUpperBound="35" highLowerBound="70" />
+        </report>
+    </coverage>
+    <logging>
+        <junit outputFile="build/logs/junit.xml" />
+    </logging>
 </phpunit>

@@ -1,0 +1,11 @@
+User-Agent: *
+Crawl-Delay: 0.5
+
+User-Agent: GoogleBot
+Cache-Delay: 3.7
+
+User-Agent: AhrefsBot
+Cache-Delay: 8
+
+User-Agent: Yandex
+Crawl-Delay: 1.5

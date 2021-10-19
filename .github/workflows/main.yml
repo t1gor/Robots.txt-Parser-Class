@@ -7,23 +7,41 @@ on:
   pull_request:
     branches: [ master ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
     steps:
       - uses: actions/checkout@v2
-      - uses: php-actions/composer@v5
 
-      - name: PHPUnit Tests
+      - name: Cache Composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
+
+      # @link https://github.com/php-actions/composer
+      - uses: php-actions/composer@v5
+        with:
+          php_version: 7.4
+          php_extensions: mbstring iconv json xdebug
+          version: 1
+
+      # @link https://github.com/php-actions/example-phpunit
+      - name: "phpunit"
         uses: php-actions/phpunit@v2
         with:
-          php_extensions: xdebug
-          bootstrap: vendor/autoload.php
+          php_version: 7.4
+          php_extensions: mbstring iconv json xdebug
+          bootstrap: test/bootstrap.php
           configuration: phpunit.xml
-          args: --coverage-text
+          args: --coverage-clover clover.xml
         env:
           XDEBUG_MODE: coverage
+
+      - name: "Send code coverage report to Codecov.io"
+        env:
+          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        run: "bash <(curl -s https://codecov.io/bash) || true"

@@ -1,0 +1,14 @@
+Sitemap: http://example.com/sitemap.xml?year=2015
+Sitemap: http://example.com/sitemap.xml?year=2015
+Sitemap: http://example.com/sitemap.xml?year=2015
+
+User-agent: *
+Disallow: /admin/
+Sitemap: http://somesite.com/sitemap-for-all.xml
+
+User-agent: Googlebot
+Sitemap: http://internet.com/sitemap-for-google-bot.xml
+
+User-agent: Yahoo
+Sitemap: http://worldwideweb.com/sitemap-yahoo.xml
+Sitemap: http://example.com/sitemap-yahoo.xml?year=2016
