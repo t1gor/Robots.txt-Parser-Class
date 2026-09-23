@@ -8,7 +8,7 @@ use t1gor\RobotsTxtParser\Stream\Filters\TrimSpacesLeftFilter;
 /**
  * @covers \t1gor\RobotsTxtParser\Stream\Filters\TrimSpacesLeftFilter::filter
  */
-class TrimSpacesLeftAndRightFilterTest extends TestCase {
+class TrimSpacesLeftFilterTest extends TestCase {
 
 	public function setUp(): void {
 		parent::setUp();

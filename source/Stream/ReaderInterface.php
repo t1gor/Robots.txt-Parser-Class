@@ -8,4 +8,7 @@ interface ReaderInterface extends LoggerAwareInterface {
 	public function setEncoding(string $encoding);
 	public function getContentIterated(): \Iterator;
 	public function getContentRaw(): string;
+
+	/** @return string[] */
+	public function filters(): array;
 }

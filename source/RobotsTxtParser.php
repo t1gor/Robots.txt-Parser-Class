@@ -448,6 +448,15 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
+	 * Applied stream filters, in the order they run.
+	 *
+	 * @return string[]
+	 */
+	public function filters(): array {
+		return $this->reader->filters();
+	}
+
+	/**
 	 * @deprecated
 	 */
 	public function getContent(): string {

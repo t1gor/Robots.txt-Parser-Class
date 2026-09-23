@@ -76,6 +76,21 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
 $parser = new RobotsTxtParser(fopen('market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
 ```
 
+###### Inspecting the applied stream filters
+
+Input runs through a chain of stream filters before any directive is read. `filters()` shows which ones are actually active, in order:
+
+```php
+use t1gor\RobotsTxtParser\RobotsTxtParser;
+
+$parser = new RobotsTxtParser(fopen('robots.txt', 'r'));
+
+print_r($parser->filters());
+// RTP_ensure_end_of_lines, RTP_skip_commented_lines, RTP_skip_end_of_commented_line, RTP_trim_spaces_left, RTP_skip_unsupported_directives, RTP_skip_directives_invalid_value, RTP_skip_empty_lines
+```
+
+A missing filter means it failed to apply - attach a logger to see why. A non UTF-8 encoding adds `convert.iconv.*` at the front.
+
 ### Public API
 
 | Method | Params | Returns | Description |
@@ -90,6 +105,7 @@ $parser = new RobotsTxtParser(fopen('market-yandex-Windows-1251.txt', 'r'), 'Win
 | `getRules` | `?string $userAgent` | `array` | Get the rules the parser read in a tree-line structure |
 | `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
 | `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
+| `filters` | `-` | `string[]` | Stream filters applied to the input, in the order they run |
 | `getContent` | `-` | `string` | The content that was parsed. |
 | `getLog` | `-` | `[]` | **Deprecated.** Please use PSR logger as described above. |
 | `render` | `-` | `string` | **Deprecated.** Please `getContent` |

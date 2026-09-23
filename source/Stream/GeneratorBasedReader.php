@@ -20,10 +20,13 @@ class GeneratorBasedReader implements ReaderInterface {
 
 	private $stream;
 
-	/**
-	 * @var string[]
-	 */
+	/** @var array<class-string<CustomFilterInterface>, resource|false> Applied in order. */
 	private array $filters;
+
+	/** @var resource|false|null Separate from $filters - not one of our classes. */
+	private $encodingFilter = null;
+
+	private ?string $encodingFilterName = null;
 
 	protected function __construct() {
 		/** @note order matters */
@@ -42,7 +45,13 @@ class GeneratorBasedReader implements ReaderInterface {
 	 * @link https://www.php.net/manual/en/function.stream-filter-append.php#84637
 	 */
 	public function __destruct() {
-		foreach ($this->filters as $class => $instance) {
+		$applied = $this->filters;
+
+		if (is_resource($this->encodingFilter)) {
+			$applied[$this->encodingFilterName] = $this->encodingFilter;
+		}
+
+		foreach ($applied as $class => $instance) {
 			try {
 				if (is_resource($instance)) {
 					stream_filter_remove($instance);
@@ -93,14 +102,33 @@ class GeneratorBasedReader implements ReaderInterface {
 		$this->stream = $stream;
 
 		foreach ($this->filters as $filterClass => & $filter) {
-			stream_filter_register($filterClass::NAME, $filterClass);
+			$name = $filterClass::NAME;
+
+			// Registration is process-wide, so later readers re-use it.
+			if (in_array($name, stream_get_filters(), true)) {
+				$this->log('Filter {name} already registered, re-using it', ['name' => $name]);
+			} elseif (!stream_filter_register($name, $filterClass)) {
+				$this->log('Failed to register filter {name}, input will not be filtered by it', [
+					'name' => $name,
+				], LogLevel::WARNING);
+				continue;
+			}
+
 			$filter = stream_filter_append(
 				$this->stream,
-				$filterClass::NAME,
+				$name,
 				STREAM_FILTER_READ,
 				['logger' => $this->logger] // pass logger to filters
 			);
+
+			if (false === $filter) {
+				$this->log('Failed to apply filter {name}, input will not be filtered by it', [
+					'name' => $name,
+				], LogLevel::WARNING);
+			}
 		}
+
+		unset($filter);
 
 		return $this;
 	}
@@ -121,7 +149,36 @@ class GeneratorBasedReader implements ReaderInterface {
 		$this->log('Adding encoding filter ' . $filterName);
 
 		// convert encoding
-		$this->filters['iconv'] = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
+		$this->encodingFilterName = $filterName;
+		$this->encodingFilter     = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
+
+		if (false === $this->encodingFilter) {
+			$this->log('Failed to apply encoding filter {name}, content is read as-is', [
+				'name' => $filterName,
+			], LogLevel::WARNING);
+		}
+	}
+
+	/**
+	 * Applied filters, in the order they run.
+	 *
+	 * @return string[]
+	 */
+	public function filters(): array {
+		$applied = [];
+
+		foreach ($this->filters as $filterClass => $filter) {
+			if (is_resource($filter)) {
+				$applied[] = $filterClass::NAME;
+			}
+		}
+
+		// Prepended, so it runs first.
+		if (is_resource($this->encodingFilter)) {
+			array_unshift($applied, $this->encodingFilterName);
+		}
+
+		return $applied;
 	}
 
 	public function getContentIterated(): \Generator {

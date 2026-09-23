@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on the same ref, but never cancel master builds.
+# Supersede PR runs; keep every master build.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      # One broken version should not hide the state of the others.
+      # Don't let one bad version mask the rest.
       fail-fast: false
       matrix:
         php: [ '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
@@ -35,7 +35,7 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mbstring, iconv, json
           coverage: xdebug
-          # The parser must stay quiet on valid input, so surface every notice.
+          # Surface every notice: the parser must stay quiet on valid input.
           ini-values: error_reporting=E_ALL, display_errors=On
 
       - name: Resolve Composer cache directory
@@ -63,8 +63,7 @@ jobs:
           XDEBUG_MODE: coverage
 
       - name: Upload coverage to Codecov
-        # A single representative version is enough; uploading six times only
-        # adds noise and flakiness to the coverage report.
+        # One upload is enough; six only adds noise.
         if: matrix.php == '8.3'
         uses: codecov/codecov-action@v5
         with:
