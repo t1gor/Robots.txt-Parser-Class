@@ -67,7 +67,7 @@ class InvalidEncodingTest extends TestCase {
 	public function testRaisesNoPhpWarning(string $encoding) {
 		$rules = [];
 		$raised = $this->phpWarningsDuring(function () use ($encoding, &$rules) {
-			$parser = new RobotsTxtParser(self::CONTENT, $encoding);
+			$parser = (new RobotsTxtParser())->setContent(self::CONTENT, $encoding);
 			$rules  = $parser->getRules();
 		});
 
@@ -82,7 +82,7 @@ class InvalidEncodingTest extends TestCase {
 	 * @dataProvider unusableEncodingProvider
 	 */
 	public function testRulesStillApply(string $encoding) {
-		$parser = new RobotsTxtParser(self::CONTENT, $encoding);
+		$parser = (new RobotsTxtParser())->setContent(self::CONTENT, $encoding);
 
 		$this->assertTrue($parser->isDisallowed('/admin'));
 		$this->assertTrue($parser->isAllowed('/public'));
@@ -92,7 +92,7 @@ class InvalidEncodingTest extends TestCase {
 	 * @dataProvider unusableEncodingProvider
 	 */
 	public function testIsLoggedWithTheUnderlyingCause(string $encoding) {
-		$parser  = new RobotsTxtParser(self::CONTENT, $encoding);
+		$parser  = (new RobotsTxtParser())->setContent(self::CONTENT, $encoding);
 		$handler = $this->handlerFor($parser);
 		$parser->getRules();
 
@@ -116,7 +116,7 @@ class InvalidEncodingTest extends TestCase {
 	 * @dataProvider utf8SpellingProvider
 	 */
 	public function testUtf8SpellingsAreANoOp(string $encoding) {
-		$parser  = new RobotsTxtParser(self::CONTENT, $encoding);
+		$parser  = (new RobotsTxtParser())->setContent(self::CONTENT, $encoding);
 		$handler = $this->handlerFor($parser);
 		$parser->getRules();
 
@@ -129,7 +129,7 @@ class InvalidEncodingTest extends TestCase {
 
 	/** A usable encoding logs no complaint at all. */
 	public function testUsableEncodingIsNotReportedAsUnsupported() {
-		$parser  = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'), 'Windows-1251');
+		$parser  = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'), 'Windows-1251');
 		$handler = $this->handlerFor($parser);
 		$parser->getRules();
 
@@ -139,7 +139,7 @@ class InvalidEncodingTest extends TestCase {
 
 	/** The bytes really are converted, not just declared. */
 	public function testWindows1251ContentIsDecoded() {
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'), 'Windows-1251');
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'), 'Windows-1251');
 
 		$this->assertSame([
 			'disallow' => ['/каталог', '/поиск'],
@@ -152,7 +152,7 @@ class InvalidEncodingTest extends TestCase {
 
 	/** Without the conversion those bytes are not valid UTF-8 at all. */
 	public function testSameFixtureUndecodedDoesNotYieldCyrillicRules() {
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'));
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'));
 
 		$this->assertNotContains('/каталог', $parser->getRules()['*']['disallow'] ?? []);
 	}
@@ -163,7 +163,7 @@ class InvalidEncodingTest extends TestCase {
 	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/70
 	 */
 	public function testRepeatedParsingDoesNotStackEncodingFilters() {
-		$parser = new RobotsTxtParser("# just a comment\n", 'Windows-1251');
+		$parser = (new RobotsTxtParser())->setContent("# just a comment\n", 'Windows-1251');
 		$reader = $this->readerOf($parser);
 
 		$seen = [];
@@ -203,7 +203,7 @@ class InvalidEncodingTest extends TestCase {
 	 * @group known-issues
 	 */
 	public function testCharsetThatDecodesToGarbageDoesNotDiscardEveryRule() {
-		$parser = new RobotsTxtParser(self::CONTENT, 'OSF10020402');
+		$parser = (new RobotsTxtParser())->setContent(self::CONTENT, 'OSF10020402');
 
 		$this->assertTrue($parser->isDisallowed('/admin'));
 	}

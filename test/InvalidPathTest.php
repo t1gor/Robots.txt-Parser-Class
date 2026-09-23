@@ -12,7 +12,7 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
 class InvalidPathTest extends TestCase {
 
 	public function testInvalidPathAllowed() {
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/disallow-all.txt', 'r'));
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/disallow-all.txt', 'r'));
 		$this->assertTrue($parser->isAllowed('*wildcard'));
 		$this->assertFalse($parser->isDisallowed("&&1@|"));
 		$this->assertTrue($parser->isAllowed('+£€@@1¤'));

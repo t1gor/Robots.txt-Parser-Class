@@ -6,17 +6,14 @@ use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 
 /**
- * Holds on to messages until a real logger turns up, then hands them over and forwards everything
- * after that.
+ * Holds messages until a real logger turns up, then hands them over and forwards from there on.
  *
- * Plenty happens before anyone can call setLogger(): the input is bounded while the parser is being
- * constructed, and a Configuration is usually built earlier still, in a framework's service
- * container. Forwarding rather than merely replaying matters too - stream filters are handed a
- * logger when they are applied and never see a later one, so they keep writing here forever.
+ * Forwarding, not just replaying: stream filters are handed a logger when they are applied and
+ * never see a later one.
  */
 final class BufferedLogger extends AbstractLogger {
 
-	/** Enough to explain a parse, capped so an unattached logger cannot grow without end. */
+	/** Capped so a logger nobody attaches cannot grow without end. */
 	public const MAX_RECORDS = 500;
 
 	private ?LoggerInterface $target = null;
@@ -33,17 +30,14 @@ final class BufferedLogger extends AbstractLogger {
 
 		$this->records[] = ['level' => $level, 'message' => $message, 'context' => $context];
 
-		// oldest first: the tail of a parse explains more than its opening
+		// the tail of a parse explains more than its opening
 		if (count($this->records) > self::MAX_RECORDS) {
 			array_shift($this->records);
 		}
 	}
 
-	/**
-	 * Hands everything buffered to the real logger and forwards from then on.
-	 */
 	public function attach(LoggerInterface $target): void {
-		// attaching to ourselves would be an endless loop with nowhere to put anything
+		// attaching to ourselves would loop forever
 		if ($target === $this) {
 			return;
 		}

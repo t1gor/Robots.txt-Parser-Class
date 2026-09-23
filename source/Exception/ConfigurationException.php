@@ -2,11 +2,6 @@
 
 namespace t1gor\RobotsTxtParser\Exception;
 
-/**
- * Extends InvalidArgumentException so existing catch blocks keep working, while still letting
- * callers single out configuration problems.
- *
- * @see ConfigurationExceptionFactory to build one.
- */
+/** Extends InvalidArgumentException so existing catch blocks keep working. */
 class ConfigurationException extends \InvalidArgumentException {
 }

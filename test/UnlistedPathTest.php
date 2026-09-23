@@ -14,7 +14,7 @@ class UnlistedPathTest extends TestCase
     public function testAllowUnlistedPath()
     {
         // init parser
-        $parser = new RobotsTxtParser("
+        $parser = (new RobotsTxtParser())->setContent("
 			User-Agent: *
 			Disallow: /admin/
 		");

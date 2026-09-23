@@ -34,9 +34,9 @@ class ReaderFiltersTest extends TestCase {
 	}
 
 	public function testExposedThroughTheParser() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /a\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /a\n");
 
-		$this->assertContains(SkipEmptyLinesFilter::NAME, $parser->filters());
+		$this->assertContains(SkipEmptyLinesFilter::NAME, $parser->getReader()->filters());
 	}
 
 	public function testEncodingFilterIsListedFirst() {

@@ -11,6 +11,4 @@ abstract class WarmingMessages {
 
 	const BYTE_LIMIT_REACHED = 'robots.txt ran past the configured byte limit and was cut short. '
 		. 'Rules beyond the limit are ignored. See Configuration::DEFAULT_BYTE_LIMIT.';
-
-	const SET_UA_DEPRECATED = 'Deprecated. Please check rules for exact user agent instead';
 }

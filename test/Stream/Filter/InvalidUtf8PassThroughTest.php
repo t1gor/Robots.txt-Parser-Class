@@ -16,7 +16,7 @@ class InvalidUtf8PassThroughTest extends TestCase {
 
 	/** @dataProvider badByteProvider */
 	public function testValidRulesSurviveABadByte(string $content, array $expected) {
-		$parser = new RobotsTxtParser($content);
+		$parser = (new RobotsTxtParser())->setContent($content);
 
 		$this->assertSame($expected, $parser->getRules()['*']['disallow'] ?? []);
 	}
@@ -32,7 +32,7 @@ class InvalidUtf8PassThroughTest extends TestCase {
 
 	/** The whole point: it must not be fatal. */
 	public function testBadByteIsNotFatal() {
-		$parser = new RobotsTxtParser("User-agent: *\n# caf\xE9\nDisallow: /admin\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\n# caf\xE9\nDisallow: /admin\n");
 
 		$this->assertTrue($parser->isDisallowed('/admin'));
 		$this->assertTrue($parser->isAllowed('/public'));
@@ -40,10 +40,10 @@ class InvalidUtf8PassThroughTest extends TestCase {
 
 	/** Clean input is still filtered normally - the fallback must not disable the filters. */
 	public function testValidUtf8IsStillFiltered() {
-		$parser = new RobotsTxtParser("User-agent: *\n# a comment\nDisallow: /admin # trailing\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\n# a comment\nDisallow: /admin # trailing\n");
 
 		$this->assertSame(['/admin'], $parser->getRules()['*']['disallow']);
-		$this->assertStringNotContainsString('#', $parser->getContent());
+		$this->assertStringNotContainsString('#', $parser->getReader()->getContentRaw());
 	}
 
 	public function testTraitKeepsSubjectWhenPatternFails() {

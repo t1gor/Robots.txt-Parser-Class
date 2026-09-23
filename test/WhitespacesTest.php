@@ -14,7 +14,7 @@ class WhitespacesTest extends TestCase {
 	 */
 	public function testWhitespaces(string $robotsTxtContent) {
 		// init parser
-		$parser = new RobotsTxtParser($robotsTxtContent);
+		$parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 		$rules = $parser->getRules('*');
 
 		$this->assertNotEmpty($rules, 'expected rules for *');
@@ -28,7 +28,7 @@ class WhitespacesTest extends TestCase {
 	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/93
 	 */
 	public function testNoSpaceAfterColon() {
-		$parser = new RobotsTxtParser("user-agent:*\ndisallow:/\n");
+		$parser = (new RobotsTxtParser())->setContent("user-agent:*\ndisallow:/\n");
 
 		$this->assertFalse($parser->isAllowed('/'));
 		$this->assertTrue($parser->isDisallowed('/'));

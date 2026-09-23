@@ -15,7 +15,7 @@ class AtSymbolTest extends TestCase
 		 */
 		public function testContainingAtChar($robotsTxtContent)
 		{
-			$parser = new RobotsTxtParser($robotsTxtContent);
+			$parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 			$this->assertTrue($parser->isAllowed("/peanuts"));
 			$this->assertFalse($parser->isDisallowed("/peanuts"));
 			$this->assertFalse($parser->isAllowed("/url_containing_@_symbol"));

@@ -31,7 +31,7 @@ class GeneratorBasedReader implements ReaderInterface {
 
 	private bool $truncated = false;
 
-	/** Only close what we opened - a caller's stream stays theirs to close. */
+	/** Only close what we opened. */
 	private bool $ownsStream = false;
 
 	protected function __construct() {
@@ -111,7 +111,7 @@ class GeneratorBasedReader implements ReaderInterface {
 
 		$reader = new GeneratorBasedReader();
 
-		// a non-seekable stream (http) warns rather than rewinds, so read on from where it stands
+		// a non-seekable stream (http) warns rather than rewinds; read on from where it stands
 		$reader->quietly(function () use ($stream) {
 			return rewind($stream);
 		});
@@ -120,10 +120,9 @@ class GeneratorBasedReader implements ReaderInterface {
 	}
 
 	/**
-	 * Copies at most the configured number of raw bytes into a stream of our own, so neither the
-	 * filter chain nor the disk or network read behind it can run past the limit. Counting here -
-	 * ahead of every filter - is what makes the limit mean fetched bytes, the same thing Google
-	 * and RFC 9309 cap. No limit keeps the original stream, and its lazy reads with it.
+	 * Copies at most $limit raw bytes into a stream of our own. Counting ahead of every filter is
+	 * what makes the limit mean fetched bytes, as Google and RFC 9309 cap them, and stops the read
+	 * itself running long. No limit keeps the original stream and its lazy reads.
 	 *
 	 * @param resource $stream
 	 *
@@ -138,7 +137,7 @@ class GeneratorBasedReader implements ReaderInterface {
 
 		$bounded = tmpfile();
 
-		// one byte past the limit is how we find out there was more
+		// one byte past the limit tells us there was more
 		$copied          = stream_copy_to_stream($stream, $bounded, $limit + 1);
 		$this->truncated = is_int($copied) && $copied > $limit;
 
@@ -160,8 +159,8 @@ class GeneratorBasedReader implements ReaderInterface {
 	}
 
 	/**
-	 * A cut landing mid-line would turn "Disallow: /admin/secret" into "Disallow: /admin" and
-	 * silently widen the rule, so the partial line goes rather than the other way round.
+	 * A cut mid-line would turn "Disallow: /admin/secret" into "Disallow: /admin", so the partial
+	 * line goes instead.
 	 *
 	 * @param resource $stream
 	 */
@@ -184,11 +183,10 @@ class GeneratorBasedReader implements ReaderInterface {
 			$end = $start;
 		}
 
-		// not one line ending in the whole of it - nothing here is a complete directive
+		// no line ending anywhere: nothing here is a complete directive
 		ftruncate($stream, 0);
 	}
 
-	/** Whether the input ran past the byte limit and was cut short. */
 	public function wasTruncated(): bool {
 		return $this->truncated;
 	}
@@ -213,7 +211,7 @@ class GeneratorBasedReader implements ReaderInterface {
 				$this->stream,
 				$name,
 				STREAM_FILTER_READ,
-				['logger' => $this->logger()] // buffered one forwards once a real logger lands
+				['logger' => $this->logger()] // buffered until a real one lands
 			);
 
 			if (false === $filter) {

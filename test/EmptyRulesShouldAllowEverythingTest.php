@@ -15,7 +15,7 @@ class EmptyRulesShouldAllowEverythingTest extends TestCase
 	 */
 	public function testEmptyRulesAllow()
 	{
-		$parser = new RobotsTxtParser('');
+		$parser = (new RobotsTxtParser())->setContent('');
 		$this->assertTrue($parser->isAllowed('/foo'));
 		$this->assertFalse($parser->isDisallowed('/foo'));
 		$this->assertNull($parser->getHost());
@@ -27,7 +27,7 @@ class EmptyRulesShouldAllowEverythingTest extends TestCase
 	 */
 	public function testAgentWithOnlyCommentedRulesAllows()
 	{
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/with-empty-rules.txt', 'r'));
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/with-empty-rules.txt', 'r'));
 
 		$this->assertSame(['*' => []], $parser->getRules());
 		$this->assertTrue($parser->isAllowed('/tech'));

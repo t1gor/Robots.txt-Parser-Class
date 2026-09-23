@@ -3,20 +3,18 @@
 namespace t1gor\RobotsTxtParser\Exception;
 
 /**
- * Wording for every way a configuration value can be unusable.
- *
- * For most callers this message is the only feedback there is - Laravel and WordPress validate
- * nothing of their own - so each one names the option, what arrived, and what was expected.
+ * Wording for every way a configuration value can be unusable. Laravel and WordPress validate
+ * nothing of their own, so for most callers this message is the only feedback there is.
  */
 final class ConfigurationExceptionFactory {
 
 	/**
 	 * @param string[] $known
 	 */
-	public static function unknownOption(string $given, array $known): ConfigurationException {
+	public static function unknownOption(string $given, array $known): UnknownOptionException {
 		$suggestion = self::closest($given, $known);
 
-		return new ConfigurationException(strtr('Unknown configuration option "{given}". {hint}', [
+		return new UnknownOptionException(strtr('Unknown configuration option "{given}". {hint}', [
 			'{given}' => $given,
 			'{hint}'  => is_null($suggestion)
 				? 'Known options: ' . implode(', ', $known) . '.'
@@ -24,16 +22,16 @@ final class ConfigurationExceptionFactory {
 		]));
 	}
 
-	public static function notAByteCount(string $option, mixed $given): ConfigurationException {
-		return new ConfigurationException(sprintf(
+	public static function notAByteCount(string $option, mixed $given): InvalidByteCountException {
+		return new InvalidByteCountException(sprintf(
 			'Configuration option "%s" must be an integer, an integer string, "none"/"unlimited" or null; got %s.',
 			$option,
 			is_scalar($given) ? var_export($given, true) : get_debug_type($given)
 		));
 	}
 
-	public static function notPositive(string $option, int $given): ConfigurationException {
-		return new ConfigurationException(sprintf(
+	public static function notPositive(string $option, int $given): ByteCountOutOfRangeException {
+		return new ByteCountOutOfRangeException(sprintf(
 			'Configuration option "%s" must be a positive number of bytes, or null to disable the limit; got %d.',
 			$option,
 			$given
@@ -56,7 +54,7 @@ final class ConfigurationExceptionFactory {
 			}
 		}
 
-		// far enough away and a suggestion is just noise
+		// far enough away and a suggestion is only noise
 		return $distance <= (int) ceil(mb_strlen($given) / 2) ? $best : null;
 	}
 }

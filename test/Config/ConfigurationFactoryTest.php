@@ -3,13 +3,19 @@
 namespace Config;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
 use t1gor\RobotsTxtParser\Configuration;
-use t1gor\RobotsTxtParser\Exception\ConfigurationException;
+use t1gor\RobotsTxtParser\Logger\BufferedLogger;
+use t1gor\RobotsTxtParser\Exception\ByteCountOutOfRangeException;
+use t1gor\RobotsTxtParser\Exception\InvalidByteCountException;
+use t1gor\RobotsTxtParser\Exception\UnknownOptionException;
 
 /**
  * @covers \t1gor\RobotsTxtParser\Config\ConfigurationFactory
  * @covers \t1gor\RobotsTxtParser\Exception\ConfigurationExceptionFactory
+ * @covers \t1gor\RobotsTxtParser\Exception\UnknownOptionException
+ * @covers \t1gor\RobotsTxtParser\Exception\InvalidByteCountException
  */
 class ConfigurationFactoryTest extends TestCase {
 
@@ -39,7 +45,7 @@ class ConfigurationFactoryTest extends TestCase {
 	 * @dataProvider refusedArrayValues
 	 */
 	public function testFromArrayRefusesEverythingElse($given) {
-		$this->expectException(ConfigurationException::class);
+		$this->expectException(InvalidByteCountException::class);
 
 		ConfigurationFactory::fromArray(['byte_limit' => $given]);
 	}
@@ -56,14 +62,14 @@ class ConfigurationFactoryTest extends TestCase {
 	}
 
 	public function testUnknownOptionSuggestsTheNearestOne() {
-		$this->expectException(ConfigurationException::class);
+		$this->expectException(UnknownOptionException::class);
 		$this->expectExceptionMessage('Did you mean "byte_limit"?');
 
 		ConfigurationFactory::fromArray(['byte_limitt' => 100000]);
 	}
 
 	public function testWildlyUnknownOptionListsWhatIsAvailable() {
-		$this->expectException(ConfigurationException::class);
+		$this->expectException(UnknownOptionException::class);
 		$this->expectExceptionMessage('Known options: byte_limit.');
 
 		ConfigurationFactory::fromArray(['something_entirely_different' => 1]);
@@ -93,7 +99,7 @@ class ConfigurationFactoryTest extends TestCase {
 	}
 
 	public function testFromEnvironmentRefusesGarbage() {
-		$this->expectException(ConfigurationException::class);
+		$this->expectException(InvalidByteCountException::class);
 
 		ConfigurationFactory::fromEnvironment(['RTP_BYTE_LIMIT' => 'lots']);
 	}
@@ -108,5 +114,68 @@ class ConfigurationFactoryTest extends TestCase {
 		define('RTP_BYTE_LIMIT', 100000);
 
 		$this->assertSame(100000, ConfigurationFactory::fromEnvironment()->byteLimit);
+	}
+
+	/**
+	 * @dataProvider unusableLimits
+	 */
+	public function testValidateRefusesLimitsThatCannotMeanAnything(int $given) {
+		$this->expectException(ByteCountOutOfRangeException::class);
+		$this->expectExceptionMessage('must be a positive number of bytes');
+
+		ConfigurationFactory::validate(new Configuration($given));
+	}
+
+	public function unusableLimits(): array {
+		return ['zero' => [0], 'negative' => [-1]];
+	}
+
+	public function testValidateAcceptsAPositiveLimitAndNoLimitAtAll() {
+		ConfigurationFactory::validate(new Configuration(100000));
+		ConfigurationFactory::validate(new Configuration(null));
+
+		$this->expectNotToPerformAssertions();
+	}
+
+	public function testFromArrayRefusesAZeroLimitToo() {
+		$this->expectException(ByteCountOutOfRangeException::class);
+
+		ConfigurationFactory::fromArray(['byte_limit' => 0]);
+	}
+
+	private function warningsFor(?int $byteLimit): array {
+		$logger = new BufferedLogger();
+
+		ConfigurationFactory::validate(new Configuration($byteLimit), $logger);
+
+		return $logger->getRecords();
+	}
+
+	public function testTheDefaultIsWorthNoWarnings() {
+		$this->assertSame([], $this->warningsFor(Configuration::DEFAULT_BYTE_LIMIT));
+		$this->assertSame([], $this->warningsFor(Configuration::RECOMMENDED_MIN_BYTE_LIMIT));
+	}
+
+	public function testDisablingTheLimitIsWarnedAbout() {
+		$warnings = $this->warningsFor(null);
+
+		$this->assertCount(1, $warnings);
+		$this->assertSame(LogLevel::WARNING, $warnings[0]['level']);
+		$this->assertStringContainsString('exhaustion', $warnings[0]['message']);
+		$this->assertSame([Configuration::OPTION_BYTE_LIMIT => null], $warnings[0]['context']);
+	}
+
+	public function testALowLimitIsKeptButWarnedAbout() {
+		$warnings = $this->warningsFor(1024);
+
+		$this->assertCount(1, $warnings);
+		$this->assertStringContainsString('below the recommended minimum', $warnings[0]['message']);
+		$this->assertSame(1024, $warnings[0]['context'][Configuration::OPTION_BYTE_LIMIT]);
+	}
+
+	public function testValidateWithoutALoggerStillRefusesTheUnusable() {
+		$this->expectException(ByteCountOutOfRangeException::class);
+
+		ConfigurationFactory::validate(new Configuration(0));
 	}
 }

@@ -16,7 +16,7 @@ class UserAgentTest extends TestCase
     public function testUserAgentPermission(string $robotsTxtContent)
     {
         // init parser
-        $parser = new RobotsTxtParser($robotsTxtContent);
+        $parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 
         $this->assertTrue($parser->isAllowed("/"));
         $this->assertTrue($parser->isAllowed("/article"));

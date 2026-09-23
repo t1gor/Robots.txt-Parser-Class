@@ -98,7 +98,7 @@ class BufferedLoggerTest extends TestCase {
 	public function testFilterMessagesSurviveALoggerAttachedAfterConstruction() {
 		[$logger, $handler] = $this->monolog();
 
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/../Fixtures/with-commented-lines.txt', 'r'));
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/../Fixtures/with-commented-lines.txt', 'r'));
 		$parser->setLogger($logger);
 		$parser->getRules();
 
@@ -112,10 +112,7 @@ class BufferedLoggerTest extends TestCase {
 	public function testConfigurationWarningsSurviveALateLogger() {
 		[$logger, $handler] = $this->monolog();
 
-		$parser = new RobotsTxtParser(
-			fopen(__DIR__ . '/../Fixtures/allow-spec.txt', 'r'),
-			config: new Configuration(null)
-		);
+		$parser = (new RobotsTxtParser(new Configuration(null)))->setContent(fopen(__DIR__ . '/../Fixtures/allow-spec.txt', 'r'));
 		$parser->setLogger($logger);
 
 		$this->assertTrue(

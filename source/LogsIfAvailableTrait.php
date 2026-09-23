@@ -10,10 +10,7 @@ trait LogsIfAvailableTrait {
 
 	private ?LoggerInterface $logger = null;
 
-	/**
-	 * There is always somewhere to log: until a real logger arrives messages are buffered rather
-	 * than dropped, so nothing decided during construction is lost.
-	 */
+	/** Always somewhere to log: until a real logger arrives, messages buffer rather than vanish. */
 	protected function logger(): LoggerInterface {
 		return $this->logger ??= new BufferedLogger();
 	}
@@ -30,7 +27,7 @@ trait LogsIfAvailableTrait {
 		$this->onLoggerSet($logger);
 	}
 
-	/** Hook for classes that hand the logger on to things they own. */
+	/** For classes that hand the logger on to things they own. */
 	protected function onLoggerSet(LoggerInterface $logger): void {
 	}
 

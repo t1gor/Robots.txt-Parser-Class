@@ -31,7 +31,7 @@ class RegexMetaCharsTest extends TestCase {
 	 * @dataProvider metaCharProvider
 	 */
 	public function testMetaCharsMatchLiterally(string $rule, string $matches, string $doesNotMatch) {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: {$rule}\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: {$rule}\n");
 
 		$this->assertTrue($parser->isDisallowed($matches), "{$rule} should match {$matches}");
 		$this->assertFalse($parser->isDisallowed($doesNotMatch), "{$rule} should not match {$doesNotMatch}");
@@ -43,7 +43,7 @@ class RegexMetaCharsTest extends TestCase {
 	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/87
 	 */
 	public function testWildcardNextToPlusIsNotAPossessiveQuantifier() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /blogs/*+*\nDisallow: /collections/*+*\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /blogs/*+*\nDisallow: /collections/*+*\n");
 
 		$this->assertFalse($parser->isDisallowed('/collections/belts'));
 		$this->assertFalse($parser->isDisallowed('/blogs/plain'));
@@ -65,7 +65,7 @@ class RegexMetaCharsTest extends TestCase {
 
 		try {
 			foreach (['/path(foo', '/d)e', '/a{2', '/x|y', '/p^q', '/s\\t', '/b[c'] as $rule) {
-				$parser = new RobotsTxtParser("User-agent: *\nDisallow: {$rule}\n");
+				$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: {$rule}\n");
 				$parser->isDisallowed('/some/path');
 			}
 		} finally {
@@ -77,7 +77,7 @@ class RegexMetaCharsTest extends TestCase {
 
 	/** `*` is still a wildcard and a trailing `$` still anchors. */
 	public function testWildcardAndEndAnchorStillWork() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /a/*/b\nDisallow: /exact$\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /a/*/b\nDisallow: /exact$\n");
 
 		$this->assertTrue($parser->isDisallowed('/a/anything/b'));
 		$this->assertFalse($parser->isDisallowed('/a/b'));
@@ -91,7 +91,7 @@ class RegexMetaCharsTest extends TestCase {
 	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/69
 	 */
 	public function testPercentEncodedPathStillMatchesRawRule() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /x|y\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /x|y\n");
 
 		$this->assertTrue($parser->isDisallowed('/x|y'));
 	}

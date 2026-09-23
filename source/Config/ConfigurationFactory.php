@@ -2,16 +2,15 @@
 
 namespace t1gor\RobotsTxtParser\Config;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Configuration;
-use t1gor\RobotsTxtParser\Exception\ConfigurationException;
+use t1gor\RobotsTxtParser\Exception\ByteCountOutOfRangeException;
 use t1gor\RobotsTxtParser\Exception\ConfigurationExceptionFactory;
+use t1gor\RobotsTxtParser\Exception\InvalidByteCountException;
+use t1gor\RobotsTxtParser\Exception\UnknownOptionException;
 
-/**
- * Builds a {@see Configuration} out of whatever shape the host application keeps its settings in.
- *
- * Kept apart from Configuration itself so the value object stays a value object: it knows its own
- * invariants, this knows the formats other people write.
- */
+/** Builds and checks a {@see Configuration} from whatever shape the host application uses. */
 final class ConfigurationFactory {
 
 	/** Shared with the stream filter names. */
@@ -24,12 +23,12 @@ final class ConfigurationFactory {
 	private const UNLIMITED_ALIASES = ['none', 'unlimited'];
 
 	/**
-	 * Every framework config layer - Laravel arrays, Symfony YAML, Yii2, Laminas, CakePHP - ends
-	 * up as an array, so this is the portable entry point. Keys left out keep their defaults.
+	 * Every framework config layer ends up as an array, so this is the portable entry point.
+	 * Missing keys keep their defaults.
 	 *
 	 * @param array{byte_limit?: int|numeric-string|null} $options
 	 *
-	 * @throws ConfigurationException on unknown keys or unusable values
+	 * @throws UnknownOptionException|InvalidByteCountException|ByteCountOutOfRangeException
 	 */
 	public static function fromArray(array $options): Configuration {
 		foreach (array_keys($options) as $key) {
@@ -42,19 +41,18 @@ final class ConfigurationFactory {
 			return new Configuration();
 		}
 
-		return new Configuration(self::toByteCount(
+		return self::build(self::toByteCount(
 			Configuration::OPTION_BYTE_LIMIT,
 			$options[Configuration::OPTION_BYTE_LIMIT]
 		));
 	}
 
 	/**
-	 * Reads RTP_BYTE_LIMIT from the environment, falling back to a constant of the same name -
-	 * WordPress has no env convention, wp-config.php defines constants instead.
+	 * Falls back to a constant of the same name: WordPress defines those instead of env vars.
 	 *
 	 * @param array<string, mixed>|null $env Injectable so tests never touch the real environment.
 	 *
-	 * @throws ConfigurationException on unusable values
+	 * @throws InvalidByteCountException|ByteCountOutOfRangeException
 	 */
 	public static function fromEnvironment(?array $env = null): Configuration {
 		$name = self::ENV_PREFIX . 'BYTE_LIMIT';
@@ -63,7 +61,64 @@ final class ConfigurationFactory {
 		// unset or blank is not a decision - keep the default
 		return is_null($raw) || '' === trim($raw)
 			? new Configuration()
-			: new Configuration(self::toByteCount($name, $raw));
+			: self::build(self::toByteCount($name, $raw));
+	}
+
+	/**
+	 * Configuration holds no rules of its own, so anything handed one built directly runs it past
+	 * this first. Unusable settings throw, legal but questionable ones are logged.
+	 *
+	 * @throws ByteCountOutOfRangeException
+	 */
+	public static function validate(Configuration $config, ?LoggerInterface $logger = null): void {
+		// 0 is what people reach for when they mean null, and reading nothing is never meaningful
+		if (!is_null($config->byteLimit) && $config->byteLimit <= 0) {
+			throw ConfigurationExceptionFactory::notPositive(
+				Configuration::OPTION_BYTE_LIMIT,
+				$config->byteLimit
+			);
+		}
+
+		if (is_null($logger)) {
+			return;
+		}
+
+		foreach (self::warningsFor($config) as $warning) {
+			$logger->log(LogLevel::WARNING, $warning['message'], $warning['context']);
+		}
+	}
+
+	/** @return array<int, array{message: string, context: array<string, mixed>}> */
+	private static function warningsFor(Configuration $config): array {
+		if (is_null($config->byteLimit)) {
+			return [[
+				'message' => 'Byte limit is disabled: the whole robots.txt will be read however large '
+					. 'it is, risking memory and CPU exhaustion on a hostile or runaway file.',
+				'context' => [Configuration::OPTION_BYTE_LIMIT => null],
+			]];
+		}
+
+		if ($config->byteLimit < Configuration::RECOMMENDED_MIN_BYTE_LIMIT) {
+			return [[
+				'message' => 'Byte limit {byte_limit} is below the recommended minimum {recommended}: '
+					. 'robots.txt may be truncated to nothing, and unmatched paths default to allowed.',
+				'context' => [
+					Configuration::OPTION_BYTE_LIMIT => $config->byteLimit,
+					'recommended'                    => Configuration::RECOMMENDED_MIN_BYTE_LIMIT,
+				],
+			]];
+		}
+
+		return [];
+	}
+
+	/** @throws ByteCountOutOfRangeException */
+	private static function build(?int $byteLimit): Configuration {
+		$config = new Configuration($byteLimit);
+
+		self::validate($config);
+
+		return $config;
 	}
 
 	private static function readEnv(string $name, ?array $env): ?string {
@@ -78,18 +133,13 @@ final class ConfigurationFactory {
 		return is_scalar($value) ? (string) $value : null;
 	}
 
-	/**
-	 * Config layers hand over strings as often as ints: Symfony's %env()%, Laravel's env(), and
-	 * every define() in wp-config.php.
-	 *
-	 * @throws ConfigurationException
-	 */
+	/** Config layers hand over strings as often as ints. @throws InvalidByteCountException */
 	private static function toByteCount(string $option, mixed $value): ?int {
 		if (is_null($value)) {
 			return null;
 		}
 
-		// ahead of any is_scalar check - a bool would otherwise silently become 1
+		// before any is_scalar check, or a bool silently becomes 1
 		if (is_int($value)) {
 			return $value;
 		}
@@ -101,7 +151,7 @@ final class ConfigurationFactory {
 				return null;
 			}
 
-			// whole numbers only - "5.5" and "1e3" are too ambiguous to guess at
+			// whole numbers only: "5.5" and "1e3" are too ambiguous to guess at
 			if (1 === preg_match('/^-?\d+$/', $normalised)) {
 				return (int) $normalised;
 			}

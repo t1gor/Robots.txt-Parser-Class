@@ -6,6 +6,7 @@ use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Configuration;
+use t1gor\RobotsTxtParser\Exception\ByteCountOutOfRangeException;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 /**
@@ -13,7 +14,6 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::trimToLastLine
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::wasTruncated
  * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::emitWarnings
- * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isTruncated
  */
 class ByteLimitTest extends TestCase {
 
@@ -51,15 +51,15 @@ class ByteLimitTest extends TestCase {
 
 	public function testRulesPastTheLimitAreIgnored() {
 		$content = $this->robotsTxtOf(self::LIMIT) . "Disallow: /beyond-the-limit\n";
-		$parser  = new RobotsTxtParser($this->streamOf($content), config: new Configuration(self::LIMIT));
+		$parser  = (new RobotsTxtParser(new Configuration(self::LIMIT)))->setContent($this->streamOf($content));
 
-		$this->assertTrue($parser->isTruncated());
+		$this->assertTrue($parser->getReader()->wasTruncated());
 		$this->assertNotContains('/beyond-the-limit', $parser->getRules()['*']['disallow']);
 	}
 
 	public function testRulesBeforeTheLimitSurvive() {
 		$content = $this->robotsTxtOf(self::LIMIT) . "Disallow: /beyond-the-limit\n";
-		$parser  = new RobotsTxtParser($this->streamOf($content), config: new Configuration(self::LIMIT));
+		$parser  = (new RobotsTxtParser(new Configuration(self::LIMIT)))->setContent($this->streamOf($content));
 
 		$this->assertCount(1, $parser->getRules()['*']['disallow']);
 		$this->assertStringStartsWith('/xxx', $parser->getRules()['*']['disallow'][0]);
@@ -68,7 +68,7 @@ class ByteLimitTest extends TestCase {
 	/** A cut mid-rule must drop the rule, never shorten it into a broader one. */
 	public function testAPartialLineIsDroppedRatherThanShortened() {
 		$content = $this->robotsTxtOf(self::LIMIT - 10) . "Disallow: /secret-area\n";
-		$parser  = new RobotsTxtParser($this->streamOf($content), config: new Configuration(self::LIMIT));
+		$parser  = (new RobotsTxtParser(new Configuration(self::LIMIT)))->setContent($this->streamOf($content));
 
 		foreach ($parser->getRules()['*']['disallow'] as $rule) {
 			$this->assertStringNotContainsString('secret', $rule);
@@ -77,27 +77,24 @@ class ByteLimitTest extends TestCase {
 	}
 
 	public function testContentWithoutAnyLineBreakIsDiscardedWholesale() {
-		$parser = new RobotsTxtParser(
-			$this->streamOf('Disallow: /' . str_repeat('x', self::LIMIT * 2)),
-			config: new Configuration(self::LIMIT)
-		);
+		$parser = (new RobotsTxtParser(new Configuration(self::LIMIT)))->setContent($this->streamOf('Disallow: /' . str_repeat('x', self::LIMIT * 2)));
 
-		$this->assertTrue($parser->isTruncated());
+		$this->assertTrue($parser->getReader()->wasTruncated());
 		$this->assertSame([], $parser->getRules());
 	}
 
 	public function testDisablingTheLimitReadsEverything() {
 		$content = $this->robotsTxtOf(self::LIMIT) . "Disallow: /beyond-the-limit\n";
-		$parser  = new RobotsTxtParser($this->streamOf($content), config: new Configuration(null));
+		$parser  = (new RobotsTxtParser(new Configuration(null)))->setContent($this->streamOf($content));
 
-		$this->assertFalse($parser->isTruncated());
+		$this->assertFalse($parser->getReader()->wasTruncated());
 		$this->assertContains('/beyond-the-limit', $parser->getRules()['*']['disallow']);
 	}
 
 	public function testOrdinaryFilesAreUntouchedByTheDefaultLimit() {
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
 
-		$this->assertFalse($parser->isTruncated());
+		$this->assertFalse($parser->getReader()->wasTruncated());
 		$this->assertNotEmpty($parser->getRules());
 	}
 
@@ -106,13 +103,9 @@ class ByteLimitTest extends TestCase {
 	 * CP1251 that becomes 100 once decoded, so a 90 byte limit only fits if we count before iconv.
 	 */
 	public function testTheLimitCountsRawBytesNotDecodedOnes() {
-		$parser = new RobotsTxtParser(
-			fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'),
-			'Windows-1251',
-			config: new Configuration(90)
-		);
+		$parser = (new RobotsTxtParser(new Configuration(90)))->setContent(fopen(__DIR__ . '/Fixtures/cp1251-real-bytes.txt', 'r'), 'Windows-1251');
 
-		$this->assertFalse($parser->isTruncated());
+		$this->assertFalse($parser->getReader()->wasTruncated());
 		$this->assertSame([
 			'disallow' => ['/каталог', '/поиск'],
 			'allow'    => ['/каталог/общий'],
@@ -121,7 +114,7 @@ class ByteLimitTest extends TestCase {
 
 	public function testTruncationIsReportedToALoggerAttachedAfterConstruction() {
 		$content = $this->robotsTxtOf(self::LIMIT) . "Disallow: /beyond-the-limit\n";
-		$parser  = new RobotsTxtParser($this->streamOf($content), config: new Configuration(self::LIMIT));
+		$parser  = (new RobotsTxtParser(new Configuration(self::LIMIT)))->setContent($this->streamOf($content));
 		$handler = $this->handlerFor($parser);
 
 		$parser->getRules();
@@ -133,10 +126,7 @@ class ByteLimitTest extends TestCase {
 	}
 
 	public function testALowLimitWarnsBeforeItEverTruncates() {
-		$parser  = new RobotsTxtParser(
-			fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'),
-			config: new Configuration(1024)
-		);
+		$parser  = (new RobotsTxtParser(new Configuration(1024)))->setContent(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
 		$handler = $this->handlerFor($parser);
 
 		$parser->getRules();
@@ -148,10 +138,7 @@ class ByteLimitTest extends TestCase {
 	}
 
 	public function testDisablingTheLimitWarns() {
-		$parser  = new RobotsTxtParser(
-			fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'),
-			config: new Configuration(null)
-		);
+		$parser  = (new RobotsTxtParser(new Configuration(null)))->setContent(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
 		$handler = $this->handlerFor($parser);
 
 		$parser->getRules();
@@ -164,7 +151,7 @@ class ByteLimitTest extends TestCase {
 
 	/** The default must stay silent, or the warnings stop meaning anything. */
 	public function testTheDefaultConfigurationWarnsAboutNothing() {
-		$parser  = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
+		$parser  = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
 		$handler = $this->handlerFor($parser);
 
 		$parser->getRules();
@@ -172,9 +159,16 @@ class ByteLimitTest extends TestCase {
 		$this->assertFalse($handler->hasWarningRecords(), stringifyLogs($handler->getRecords()));
 	}
 
+	/** Configuration validates nothing itself, so the parser has to. */
+	public function testTheParserRefusesAHandBuiltConfigurationThatCannotWork() {
+		$this->expectException(ByteCountOutOfRangeException::class);
+
+		(new RobotsTxtParser(new Configuration(0)))->setContent($this->streamOf("User-agent: *\n"));
+	}
+
 	public function testConfigurationIsReadableBackOffTheParser() {
 		$config = new Configuration(100000);
-		$parser = new RobotsTxtParser($this->streamOf("User-agent: *\n"), config: $config);
+		$parser = (new RobotsTxtParser($config))->setContent($this->streamOf("User-agent: *\n"));
 
 		$this->assertSame($config, $parser->getConfiguration());
 	}
