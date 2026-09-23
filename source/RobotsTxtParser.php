@@ -6,7 +6,6 @@ use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessorsFactory;
-use t1gor\RobotsTxtParser\Parser\HostName;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
 use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
 use t1gor\RobotsTxtParser\Parser\Url;
@@ -49,9 +48,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 	// robots.txt http status code
 	protected ?int $httpStatusCode;
-
-	// url
-	private $url = null;
 
 	// UserAgent
 	private $userAgent      = '*';
@@ -129,72 +125,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
 			$this->userAgentMatcher->setLogger($this->logger);
 		}
-	}
-
-	private static function isValidHostName(string $host): bool {
-		return HostName::isValid($host);
-	}
-
-	/**
-	 * Validate URL scheme
-	 *
-	 * @param string $scheme
-	 *
-	 * @return bool
-	 */
-	private static function isValidScheme($scheme) {
-		return Url::isValidScheme($scheme);
-	}
-
-	/**
-	 * Parse URL
-	 *
-	 * @param string $url
-	 *
-	 * @return array|false
-	 */
-	protected function parseURL($url) {
-		$parsed = parse_url($url);
-		if ($parsed === false) {
-			return false;
-		} elseif (!isset($parsed['scheme']) || !$this->isValidScheme($parsed['scheme'])) {
-			return false;
-		} else {
-			if (!isset($parsed['host']) || !$this->isValidHostName($parsed['host'])) {
-				return false;
-			} else {
-				if (!isset($parsed['port'])) {
-					$parsed['port'] = getservbyname($parsed['scheme'], 'tcp');
-					if (!is_int($parsed['port'])) {
-						return false;
-					}
-				}
-			}
-		}
-		$parsed['custom'] = (isset($parsed['path']) ? $parsed['path'] : '/') . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
-		return $parsed;
-	}
-
-	/**
-	 * Explode Clean-Param rule
-	 *
-	 * @param string $rule
-	 *
-	 * @return array
-	 */
-	private function explodeCleanParamRule($rule) {
-		// strip multi-spaces
-		$rule = preg_replace('/\s+/S', ' ', $rule);
-		// split into parameter and path
-		$array      = explode(' ', $rule, 2);
-		$cleanParam = [];
-		// strip any invalid characters from path prefix
-		$cleanParam['path'] = isset($array[1]) ? $this->encode_url(preg_replace('/[^A-Za-z0-9\.-\/\*\_]/', '', $array[1])) : '/*';
-		$param              = explode('&', $array[0]);
-		foreach ($param as $key) {
-			$cleanParam['param'][] = trim($key);
-		}
-		return $cleanParam;
 	}
 
 	/**
@@ -286,49 +216,12 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return false;
 	}
 
-	protected function checkRuleSwitch(string $rule, string $path): bool {
-		switch (Directive::attemptGetInline($rule)) {
-
-			case Directive::CLEAN_PARAM:
-				if ($this->checkCleanParamRule(Directive::stripInline($rule), $path)) {
-					return true;
-				}
-				break;
-
-			case Directive::HOST;
-				if ($this->checkHostRule(Directive::stripInline($rule))) {
-					return true;
-				}
-				break;
-
-			default:
-				return $this->checkBasicRule($rule, $path);
-		}
-	}
-
 	/**
-	 * Check Clean-Param rule
-	 *
-	 * @param string $rule
-	 * @param string $path
-	 *
-	 * @return bool
+	 * Only allow/disallow paths reach here - inline clean-param/host are kept out of the tree
+	 * by their own processors, see {@see getCleanParam()} and {@see getHost()}.
 	 */
-	private function checkCleanParamRule($rule, $path) {
-		$cleanParam = $this->explodeCleanParamRule($rule);
-		// check if path prefix matches the path of the url we're checking
-		if (!$this->checkBasicRule($cleanParam['path'], $path)) {
-			return false;
-		}
-		foreach ($cleanParam['param'] as $param) {
-			if (!strpos($path, "?$param=")
-				&& !strpos($path, "&$param=")
-			) {
-				return false;
-			}
-		}
-		$this->log('Rule match: ' . Directive::CLEAN_PARAM . ' directive');
-		return true;
+	protected function checkRuleSwitch(string $rule, string $path): bool {
+		return $this->checkBasicRule($rule, $path);
 	}
 
 	/**
@@ -366,36 +259,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			$value = '^' . $value;
 		}
 		return $value;
-	}
-
-	/**
-	 * Check Host rule
-	 *
-	 * @param string $rule
-	 *
-	 * @return bool
-	 */
-	private function checkHostRule($rule) {
-		if (!isset($this->url)) {
-			$error_msg = WarmingMessages::INLINED_HOST;
-			$this->log($error_msg, [], LogLevel::ERROR);
-			return false;
-		}
-
-		$url  = $this->parseURL($this->url);
-		$host = trim(str_ireplace(Directive::HOST . ':', '', mb_strtolower($rule)));
-		if (in_array(
-			$host, [
-				$url['host'],
-				$url['host'] . ':' . $url['port'],
-				$url['scheme'] . '://' . $url['host'],
-				$url['scheme'] . '://' . $url['host'] . ':' . $url['port'],
-			]
-		)) {
-			$this->log('Rule match: ' . Directive::HOST . ' directive');
-			return true;
-		}
-		return false;
 	}
 
 	/**

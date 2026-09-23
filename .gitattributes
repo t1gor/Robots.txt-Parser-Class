@@ -1,0 +1,7 @@
+# LF everywhere, on every platform.
+* text=auto eol=lf
+
+*.png binary
+
+# Captured robots.txt files: served bytes are the fixture, CRLF included. Never normalize.
+test/Fixtures/** -text
