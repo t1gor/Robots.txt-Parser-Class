@@ -144,6 +144,9 @@ class GeneratorBasedReader implements ReaderInterface {
 
 		if ($this->truncated) {
 			$this->trimToLastLine($bounded, $limit);
+			$this->log(WarmingMessages::BYTE_LIMIT_REACHED, [
+				Configuration::OPTION_BYTE_LIMIT => $limit,
+			], LogLevel::WARNING);
 		}
 
 		if ($this->ownsStream && is_resource($stream)) {
@@ -210,7 +213,7 @@ class GeneratorBasedReader implements ReaderInterface {
 				$this->stream,
 				$name,
 				STREAM_FILTER_READ,
-				['logger' => $this->logger] // pass logger to filters
+				['logger' => $this->logger()] // buffered one forwards once a real logger lands
 			);
 
 			if (false === $filter) {

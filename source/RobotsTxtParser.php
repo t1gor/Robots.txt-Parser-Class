@@ -76,6 +76,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->userAgentMatcher = $userAgentMatcher;
 		$this->config           = $config ?? new Configuration();
 
+		// buffered until a logger arrives - see LogsIfAvailableTrait::logger()
+		foreach ($this->config->warnings as $warning) {
+			$this->log($warning['message'], $warning['context'], LogLevel::WARNING);
+		}
+
 		if (is_null($this->reader)) {
 			$this->log('Reader is not passed, using a default one...');
 
@@ -108,8 +113,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			$this->log('Creating a default tree builder as none passed...');
 
 			$this->treeBuilder = new TreeBuilder(
-				DirectiveProcessorsFactory::getDefault($this->logger),
-				$this->logger
+				DirectiveProcessorsFactory::getDefault($this->logger()),
+				$this->logger()
 			);
 		}
 
@@ -128,21 +133,17 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return $this->reader->wasTruncated();
 	}
 
-	public function getLogger(): ?LoggerInterface {
-		return $this->logger;
+	public function getLogger(): LoggerInterface {
+		return $this->logger();
 	}
 
-	public function setLogger(LoggerInterface $logger): void {
-		$this->logger = $logger;
-
-		$this->replayWarnings();
-
+	protected function onLoggerSet(LoggerInterface $logger): void {
 		if ($this->reader instanceof LoggerAwareInterface) {
-			$this->reader->setLogger($this->logger);
+			$this->reader->setLogger($logger);
 		}
 
 		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
-			$this->userAgentMatcher->setLogger($this->logger);
+			$this->userAgentMatcher->setLogger($logger);
 		}
 	}
 
@@ -153,24 +154,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return bool
 	 */
-	/**
-	 * A Configuration is usually built long before a logger exists - in a framework's service
-	 * container, or in wp-config.php - and the input is bounded while the parser is constructed.
-	 * Both are therefore already decided by the time a logger shows up, so they are replayed here
-	 * rather than logged into the void.
-	 */
-	private function replayWarnings(): void {
-		foreach ($this->config->warnings as $warning) {
-			$this->log($warning['message'], $warning['context'], LogLevel::WARNING);
-		}
-
-		if ($this->reader->wasTruncated()) {
-			$this->log(WarmingMessages::BYTE_LIMIT_REACHED, [
-				Configuration::OPTION_BYTE_LIMIT => $this->config->byteLimit,
-			], LogLevel::WARNING);
-		}
-	}
-
 	public function setHttpStatusCode(int $code): bool {
 		if (!is_int($code) || $code < 100 || $code > 599) {
 			$this->log('Invalid HTTP status code, not taken into account.', ['code' => $code], LogLevel::WARNING);
@@ -186,7 +169,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->buildTree();
 
 		$url = new Url($url);
-		!is_null($this->logger) && $url->setLogger($this->logger);
+		$url->setLogger($this->logger());
 
 		return $this->checkRules(Directive::ALLOW, $url->getPath(), $userAgent);
 	}
@@ -321,7 +304,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->buildTree();
 
 		$url = new Url($url);
-		!is_null($this->logger) && $url->setLogger($this->logger);
+		$url->setLogger($this->logger());
 
 		return $this->checkRules(Directive::DISALLOW, $url->getPath(), $userAgent);
 	}
