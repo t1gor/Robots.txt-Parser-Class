@@ -91,6 +91,72 @@ print_r($parser->filters());
 
 A missing filter means it failed to apply - attach a logger to see why. A non UTF-8 encoding adds `convert.iconv.*` at the front.
 
+###### Limiting how much gets parsed
+
+An endless or hostile robots.txt will happily burn your crawler's CPU and memory, so the parser reads
+at most 500 KiB by default - the size [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.5)
+and Google both settle on. The cap counts *fetched* bytes, before any decoding, and anything past it
+is ignored. A rule cut in half by the limit is dropped rather than shortened, so `Disallow: /admin/secret`
+can never silently widen into `Disallow: /admin`.
+
+```php
+use t1gor\RobotsTxtParser\Configuration;
+use t1gor\RobotsTxtParser\RobotsTxtParser;
+
+$parser = new RobotsTxtParser(fopen('robots.txt', 'r'), config: new Configuration(100 * 1024));
+
+$parser->isTruncated(); // did the limit actually cut anything off?
+```
+
+Pass `null` to switch the limit off. That is logged as a warning, and so is any limit below
+`Configuration::RECOMMENDED_MIN_BYTE_LIMIT` (24 KiB), where robots.txt risks truncating to nothing -
+and unmatched paths then default to allowed. `0` and negative values throw a `ConfigurationException`.
+
+Warnings go through the PSR-3 logger. Attaching one after construction is fine: anything decided
+earlier is replayed as soon as a logger turns up.
+
+###### Bootstrapping the configuration from a framework
+
+`ConfigurationFactory` turns whatever shape your framework keeps settings in into a `Configuration`.
+Unknown keys are rejected with a suggestion, and strings are accepted wherever an integer is - config
+layers hand those over constantly.
+
+**Laravel** - `config/robots.php`, then bind it in a service provider:
+
+```php
+// config/robots.php
+return ['byte_limit' => env('RTP_BYTE_LIMIT', 512000)];
+
+// app/Providers/AppServiceProvider.php
+use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
+use t1gor\RobotsTxtParser\Configuration;
+
+$this->app->singleton(Configuration::class, fn () => ConfigurationFactory::fromArray(config('robots')));
+```
+
+**Symfony** - `config/services.yaml`:
+
+```yaml
+t1gor\RobotsTxtParser\Configuration:
+    factory: ['t1gor\RobotsTxtParser\Config\ConfigurationFactory', 'fromArray']
+    arguments:
+        - { byte_limit: '%env(int:RTP_BYTE_LIMIT)%' }
+```
+
+**WordPress** - no container and no environment convention, so `fromEnvironment()` falls back to a
+constant of the same name:
+
+```php
+// wp-config.php
+define('RTP_BYTE_LIMIT', 512000);
+
+// anywhere in the plugin
+$config = ConfigurationFactory::fromEnvironment();
+```
+
+**Anything else** - `ConfigurationFactory::fromArray()` takes a plain array, which every PHP config
+layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefixed variables.
+
 ### Public API
 
 | Method | Params | Returns | Description |
@@ -106,6 +172,8 @@ A missing filter means it failed to apply - attach a logger to see why. A non UT
 | `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
 | `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
 | `filters` | `-` | `string[]` | Stream filters applied to the input, in the order they run |
+| `getConfiguration` | `-` | `Configuration` | The options the parser was built with |
+| `isTruncated` | `-` | `bool` | Whether the byte limit cut the input short |
 | `getContent` | `-` | `string` | The content that was parsed. |
 | `getLog` | `-` | `[]` | **Deprecated.** Please use PSR logger as described above. |
 | `render` | `-` | `string` | **Deprecated.** Please `getContent` |

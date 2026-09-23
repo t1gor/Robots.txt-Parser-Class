@@ -3,6 +3,7 @@
 namespace t1gor\RobotsTxtParser\Stream;
 
 use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\Configuration;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 use t1gor\RobotsTxtParser\Stream\Filters\EnsureEndOfLinesFilter;
@@ -27,6 +28,11 @@ class GeneratorBasedReader implements ReaderInterface {
 	private $encodingFilter = null;
 
 	private ?string $encodingFilterName = null;
+
+	private bool $truncated = false;
+
+	/** Only close what we opened - a caller's stream stays theirs to close. */
+	private bool $ownsStream = false;
 
 	protected function __construct() {
 		/** @note order matters */
@@ -74,7 +80,7 @@ class GeneratorBasedReader implements ReaderInterface {
 			}
 		}
 
-		if (is_resource($this->stream)) {
+		if ($this->ownsStream && is_resource($this->stream)) {
 			fclose($this->stream);
 		}
 	}
@@ -84,7 +90,7 @@ class GeneratorBasedReader implements ReaderInterface {
 	 *
 	 * @return static
 	 */
-	public static function fromString(string $input = ''): self {
+	public static function fromString(string $input = '', ?Configuration $config = null): self {
 		$reader = new GeneratorBasedReader();
 		$stream = tmpfile();
 
@@ -92,20 +98,96 @@ class GeneratorBasedReader implements ReaderInterface {
 		fseek($stream, 0);
 
 		$reader->log(WarmingMessages::STRING_INIT_DEPRECATE);
+		$reader->ownsStream = true;
 
-		return $reader->setStream($stream);
+		return $reader->setStream($reader->bound($stream, $config));
 	}
 
-	public static function fromStream($stream): self {
+	public static function fromStream($stream, ?Configuration $config = null): self {
 		if (!is_resource($stream)) {
 			$error = sprintf('Argument must be a valid resource type. %s given.', gettype($stream));
 			throw new \InvalidArgumentException($error);
 		}
 
 		$reader = new GeneratorBasedReader();
-		rewind($stream);
 
-		return $reader->setStream($stream);
+		// a non-seekable stream (http) warns rather than rewinds, so read on from where it stands
+		$reader->quietly(function () use ($stream) {
+			return rewind($stream);
+		});
+
+		return $reader->setStream($reader->bound($stream, $config));
+	}
+
+	/**
+	 * Copies at most the configured number of raw bytes into a stream of our own, so neither the
+	 * filter chain nor the disk or network read behind it can run past the limit. Counting here -
+	 * ahead of every filter - is what makes the limit mean fetched bytes, the same thing Google
+	 * and RFC 9309 cap. No limit keeps the original stream, and its lazy reads with it.
+	 *
+	 * @param resource $stream
+	 *
+	 * @return resource
+	 */
+	private function bound($stream, ?Configuration $config) {
+		$limit = ($config ?? new Configuration())->byteLimit;
+
+		if (is_null($limit)) {
+			return $stream;
+		}
+
+		$bounded = tmpfile();
+
+		// one byte past the limit is how we find out there was more
+		$copied          = stream_copy_to_stream($stream, $bounded, $limit + 1);
+		$this->truncated = is_int($copied) && $copied > $limit;
+
+		if ($this->truncated) {
+			$this->trimToLastLine($bounded, $limit);
+		}
+
+		if ($this->ownsStream && is_resource($stream)) {
+			fclose($stream);
+		}
+
+		$this->ownsStream = true;
+		rewind($bounded);
+
+		return $bounded;
+	}
+
+	/**
+	 * A cut landing mid-line would turn "Disallow: /admin/secret" into "Disallow: /admin" and
+	 * silently widen the rule, so the partial line goes rather than the other way round.
+	 *
+	 * @param resource $stream
+	 */
+	private function trimToLastLine($stream, int $limit): void {
+		ftruncate($stream, $limit);
+
+		$end = $limit;
+
+		while ($end > 0) {
+			$start  = max(0, $end - 8192);
+			fseek($stream, $start);
+			$buffer = (string) fread($stream, $end - $start);
+			$at     = strrpos($buffer, "\n");
+
+			if (false !== $at) {
+				ftruncate($stream, $start + $at + 1);
+				return;
+			}
+
+			$end = $start;
+		}
+
+		// not one line ending in the whole of it - nothing here is a complete directive
+		ftruncate($stream, 0);
+	}
+
+	/** Whether the input ran past the byte limit and was cut short. */
+	public function wasTruncated(): bool {
+		return $this->truncated;
 	}
 
 	protected function setStream($stream): GeneratorBasedReader {

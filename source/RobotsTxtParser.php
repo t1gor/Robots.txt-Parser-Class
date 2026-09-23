@@ -57,6 +57,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	private string $encoding = '';
 
 	private array                      $tree = [];
+	private Configuration              $config;
 	private ?ReaderInterface           $reader;
 	private ?TreeBuilderInterface      $treeBuilder;
 	private ?UserAgentMatcherInterface $userAgentMatcher;
@@ -66,19 +67,24 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		string $encoding = self::DEFAULT_ENCODING,
 		?TreeBuilderInterface $treeBuilder = null,
 		?ReaderInterface $reader = null,
-		?UserAgentMatcherInterface $userAgentMatcher = null
+		?UserAgentMatcherInterface $userAgentMatcher = null,
+		?Configuration $config = null
 	) {
 		$this->treeBuilder      = $treeBuilder;
 		$this->reader           = $reader;
 		$this->encoding         = $encoding;
 		$this->userAgentMatcher = $userAgentMatcher;
+		$this->config           = $config ?? new Configuration();
 
 		if (is_null($this->reader)) {
 			$this->log('Reader is not passed, using a default one...');
 
 			$this->reader = is_resource($content)
-				? GeneratorBasedReader::fromStream($content)
-				: GeneratorBasedReader::fromString($content);
+				? GeneratorBasedReader::fromStream($content, $this->config)
+				: GeneratorBasedReader::fromString($content, $this->config);
+		} elseif (!is_null($config)) {
+			// a reader brought its own limit with it when it was built
+			$this->log('Both a reader and a configuration were passed; the configuration is not applied to the reader.');
 		}
 
 		if (is_null($this->userAgentMatcher)) {
@@ -111,12 +117,25 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->tree = $this->treeBuilder->build();
 	}
 
+	public function getConfiguration(): Configuration {
+		return $this->config;
+	}
+
+	/** Whether robots.txt was cut short by the byte limit. */
+	public function isTruncated(): bool {
+		$this->buildTree();
+
+		return $this->reader->wasTruncated();
+	}
+
 	public function getLogger(): ?LoggerInterface {
 		return $this->logger;
 	}
 
 	public function setLogger(LoggerInterface $logger): void {
 		$this->logger = $logger;
+
+		$this->replayWarnings();
 
 		if ($this->reader instanceof LoggerAwareInterface) {
 			$this->reader->setLogger($this->logger);
@@ -134,6 +153,24 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return bool
 	 */
+	/**
+	 * A Configuration is usually built long before a logger exists - in a framework's service
+	 * container, or in wp-config.php - and the input is bounded while the parser is constructed.
+	 * Both are therefore already decided by the time a logger shows up, so they are replayed here
+	 * rather than logged into the void.
+	 */
+	private function replayWarnings(): void {
+		foreach ($this->config->warnings as $warning) {
+			$this->log($warning['message'], $warning['context'], LogLevel::WARNING);
+		}
+
+		if ($this->reader->wasTruncated()) {
+			$this->log(WarmingMessages::BYTE_LIMIT_REACHED, [
+				Configuration::OPTION_BYTE_LIMIT => $this->config->byteLimit,
+			], LogLevel::WARNING);
+		}
+	}
+
 	public function setHttpStatusCode(int $code): bool {
 		if (!is_int($code) || $code < 100 || $code > 599) {
 			$this->log('Invalid HTTP status code, not taken into account.', ['code' => $code], LogLevel::WARNING);

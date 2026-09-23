@@ -9,6 +9,9 @@ interface ReaderInterface extends LoggerAwareInterface {
 	public function getContentIterated(): \Iterator;
 	public function getContentRaw(): string;
 
+	/** Whether the input ran past the configured byte limit and was cut short. */
+	public function wasTruncated(): bool;
+
 	/** @return string[] */
 	public function filters(): array;
 }
