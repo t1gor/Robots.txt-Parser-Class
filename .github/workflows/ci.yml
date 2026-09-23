@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Re-apply .gitattributes to every tracked file; anything that moves was committed with CRLF.
       - name: Check for CRLF
@@ -44,7 +44,7 @@ jobs:
         php: [ '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
