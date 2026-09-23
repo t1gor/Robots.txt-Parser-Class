@@ -228,11 +228,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * Check basic rule
 	 */
 	private function checkBasicRule(string $rule, string $path): bool {
-		// change @ to \@
-		$escaped = strtr($this->prepareRegexRule($rule), ['@' => '\@']);
-
-		// match result
-		if (preg_match('@' . $escaped . '@', $path)) {
+		if (preg_match('@' . $this->prepareRegexRule($rule) . '@', $path)) {
 			$this->log('Rule match: Path');
 			return true;
 		}
@@ -240,25 +236,25 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return false;
 	}
 
+	/**
+	 * Only `*` (wildcard) and a trailing `$` (end anchor) are special; everything else is a literal,
+	 * so quote it rather than hand-escaping a list that keeps missing metachars.
+	 *
+	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
+	 */
 	protected function prepareRegexRule(string $value): string {
-		$escape = ['$' => '\$', '?' => '\?', '.' => '\.', '*' => '.*', '[' => '\[', ']' => '\]'];
-		$value  = str_replace(array_keys($escape), array_values($escape), $value);
+		$anchored = mb_substr($value, -1) === '$';
 
-		if (mb_strlen($value) > 2 && mb_substr($value, -2) == '\$') {
-			$value = substr($value, 0, -2) . '$';
+		if ($anchored) {
+			$value = mb_substr($value, 0, -1);
 		}
 
-		if (mb_strrpos($value, '/') == (mb_strlen($value) - 1)
-			|| mb_strrpos($value, '=') == (mb_strlen($value) - 1)
-			|| mb_strrpos($value, '?') == (mb_strlen($value) - 1)
-		) {
-			$value .= '.*';
-		}
+		$quoted = implode('.*', array_map(function (string $literal): string {
+			return preg_quote($literal, '@');
+		}, explode('*', $value)));
 
-		if (substr($value, 0, 2) != '.*') {
-			$value = '^' . $value;
-		}
-		return $value;
+		// no end anchor means prefix matching, which '^' alone already gives us
+		return '^' . $quoted . ($anchored ? '$' : '');
 	}
 
 	/**
