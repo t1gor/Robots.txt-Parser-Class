@@ -5,6 +5,7 @@ namespace t1gor\RobotsTxtParser\Stream;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
+use t1gor\RobotsTxtParser\Stream\Filters\EnsureEndOfLinesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipDirectivesWithInvalidValuesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipEndOfCommentedLineFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
@@ -27,6 +28,7 @@ class GeneratorBasedReader implements ReaderInterface {
 	protected function __construct() {
 		/** @note order matters */
 		$this->filters = [
+			EnsureEndOfLinesFilter::class                => false,
 			SkipCommentedLinesFilter::class              => false,
 			SkipEndOfCommentedLineFilter::class          => false,
 			TrimSpacesLeftFilter::class                  => false,
