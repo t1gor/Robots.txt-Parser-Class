@@ -9,9 +9,7 @@ class SkipEndOfCommentedLineFilter extends \php_user_filter implements CustomFil
 
 	public const NAME = 'RTP_skip_end_of_commented_line';
 
-	public $filtername = self::NAME;
-
-	public function filter($in, $out, &$consumed, $closing) {
+	public function filter($in, $out, &$consumed, $closing): int {
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			$replacedCount = 0;
 			$bucket->data = preg_replace('/\s*#.*/mui', '', $bucket->data, -1, $replacedCount);

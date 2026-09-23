@@ -8,9 +8,7 @@ class TrimSpacesLeftFilter extends \php_user_filter implements CustomFilterInter
 
 	public const NAME = 'RTP_trim_spaces_both';
 
-	public $filtername = self::NAME;
-
-	public function filter($in, $out, &$consumed, $closing) {
+	public function filter($in, $out, &$consumed, $closing): int {
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			$bucket->data = preg_replace('/(^\s+)(?!\n$)/mui', '', $bucket->data);
 			$consumed += $bucket->datalen;

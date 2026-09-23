@@ -8,11 +8,9 @@ class EnsureEndOfLinesFilter extends \php_user_filter implements CustomFilterInt
 {
     public const NAME = 'RTP_ensure_end_of_lines';
 
-    public $filtername = self::NAME;
-
     protected string $incompleteLine = '';
 
-    public function filter($in, $out, &$consumed, $closing)
+    public function filter($in, $out, &$consumed, $closing): int
     {
         $buffer = $this->incompleteLine;
         while ($bucket = stream_bucket_make_writeable($in)) {
