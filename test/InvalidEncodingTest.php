@@ -1,7 +1,9 @@
 <?php declare(strict_types=1);
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
@@ -94,7 +96,7 @@ class InvalidEncodingTest extends TestCase {
 		$handler = $this->handlerFor($parser);
 		$parser->getRules();
 
-		$records = array_values(array_filter($handler->getRecords(), function (array $record): bool {
+		$records = array_values(array_filter($handler->getRecords(), function (LogRecord $record): bool {
 			return strpos($record['message'], 'Unsupported encoding') === 0;
 		}));
 
@@ -119,7 +121,7 @@ class InvalidEncodingTest extends TestCase {
 		$parser->getRules();
 
 		$this->assertFalse(
-			$handler->hasRecordThatContains('Adding encoding filter', LogLevel::DEBUG),
+			$handler->hasRecordThatContains('Adding encoding filter', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 		$this->assertSame(['/admin'], $parser->getRules()['*']['disallow']);
@@ -131,8 +133,8 @@ class InvalidEncodingTest extends TestCase {
 		$handler = $this->handlerFor($parser);
 		$parser->getRules();
 
-		$this->assertTrue($handler->hasRecord('Adding encoding filter convert.iconv.Windows-1251/utf-8', LogLevel::DEBUG));
-		$this->assertFalse($handler->hasRecordThatContains('Unsupported encoding', LogLevel::WARNING));
+		$this->assertTrue($handler->hasRecord('Adding encoding filter convert.iconv.Windows-1251/utf-8', Level::Debug));
+		$this->assertFalse($handler->hasRecordThatContains('Unsupported encoding', Level::Warning));
 	}
 
 	/** The bytes really are converted, not just declared. */

@@ -3,6 +3,7 @@
 namespace Directives;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -46,7 +47,7 @@ class HostTest extends TestCase {
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord("Failed to match user agent 'Google', falling back to '*'", LogLevel::DEBUG),
+			$handler->hasRecord("Failed to match user agent 'Google', falling back to '*'", Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -26,12 +27,12 @@ class EncodingTest extends TestCase {
 		$handler = $parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord(WarmingMessages::ENCODING_NOT_UTF8, LogLevel::WARNING),
+			$handler->hasRecord(WarmingMessages::ENCODING_NOT_UTF8, Level::Warning),
 			stringifyLogs($handler->getRecords())
 		);
 
 		$this->assertTrue(
-			$handler->hasRecord('Adding encoding filter convert.iconv.Windows-1251/utf-8', LogLevel::DEBUG),
+			$handler->hasRecord('Adding encoding filter convert.iconv.Windows-1251/utf-8', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

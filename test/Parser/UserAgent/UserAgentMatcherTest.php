@@ -3,6 +3,7 @@
 namespace Parser\UserAgent;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -25,7 +26,7 @@ class UserAgentMatcherTest extends TestCase {
 		$handler = $logger->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord("Matched Google for user agent Google", LogLevel::DEBUG),
+			$handler->hasRecord("Matched Google for user agent Google", Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}
@@ -42,7 +43,7 @@ class UserAgentMatcherTest extends TestCase {
 		$handler = $logger->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord("Failed to match user agent 'Google', falling back to '*'", LogLevel::DEBUG),
+			$handler->hasRecord("Failed to match user agent 'Google', falling back to '*'", Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

@@ -1,6 +1,9 @@
 <?php require_once dirname(__FILE__) . "/../vendor/autoload.php";
 
-function extractMessageFromRecord(array $record) {
+use Monolog\LogRecord;
+
+// Monolog 3 hands out LogRecord objects; they keep array access for the old keys.
+function extractMessageFromRecord(LogRecord $record) {
 	return $record['message'];
 }
 

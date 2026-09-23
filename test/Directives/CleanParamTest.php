@@ -3,6 +3,7 @@
 namespace Directives;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -49,7 +50,7 @@ class CleanParamTest extends TestCase
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord('Rule match: clean-param directive', LogLevel::DEBUG),
+			$handler->hasRecord('Rule match: clean-param directive', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 
@@ -57,7 +58,7 @@ class CleanParamTest extends TestCase
 		$this->assertFalse($this->parser->isDisallowed("http://www.site2.com/forums/showthread.php?s=681498b9648949605"));
 
 		$this->assertTrue(
-			$handler->hasRecord('Rule match: Path', LogLevel::DEBUG),
+			$handler->hasRecord('Rule match: Path', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

@@ -3,6 +3,7 @@
 namespace Stream\Filter;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -59,11 +60,11 @@ class SkipDirectivesWithInvalidValuesFilterTest  extends TestCase {
 		fclose($stream);
 
 		$this->assertTrue(
-			$handler->hasRecordThatContains('dropped as invalid Request-rate value.', LogLevel::DEBUG),
+			$handler->hasRecordThatContains('dropped as invalid Request-rate value.', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 		$this->assertTrue(
-			$handler->hasRecordThatContains('dropped as invalid Crawl-delay value.', LogLevel::DEBUG),
+			$handler->hasRecordThatContains('dropped as invalid Crawl-delay value.', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}
@@ -132,7 +133,7 @@ class SkipDirectivesWithInvalidValuesFilterTest  extends TestCase {
 		fclose($stream);
 
 		$this->assertTrue(
-			$handler->hasRecordThatContains('dropped as invalid allow/disallow value.', LogLevel::DEBUG),
+			$handler->hasRecordThatContains('dropped as invalid allow/disallow value.', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

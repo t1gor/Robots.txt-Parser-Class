@@ -3,6 +3,7 @@
 namespace Stream\Filter;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -62,7 +63,7 @@ class SkipUnsupportedDirectivesTest extends TestCase {
 
 		$this->assertNotEmpty($contents);
 		$this->assertTrue(
-			$handler->hasRecord('9 lines skipped as un-supported', LogLevel::DEBUG),
+			$handler->hasRecord('9 lines skipped as un-supported', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 

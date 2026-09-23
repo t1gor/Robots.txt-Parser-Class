@@ -1,6 +1,7 @@
 <?php declare(strict_types=1);
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -31,7 +32,7 @@ class HttpStatusCodeTest extends TestCase {
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord("Rule match: Path", LogLevel::DEBUG),
+			$handler->hasRecord("Rule match: Path", Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}
@@ -45,7 +46,7 @@ class HttpStatusCodeTest extends TestCase {
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord("Disallowed by HTTP status code 503", LogLevel::DEBUG),
+			$handler->hasRecord("Disallowed by HTTP status code 503", Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

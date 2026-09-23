@@ -3,6 +3,7 @@
 namespace Stream\Filter;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -90,7 +91,7 @@ class SkipEmptyLinesFilterTest extends TestCase {
 
 		$this->assertNotEmpty($lines);
 		$this->assertTrue(
-			$handler->hasRecord('3 lines skipped as empty.', LogLevel::DEBUG),
+			$handler->hasRecord('3 lines skipped as empty.', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 		fclose($stream);

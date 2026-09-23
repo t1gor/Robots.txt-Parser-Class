@@ -3,6 +3,7 @@
 namespace Directives;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -48,7 +49,7 @@ class CacheDelayTest extends TestCase {
 
 		$this->assertTrue($handler->hasRecord(
 			'cache-delay directive (unofficial): Not found, fallback to crawl-delay directive',
-			LogLevel::DEBUG
+			Level::Debug
 		));
 	}
 }
