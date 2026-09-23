@@ -16,6 +16,23 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  line-endings:
+    name: Line endings
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Re-apply .gitattributes to every tracked file; anything that moves was committed with CRLF.
+      - name: Check for CRLF
+        run: |
+          git add --renormalize .
+          if ! git diff --cached --quiet; then
+            echo "::error::These files are not stored with LF endings - run 'git add --renormalize .' and commit:"
+            git diff --cached --name-only | sed 's/^/  /'
+            exit 1
+          fi
+
   tests:
     name: "PHP ${{ matrix.php }}"
     runs-on: ubuntu-latest

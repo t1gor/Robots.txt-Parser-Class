@@ -9,7 +9,5 @@ abstract class WarmingMessages {
 		. 'Google might be ignoring some parts of the file.'
 		. 'See https://developers.google.com/search/reference/robots_txt#file-format for more info.';
 
-	const INLINED_HOST = 'Inline host directive detected. URL not set, result may be inaccurate.';
-
 	const SET_UA_DEPRECATED = 'Deprecated. Please check rules for exact user agent instead';
 }

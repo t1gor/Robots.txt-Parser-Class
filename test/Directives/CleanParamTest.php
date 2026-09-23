@@ -10,6 +10,7 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 /**
  * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getCleanParam
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::checkRuleSwitch
  */
 class CleanParamTest extends TestCase
 {
@@ -59,5 +60,20 @@ class CleanParamTest extends TestCase
 			$handler->hasRecord('Rule match: Path', LogLevel::DEBUG),
 			stringifyLogs($handler->getRecords())
 		);
+	}
+
+	/**
+	 * Inlined clean-param/host used to hit dead switch arms that called a removed method
+	 * and fell through without returning.
+	 *
+	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/127
+	 */
+	public function testInlinedDirectivesAreTreatedAsPlainRules() {
+		$check = new \ReflectionMethod(RobotsTxtParser::class, 'checkRuleSwitch');
+		$check->setAccessible(true);
+
+		$this->assertFalse($check->invoke($this->parser, 'clean-param: ref /forum/showthread.php', '/forum/showthread.php'));
+		$this->assertFalse($check->invoke($this->parser, 'host: example.com', '/forum/showthread.php'));
+		$this->assertTrue($check->invoke($this->parser, '/forum/', '/forum/showthread.php'));
 	}
 }
