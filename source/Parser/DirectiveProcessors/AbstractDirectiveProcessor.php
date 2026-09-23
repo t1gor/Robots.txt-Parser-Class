@@ -3,7 +3,6 @@
 namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 use Psr\Log\LoggerInterface;
-use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 
 abstract class AbstractDirectiveProcessor implements DirectiveProcessorInterface {
@@ -19,6 +18,7 @@ abstract class AbstractDirectiveProcessor implements DirectiveProcessorInterface
 	}
 
 	public function matches(string $line): bool {
-		return (bool) preg_match('/^' . $this->getDirectiveName() . '\s*:\s+/isu', $line);
+		// Whitespace around the colon is optional: "disallow:/" is as valid as "disallow: /".
+		return (bool) preg_match('/^' . $this->getDirectiveName() . '\s*:\s*/isu', $line);
 	}
 }

@@ -25,6 +25,17 @@ class WhitespacesTest extends TestCase {
 	}
 
 	/**
+	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/93
+	 */
+	public function testNoSpaceAfterColon() {
+		$parser = new RobotsTxtParser("user-agent:*\ndisallow:/\n");
+
+		$this->assertFalse($parser->isAllowed('/'));
+		$this->assertTrue($parser->isDisallowed('/'));
+		$this->assertSame(['*' => ['disallow' => ['/']]], $parser->getRules());
+	}
+
+	/**
 	 * Generate test case data
 	 * @return array
 	 */
@@ -36,6 +47,9 @@ class WhitespacesTest extends TestCase {
 					Disallow : /admin
 					Allow    :   /admin/front
 				",
+			],
+			[
+				"user-agent:*\ndisallow:/admin\nallow:/admin/front\n",
 			],
 		];
 	}
