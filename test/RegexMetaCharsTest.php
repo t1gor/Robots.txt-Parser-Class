@@ -86,10 +86,8 @@ class RegexMetaCharsTest extends TestCase {
 	}
 
 	/**
-	 * Url::encode() percent-encodes the path but rules are stored raw, so they never meet.
-	 * Unrelated to the escaping above.
+	 * Both sides are percent-encoded before comparison.
 	 *
-	 * @group known-issues
 	 * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/69
 	 */
 	public function testPercentEncodedPathStillMatchesRawRule() {

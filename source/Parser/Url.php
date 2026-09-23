@@ -12,20 +12,24 @@ class Url implements LoggerAwareInterface {
 	protected string $in = '';
 
 	public function __construct(string $in) {
-		$this->in = $this->encode(trim($in));
+		$this->in = static::encode(trim($in));
 	}
 
 	/**
 	 * URL encoder according to RFC 3986
 	 * Returns a string containing the encoded URL with disallowed characters converted to their percentage encodings.
 	 *
+	 * Rules are encoded through here too: RFC 9309 requires both sides of a comparison
+	 * to be percent-encoded first.
+	 *
 	 * @link http://publicmind.in/blog/url-encoding/
+	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 *
 	 * @param string $url
 	 *
-	 * @return string string
+	 * @return string
 	 */
-	protected function encode(string $url): string {
+	public static function encode(string $url): string {
 		$reserved = [
 			':' => '!%3A!ui',
 			'/' => '!%2F!ui',

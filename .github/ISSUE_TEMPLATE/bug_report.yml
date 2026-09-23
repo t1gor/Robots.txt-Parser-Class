@@ -1,0 +1,71 @@
+name: Bug report
+description: Rules parsed or matched the wrong way
+labels: [bug]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The robots.txt you hit this on is the single most useful thing you can give us -
+        it usually becomes the regression fixture for the fix.
+
+  - type: textarea
+    id: robotstxt
+    attributes:
+      label: robots.txt
+      description: The file, or the smallest part of it that still shows the problem.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: URL or path checked
+      placeholder: /some/path?with=query
+    validations:
+      required: true
+
+  - type: input
+    id: useragent
+    attributes:
+      label: User-agent
+      description: As passed to isAllowed()/isDisallowed().
+      value: "*"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      placeholder: |
+        isDisallowed('/some/path') returned false, expected true
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Library version
+      description: From composer.lock. The parser was rewritten in 2022 - reports against older versions often no longer apply.
+    validations:
+      required: true
+
+  - type: input
+    id: php
+    attributes:
+      label: PHP version
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: whitespace
+    attributes:
+      label: Anything invisible involved?
+      description: Pasting into GitHub normalises these, so attach the raw file if you tick any.
+      options:
+        - label: CRLF or bare CR line endings
+        - label: A byte order mark
+        - label: Non-breaking spaces, tabs or other odd whitespace
+        - label: A non-UTF-8 encoding
