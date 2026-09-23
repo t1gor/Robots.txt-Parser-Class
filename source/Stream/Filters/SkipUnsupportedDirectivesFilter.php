@@ -8,12 +8,14 @@ use t1gor\RobotsTxtParser\Stream\CustomFilterInterface;
 
 class SkipUnsupportedDirectivesFilter extends \php_user_filter implements CustomFilterInterface {
 
+	use KeepsDataOnInvalidUtf8Trait;
+
 	public const NAME = 'RTP_skip_unsupported_directives';
 
 	public function filter($in, $out, &$consumed, $closing): int {
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			$replacedCount = 0;
-			$bucket->data = preg_replace(Directive::getRegex(), '', $bucket->data, -1, $replacedCount);
+			$bucket->data = self::replaceOrKeep(Directive::getRegex(), '', $bucket->data, $replacedCount);
 			$consumed += $bucket->datalen;
 			stream_bucket_append($out, $bucket);
 

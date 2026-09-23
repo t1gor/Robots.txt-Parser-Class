@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /каталог
+Disallow: /поиск
+Allow: /каталог/общий

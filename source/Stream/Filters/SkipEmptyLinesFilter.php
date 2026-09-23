@@ -7,15 +7,17 @@ use t1gor\RobotsTxtParser\Stream\CustomFilterInterface;
 
 class SkipEmptyLinesFilter extends \php_user_filter implements CustomFilterInterface {
 
+	use KeepsDataOnInvalidUtf8Trait;
+
 	public const NAME = 'RTP_skip_empty_lines';
 
 	public function filter($in, $out, &$consumed, $closing): int {
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			$replacedCount = 0;
-			$bucket->data = preg_replace(
+			$bucket->data = self::replaceOrKeep(
 				'/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/mui',
 				PHP_EOL,
-				$bucket->data, -1,
+				$bucket->data,
 				$replacedCount
 			);
 

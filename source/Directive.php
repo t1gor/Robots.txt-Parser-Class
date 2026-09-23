@@ -70,11 +70,13 @@ abstract class Directive {
 	}
 
 	/**
-	 * @TODO finish me
-	 * @return string
+	 * Allow/Disallow values are path patterns, so they start with "/". An empty value is
+	 * legal though - "Disallow:" means "nothing is disallowed" - so it is left alone.
+	 *
+	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	public static function getAllowDisallowRegex(): string {
-		return "/^(" . self::ALLOW . "|" . self::DISALLOW . "):+\s*\\{1}.*$/mui";
+		return "/^(" . self::ALLOW . "|" . self::DISALLOW . "):+[^\S\\r\\n]*(?![\/\s])\S.*$/mui";
 	}
 
 	public static function attemptGetInline(string $rule) {

@@ -30,11 +30,7 @@ class MalformedInputTest extends TestCase {
 		$this->assertSame(['googlebot' => ['disallow' => ['/admin']]], $parser->getRules());
 	}
 
-	/**
-	 * One bad byte blanks the whole bucket, so every rule is lost - including valid ones.
-	 *
-	 * @group known-issues
-	 */
+	/** One bad byte must not blank the whole bucket. */
 	public function testInvalidUtf8ByteDoesNotDiscardTheWholeFile() {
 		$parser = new RobotsTxtParser("User-agent: googlebot\nDisallow: /a\nDisallow: /caf\xE9\nDisallow: /b\n");
 
