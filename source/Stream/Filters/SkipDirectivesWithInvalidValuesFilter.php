@@ -11,6 +11,8 @@ use t1gor\RobotsTxtParser\Stream\CustomFilterInterface;
  */
 class SkipDirectivesWithInvalidValuesFilter extends \php_user_filter implements CustomFilterInterface {
 
+	use KeepsDataOnInvalidUtf8Trait;
+
 	public const NAME = 'RTP_skip_directives_invalid_value';
 
 	public function filter($in, $out, &$consumed, $closing): int {
@@ -19,9 +21,9 @@ class SkipDirectivesWithInvalidValuesFilter extends \php_user_filter implements 
 			$skippedCrawlDelayValues = 0;
 			$skippedAllowanceValues = 0;
 
-			$bucket->data = preg_replace(Directive::getRequestRateRegex(), '', $bucket->data, -1, $skippedRequestRateValues);
-			$bucket->data = preg_replace(Directive::getCrawlDelayRegex(), '', $bucket->data, -1, $skippedCrawlDelayValues);
-//			$bucket->data = preg_replace(Directive::getAllowDisallowRegex(), '', $bucket->data, -1, $skippedAllowanceValues);
+			$bucket->data = self::replaceOrKeep(Directive::getRequestRateRegex(), '', $bucket->data, $skippedRequestRateValues);
+			$bucket->data = self::replaceOrKeep(Directive::getCrawlDelayRegex(), '', $bucket->data, $skippedCrawlDelayValues);
+			$bucket->data = self::replaceOrKeep(Directive::getAllowDisallowRegex(), '', $bucket->data, $skippedAllowanceValues);
 
 			$consumed += $bucket->datalen;
 			stream_bucket_append($out, $bucket);

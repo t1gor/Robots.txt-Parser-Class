@@ -7,7 +7,9 @@ use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 
 /**
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::fromStream
+ * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::fromString
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::getContentIterated
+ * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::getContentRaw
  */
 class ReaderTest extends TestCase {
 
@@ -39,5 +41,34 @@ class ReaderTest extends TestCase {
 					break;
 			}
 		}
+	}
+
+	public function testFromStreamRejectsNonResource() {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('Argument must be a valid resource type. string given.');
+
+		GeneratorBasedReader::fromStream('/not/a/stream');
+	}
+
+	public function testFromStreamRejectsNull() {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('NULL given');
+
+		GeneratorBasedReader::fromStream(null);
+	}
+
+	public function testGetContentRawReturnsTheFilteredStream() {
+		$reader = GeneratorBasedReader::fromString("User-agent: *\n# a comment\nDisallow: /admin\n");
+		$raw    = $reader->getContentRaw();
+
+		$this->assertStringContainsString('Disallow: /admin', $raw);
+		$this->assertStringNotContainsString('# a comment', $raw, 'filters are applied');
+	}
+
+	/** Reading twice rewinds, so the content is not consumed by the first call. */
+	public function testGetContentRawIsRepeatable() {
+		$reader = GeneratorBasedReader::fromString("User-agent: *\nDisallow: /admin\n");
+
+		$this->assertSame($reader->getContentRaw(), $reader->getContentRaw());
 	}
 }
