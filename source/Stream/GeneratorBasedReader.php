@@ -134,29 +134,66 @@ class GeneratorBasedReader implements ReaderInterface {
 	}
 
 	/**
-	 * @param string $encoding
+	 * An encoding iconv doesn't know is ignored, not fatal - the content is then read as-is.
 	 *
-	 * @TODO check on composer install if we have filters available
+	 * @param string $encoding
 	 */
 	public function setEncoding(string $encoding) {
-		if (strtoupper($encoding) === RobotsTxtParser::DEFAULT_ENCODING) {
+		$encoding = trim($encoding);
+
+		if ($encoding === '' || strtoupper($encoding) === RobotsTxtParser::DEFAULT_ENCODING) {
 			return;
 		}
 
 		$this->log(WarmingMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
 
 		$filterName = 'convert.iconv.' . $encoding . '/utf-8';
+		$filter     = $this->prependQuietly($filterName);
+
+		if (false === $filter) {
+			$this->log('Unsupported encoding {encoding}, content is read as-is', [
+				'encoding' => $encoding,
+			], LogLevel::WARNING);
+
+			return;
+		}
+
 		$this->log('Adding encoding filter ' . $filterName);
 
-		// convert encoding
 		$this->encodingFilterName = $filterName;
-		$this->encodingFilter     = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
+		$this->encodingFilter     = $filter;
+	}
 
-		if (false === $this->encodingFilter) {
-			$this->log('Failed to apply encoding filter {name}, content is read as-is', [
-				'name' => $filterName,
-			], LogLevel::WARNING);
+	/**
+	 * Typos and uninstalled charsets are common when the encoding comes off an HTTP header.
+	 * `@` only silences handlers that respect error_reporting(), so take the errors ourselves.
+	 *
+	 * @return resource|false
+	 */
+	private function prependQuietly(string $filterName) {
+		$suppressed = null;
+
+		set_error_handler(function (int $number, string $message) use (&$suppressed): bool {
+			$suppressed = $message;
+
+			return true;
+		});
+
+		try {
+			$filter = stream_filter_prepend($this->stream, $filterName, STREAM_FILTER_READ);
+		} finally {
+			restore_error_handler();
 		}
+
+		// logged once our handler is off, so the logger's own notices aren't swallowed too
+		if (null !== $suppressed) {
+			$this->log('Suppressed while applying {name}: {error}', [
+				'name'  => $filterName,
+				'error' => $suppressed,
+			]);
+		}
+
+		return $filter;
 	}
 
 	/**
