@@ -3,6 +3,7 @@
 namespace Parser\DirectivesProcessors;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -63,7 +64,7 @@ class CrawlDelayProcessorTest extends TestCase {
 		$this->assertTrue(
 			$handler->hasRecord(
 				'crawl-delay with value thisIsNotANumber dropped as invalid for *',
-				LogLevel::DEBUG
+				Level::Debug
 			),
 			stringifyLogs($handler->getRecords())
 		);

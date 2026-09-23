@@ -3,6 +3,7 @@
 namespace Stream\Filter;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -63,7 +64,7 @@ class SkipEndOfCommentedLineFilterTest extends TestCase {
 
 		$this->assertNotEmpty($lines);
 		$this->assertTrue(
-			$handler->hasRecord('5 char(s) dropped as commented out', LogLevel::DEBUG),
+			$handler->hasRecord('5 char(s) dropped as commented out', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 		fclose($stream);

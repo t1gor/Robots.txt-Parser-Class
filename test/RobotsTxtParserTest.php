@@ -2,6 +2,7 @@
 
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
@@ -70,7 +71,7 @@ class RobotsTxtParserTest extends TestCase {
 		/** @var TestHandler $handler */
 		$handler = $this->parser->getLogger()->getHandlers()[0];
 
-		$treeCreateRecords = array_filter($handler->getRecords(), function(array $log) {
+		$treeCreateRecords = array_filter($handler->getRecords(), function(LogRecord $log) {
 			return $log['message'] === 'Building directives tree...';
 		});
 

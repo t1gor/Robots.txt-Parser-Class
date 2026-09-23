@@ -4,6 +4,7 @@ namespace Stream\Filter;
 
 use Monolog\Handler\TestHandler;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
@@ -71,7 +72,7 @@ class SkipCommentedLinesFilterTest extends TestCase {
 		$handler = $log->getHandlers()[0];
 
 		$messagesOnly = array_map(
-			function(array $record) { return $record['message']; },
+			function(LogRecord $record) { return $record['message']; },
 			$handler->getRecords()
 		);
 

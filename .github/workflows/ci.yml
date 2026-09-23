@@ -47,11 +47,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest ]
-        php: [ '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
+        php: [ '8.2', '8.3', '8.4', '8.5' ]
         include:
           # PHP_EOL is CRLF there - oldest and newest are enough to catch what that breaks.
-          - { os: windows-latest, php: '7.4', coverage: none }
-          - { os: windows-latest, php: '8.4', coverage: none }
+          - { os: windows-latest, php: '8.2', coverage: none }
+          - { os: windows-latest, php: '8.5', coverage: none }
 
     steps:
       - uses: actions/checkout@v7

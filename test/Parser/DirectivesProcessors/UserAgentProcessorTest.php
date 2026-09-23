@@ -3,6 +3,7 @@
 namespace Parser\DirectivesProcessors;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -54,7 +55,7 @@ class UserAgentProcessorTest extends TestCase {
 		$handler = $this->processor->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord('New useragent is equal to current one, skipping ...', LogLevel::DEBUG),
+			$handler->hasRecord('New useragent is equal to current one, skipping ...', Level::Debug),
 			stringifyLogs($handler->getRecords())
 		);
 	}

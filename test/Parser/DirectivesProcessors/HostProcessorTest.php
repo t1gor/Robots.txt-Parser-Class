@@ -3,6 +3,7 @@
 namespace Parser\DirectivesProcessors;
 
 use Monolog\Handler\TestHandler;
+use Monolog\Level;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
@@ -53,7 +54,7 @@ class HostProcessorTest extends TestCase {
 		$this->assertTrue(
 			$handler->hasRecord(
 				'host with value 192.168.0.1 dropped for * as invalid (IP address is not a valid hostname)',
-				LogLevel::DEBUG
+				Level::Debug
 			),
 			stringifyLogs($handler->getRecords())
 		);
@@ -74,7 +75,7 @@ class HostProcessorTest extends TestCase {
 		$this->assertTrue(
 			$handler->hasRecord(
 				'host with value bndgang!!!@#$da12345ngda]] dropped for * as invalid',
-				LogLevel::DEBUG
+				Level::Debug
 			),
 			stringifyLogs($handler->getRecords())
 		);

@@ -1,4 +1,4 @@
-FROM php:7.4-cli-alpine
+FROM php:8.2-cli-alpine
 
 RUN apk add gnu-libiconv --update-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing/ --allow-untrusted
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
