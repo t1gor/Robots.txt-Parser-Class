@@ -55,8 +55,19 @@ class Url implements LoggerAwareInterface {
 		return preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
 	}
 
+	/**
+	 * Supported schemes and the port each one defaults to. getservbyname() reads /etc/services,
+	 * which slim containers do not ship - a missing entry used to invalidate the whole URL.
+	 */
+	const DEFAULT_PORTS = [
+		'http'  => 80,
+		'https' => 443,
+		'ftp'   => 21,
+		'sftp'  => 22,
+	];
+
 	public static function isValidScheme(string $scheme): bool {
-		return in_array($scheme, ['http', 'https', 'ftp', 'sftp']);
+		return isset(self::DEFAULT_PORTS[$scheme]);
 	}
 
 	/**
@@ -88,13 +99,10 @@ class Url implements LoggerAwareInterface {
 		}
 
 		if (!isset($parsed['port'])) {
-			$parsed['port'] = getservbyname($parsed['scheme'], 'tcp');
+			$port = getservbyname($parsed['scheme'], 'tcp');
 
-			if (!is_int($parsed['port'])) {
-				$this->log("URL port should be a number, {$parsed['port']} found for {$url}");
-
-				return false;
-			}
+			// the scheme is known to be valid by now, so the fallback always resolves
+			$parsed['port'] = is_int($port) ? $port : self::DEFAULT_PORTS[$parsed['scheme']];
 		}
 
 		$parsed['custom'] = ($parsed['path'] ?? '/') . (isset($parsed['query']) ? '?' . $parsed['query'] : '');

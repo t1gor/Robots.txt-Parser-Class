@@ -20,6 +20,33 @@ class RenderTest extends TestCase
     }
 
     /**
+     * The comparator returned a bool, which PHP 8.3+ deprecates for usort() - a notice on every
+     * render(), even though the order it produced happened to be right.
+     */
+    public function testRenderSortsShorterPathsLaterAndStaysQuiet()
+    {
+        $parser = new RobotsTxtParser("User-agent: *\nDisallow: /temp\nDisallow: /admin/test/\nDisallow: /forum\n");
+
+        $raised = [];
+        set_error_handler(function (int $no, string $str) use (&$raised) {
+            $raised[] = $str;
+            return true;
+        });
+
+        try {
+            $rendered = $parser->render("\n");
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame([], $raised, 'no PHP notices expected');
+        $this->assertStringContainsString(
+            "Disallow: /admin/test/\nDisallow: /forum\nDisallow: /temp",
+            $rendered
+        );
+    }
+
+    /**
      * Generate test data
      *
      * @return array

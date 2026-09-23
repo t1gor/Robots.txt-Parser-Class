@@ -169,6 +169,13 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	/**
 	 * Check rules
 	 *
+	 * Of all the matching rules the most specific one wins - the one with the most octets - so the
+	 * order they appear in the file is irrelevant. Ties go to allow, which also makes `Allow: /`
+	 * alongside `Disallow: /` resolve to allowed.
+	 *
+	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
+	 * @link https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#simultaneous
+	 *
 	 * @param string $rule      - rule to check
 	 * @param string $path      - path to check
 	 * @param string $userAgent - which robot to check for
@@ -181,25 +188,32 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			return ($rule === Directive::DISALLOW);
 		}
 
-		// Check each directive for rules, allowed by default
-		$result    = ($rule === Directive::ALLOW);
 		$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+		$winner    = null;
+		$longest   = -1;
 
+		// allow goes last so that it takes an equally specific disallow over on a tie
 		foreach ([Directive::DISALLOW, Directive::ALLOW] as $directive) {
 			if (!isset($this->tree[$userAgent][$directive])) {
 				continue;
 			}
 
 			foreach ($this->tree[$userAgent][$directive] as $robotRule) {
-				// check rule
-				if ($this->checkRuleSwitch($robotRule, $path)) {
-					// rule match
-					$result = ($rule === $directive);
+				if ($this->checkRuleSwitch($robotRule, $path) && strlen($robotRule) >= $longest) {
+					$longest = strlen($robotRule);
+					$winner  = $directive;
 				}
 			}
 		}
 
-		return $result;
+		if (is_null($winner)) {
+			$this->log(strtr('No rule matched {path}, allowed by default', ['{path}' => $path]));
+		}
+
+		// nothing matched - allowed by default
+		return is_null($winner)
+			? ($rule === Directive::ALLOW)
+			: ($rule === $winner);
 	}
 
 	/**
@@ -349,9 +363,9 @@ class RobotsTxtParser implements LoggerAwareInterface {
 				// Not multibyte
 				$directive = ucfirst($directive);
 				if (is_array($value)) {
-					// Shorter paths later
+					// Shorter paths later; a bool return is deprecated for usort() since PHP 8.3
 					usort($value, function ($a, $b) {
-						return mb_strlen($a) < mb_strlen($b);
+						return mb_strlen($b) <=> mb_strlen($a);
 					});
 					foreach ($value as $subValue) {
 						$output[] = $directive . ': ' . $subValue;
