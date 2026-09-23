@@ -31,11 +31,6 @@ class DirectiveNameMatchingTest extends TestCase {
 		};
 	}
 
-	/**
-	 * The name is not passed through preg_quote(), so "." matches any character.
-	 *
-	 * @group known-issues
-	 */
 	public function testDirectiveNameWithRegexMetacharsIsEscaped() {
 		$processor = $this->processorNamed('a.b');
 

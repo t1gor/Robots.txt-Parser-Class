@@ -19,6 +19,6 @@ abstract class AbstractDirectiveProcessor implements DirectiveProcessorInterface
 
 	public function matches(string $line): bool {
 		// Whitespace around the colon is optional: "disallow:/" is as valid as "disallow: /".
-		return (bool) preg_match('/^' . $this->getDirectiveName() . '\s*:\s*/isu', $line);
+		return (bool) preg_match('/^' . preg_quote($this->getDirectiveName(), '/') . '\s*:\s*/isu', $line);
 	}
 }
