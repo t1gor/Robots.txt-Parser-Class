@@ -2,6 +2,11 @@
 
 namespace t1gor\RobotsTxtParser\Stream;
 
+/**
+ * @note Never redeclare $filtername: php_user_filter leaves it untyped up to PHP 8.0
+ *       and types it string from 8.1, so either choice fatals on one of them.
+ *       PHP assigns it on instantiation; use self::NAME.
+ */
 interface CustomFilterInterface {
 
 	/**
@@ -30,7 +35,7 @@ interface CustomFilterInterface {
 	 *   - PSFS_ERR_FATAL (default): The filter experienced an unrecoverable error and
 	 *                               cannot continue.
 	 */
-	public function filter($in, $out, &$consumed, $closing);
+	public function filter($in, $out, &$consumed, $closing): int;
 
 	/**
 	 * Called when creating the filter.

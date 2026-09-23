@@ -13,9 +13,7 @@ class SkipDirectivesWithInvalidValuesFilter extends \php_user_filter implements 
 
 	public const NAME = 'RTP_skip_directives_invalid_value';
 
-	public $filtername = self::NAME;
-
-	public function filter($in, $out, &$consumed, $closing) {
+	public function filter($in, $out, &$consumed, $closing): int {
 		while ($bucket = stream_bucket_make_writeable($in)) {
 			$skippedRequestRateValues = 0;
 			$skippedCrawlDelayValues = 0;
