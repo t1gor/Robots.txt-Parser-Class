@@ -16,7 +16,8 @@ class SkipEmptyLinesFilter extends \php_user_filter implements CustomFilterInter
 			$replacedCount = 0;
 			$bucket->data = self::replaceOrKeep(
 				'/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/mui',
-				PHP_EOL,
+				// LF, not PHP_EOL - that would put CRs back on Windows
+				"\n",
 				$bucket->data,
 				$replacedCount
 			);

@@ -34,14 +34,24 @@ jobs:
           fi
 
   tests:
-    name: "PHP ${{ matrix.php }}"
-    runs-on: ubuntu-latest
+    name: "PHP ${{ matrix.php }} on ${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        # Git Bash is there on the Windows runner too, so one set of steps covers both.
+        shell: bash
 
     strategy:
       # Don't let one bad version mask the rest.
       fail-fast: false
       matrix:
+        os: [ ubuntu-latest ]
         php: [ '7.4', '8.0', '8.1', '8.2', '8.3', '8.4' ]
+        include:
+          # PHP_EOL is CRLF there - oldest and newest are enough to catch what that breaks.
+          - { os: windows-latest, php: '7.4', coverage: none }
+          - { os: windows-latest, php: '8.4', coverage: none }
 
     steps:
       - uses: actions/checkout@v7
@@ -51,7 +61,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring, iconv, json
-          coverage: xdebug
+          coverage: ${{ matrix.coverage || 'xdebug' }}
           # Surface every notice: the parser must stay quiet on valid input.
           ini-values: error_reporting=E_ALL, display_errors=On
 
@@ -80,8 +90,8 @@ jobs:
           XDEBUG_MODE: coverage
 
       - name: Upload coverage to Codecov
-        # One upload is enough; six only adds noise.
-        if: matrix.php == '8.3'
+        # One upload is enough; the rest only adds noise.
+        if: matrix.php == '8.3' && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v7
         with:
           files: build/logs/clover.xml
