@@ -117,6 +117,64 @@ and unmatched paths then default to allowed. `0` and negative values throw a `Co
 Warnings go through the PSR-3 logger. Attaching one after construction is fine: anything decided
 earlier is replayed as soon as a logger turns up.
 
+###### Writing it back out
+
+`render()` turns the parsed rules back into a robots.txt. It normalises rather than echoes: anything that cannot be valid is dropped, duplicates go, directive names get their canonical
+casing, `Host`, `Clean-param` and `Sitemap` are collected into one block at the end since they apply
+to the whole file, and user-agents carrying the same rules share a group. Rules are written longest
+first, with `Allow` ahead of an equally long `Disallow` - the order [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2)
+resolves them in, so a reader that stops at the first match still gets the same answer. Everything
+dropped is logged, so a file that comes back shorter says why.
+
+```php
+$parser = (new RobotsTxtParser())->setContent(fopen('robots.txt', 'r'));
+
+echo $parser;                                 // the naive way in: CRLF and UTF-8, as robots.txt is served
+echo $parser->render("\n");                    // or whatever line ending you need
+echo $parser->render("\n", 'Windows-1251');    // read as one encoding, written back as it
+```
+
+The rules tree is UTF-8 whatever the document was, so a second argument is a conversion on the way
+out - warned about, since the spec asks for UTF-8.
+
+The output is settled: parsing it and rendering again gives the same bytes.
+
+###### Writing without holding the document
+
+`render()` builds the whole thing in memory. `renderTo()` does not - it pushes a line at a time
+straight into your stream, the way the reader pulls a line at a time out of one:
+
+```php
+$parser->renderTo(fopen('robots.txt', 'w'));
+$parser->renderTo($response, "\n", 'Windows-1251');
+```
+
+Both return the number of bytes handed over.
+
+Behind those, `t1gor\RobotsTxtParser\Writer\AbstractWriter` holds all the normalising and two
+classes differ only in what they do with the result. Set what a render needs, then ask for it:
+
+```php
+use t1gor\RobotsTxtParser\Writer\StreamWriter;
+
+$bytes = (new StreamWriter())
+    ->setTree($parser->getRules())
+    ->setEol("\n")
+    ->setEncoding('Windows-1251')
+    ->setOutput(fopen('robots.txt', 'w'))
+    ->render();
+```
+
+`StringWriter` builds the document, converts it, writes it once. `StreamWriter` writes each line as
+it is produced and hands the encoding to PHP's iconv filter, as the reader does on the way in - so a
+character with no spelling in the target encoding leaves the whole document as UTF-8 under the first
+and is reported by the filter under the second. Either way it is logged. `RobotsTxtParser` uses
+`StreamWriter` unless you pass your own `WriterInterface`.
+
+Groups are still assembled in full before the first line goes out - merging the user-agents that
+share a rule set, and putting the catch-all last, cannot be decided until every group has been seen.
+What streaming drops is the copy of the finished document, not the rules themselves.
+
 ###### Bootstrapping the configuration from a framework
 
 `ConfigurationFactory` turns whatever shape your framework keeps settings in into a `Configuration`.
@@ -176,7 +234,9 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `setContent` | `resource\|string $content, ?string $encoding` | `self` | The document to parse; resets anything left from the previous one |
 | `getReader` | `-` | `ReaderInterface` | The reader holding the current document - filters, raw content, truncation |
 | `getConfiguration` | `-` | `Configuration` | The options the parser was built with |
-| `render` | `-` | `string` | **Deprecated.** Please `getReader()->getContentRaw()` |
+| `render` | `string $eol = "\r\n", ?string $encoding` | `string` | The rules back as a normalised robots.txt, see [Writing it back out](#writing-it-back-out) |
+| `renderTo` | `resource $stream, string $eol = "\r\n", ?string $encoding` | `int` | The same document, written a line at a time; returns the bytes handed to the stream |
+| `__toString` | `-` | `string` | `render()` with its defaults |
 
 #### `Directive` is an enum
 

@@ -2,7 +2,7 @@
 
 namespace t1gor\RobotsTxtParser;
 
-abstract class WarmingMessages {
+abstract class WarningMessages {
 	const STRING_INIT_DEPRECATE = 'Please consider initializing parser with a stream, strings would be deprecated soon.';
 
 	const ENCODING_NOT_UTF8 = 'Encoding you are passing is different from UTF-8. '

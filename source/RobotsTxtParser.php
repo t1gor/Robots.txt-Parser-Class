@@ -15,6 +15,8 @@ use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcher;
 use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcherInterface;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 use t1gor\RobotsTxtParser\Stream\ReaderInterface;
+use t1gor\RobotsTxtParser\Writer\StreamWriter;
+use t1gor\RobotsTxtParser\Writer\WriterInterface;
 
 /**
  * Class for parsing robots.txt files
@@ -66,7 +68,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		protected readonly ?Configuration $config = new Configuration(),
 		protected ?TreeBuilderInterface $treeBuilder = null,
 		protected ?ReaderInterface $reader = null,
-		protected ?UserAgentMatcherInterface $userAgentMatcher = null
+		protected ?UserAgentMatcherInterface $userAgentMatcher = null,
+		protected ?WriterInterface $writer = null
 	) {
 		// a hand-built Configuration has been through no checks; warnings buffer until a logger lands
 		ConfigurationFactory::validate($this->config, $this->logger());
@@ -184,6 +187,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
 			$this->userAgentMatcher->setLogger($logger);
 		}
+
+		if ($this->writer instanceof LoggerAwareInterface) {
+			$this->writer->setLogger($logger);
+		}
 	}
 
 	/**
@@ -257,12 +264,12 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		if (is_null($winner)) {
 			$this->log(strtr('No rule matched {path}, allowed by default', ['{path}' => $path]));
+
+			// nothing matched - allowed by default
+			return $rule === Directive::ALLOW;
 		}
 
-		// nothing matched - allowed by default
-		return is_null($winner)
-			? ($rule === Directive::ALLOW)
-			: ($rule === $winner);
+		return $rule === $winner;
 	}
 
 	/**
@@ -382,46 +389,53 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Render
+	 * The parsed rules back as a robots.txt - normalised, with anything invalid dropped and logged.
 	 *
-	 * @param string $eol
+	 * @see Writer
 	 */
-	public function render(string $eol = "\r\n"): string {
-		$input = $this->getRules();
-		krsort($input);
-		$output = [];
-		foreach ($input as $userAgent => $rules) {
-			$output[] = 'User-agent: ' . $userAgent;
-			foreach ($rules as $directive => $value) {
-				// Not multibyte
-				$directive = ucfirst($directive);
-				if (is_array($value)) {
-					// Shorter paths later; a bool return is deprecated for usort() since PHP 8.3
-					usort($value, function ($a, $b) {
-						return mb_strlen($b) <=> mb_strlen($a);
-					});
-					foreach ($value as $subValue) {
-						$output[] = $directive . ': ' . $subValue;
-					}
-				} else {
-					$output[] = $directive . ': ' . $value;
-				}
-			}
-			$output[] = '';
+	public function render(string $eol = WriterInterface::DEFAULT_EOL, ?string $encoding = null): string {
+		// php://temp spills to disk on its own, so asking for the string back costs no more than it has to
+		$buffer = fopen('php://temp', 'r+');
+
+		$this->renderTo($buffer, $eol, $encoding);
+		rewind($buffer);
+
+		$rendered = (string) stream_get_contents($buffer);
+		fclose($buffer);
+
+		return $rendered;
+	}
+
+	/**
+	 * The same document, written into $stream.
+	 *
+	 * @param resource $stream
+	 *
+	 * @return int bytes handed to the stream
+	 */
+	public function renderTo($stream, string $eol = WriterInterface::DEFAULT_EOL, ?string $encoding = null): int {
+		return $this->writer()
+			->setTree($this->getRules())
+			->setEol($eol)
+			->setEncoding($encoding)
+			->setOutput($stream)
+			->render();
+	}
+
+	/** Streaming by default: it renders the same document as {@see Writer} and need not hold it. */
+	private function writer(): WriterInterface {
+		if (is_null($this->writer)) {
+			$this->log('Creating a default writer as none passed...');
+
+			$this->writer = new StreamWriter($this->logger());
 		}
 
-		$host = $this->getHost();
-		if ($host !== null) {
-			$output[] = 'Host: ' . $host;
-		}
+		return $this->writer;
+	}
 
-		$sitemaps = $this->getSitemaps();
-		foreach ($sitemaps as $sitemap) {
-			$output[] = 'Sitemap: ' . $sitemap;
-		}
-
-		$output[] = '';
-		return implode($eol, $output);
+	/** The naive way in: {@see render()} with its defaults. Throws like it does, which PHP 8 allows. */
+	public function __toString(): string {
+		return $this->render();
 	}
 
 	public function getRules(?string $userAgent = null): array {

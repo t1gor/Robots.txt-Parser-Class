@@ -57,6 +57,12 @@ enum Directive: string {
 		);
 	}
 
+	/** How the directive is written into a robots.txt: "User-agent", "Clean-param". */
+	public function label(): string {
+		// no case carries a multibyte name
+		return ucfirst($this->value);
+	}
+
 	public static function getRegex(): string {
 		return "/^(?!(" . implode('|', self::getAll()) . ")\s*:+).+/mui";
 	}

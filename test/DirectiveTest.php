@@ -19,6 +19,29 @@ class DirectiveTest extends TestCase {
 		$this->assertCount(count(Directive::cases()) - 1, Directive::getAll());
 	}
 
+	/**
+	 * How the writers spell a directive out. Every case is ASCII, so ucfirst() is enough - a
+	 * hyphenated name keeps its lower-case second word, which is what robots.txt uses.
+	 *
+	 * @dataProvider provideLabels
+	 */
+	public function testLabelIsTheWrittenSpelling(Directive $directive, string $expected) {
+		$this->assertSame($expected, $directive->label());
+	}
+
+	public function provideLabels(): array {
+		return [
+			[Directive::USERAGENT, 'User-agent'],
+			[Directive::DISALLOW, 'Disallow'],
+			[Directive::ALLOW, 'Allow'],
+			[Directive::HOST, 'Host'],
+			[Directive::SITEMAP, 'Sitemap'],
+			[Directive::CLEAN_PARAM, 'Clean-param'],
+			[Directive::CRAWL_DELAY, 'Crawl-delay'],
+			[Directive::CACHE_DELAY, 'Cache-delay'],
+		];
+	}
+
 	public function testGetAllReturnsPlainStrings() {
 		foreach (Directive::getAll() as $directive) {
 			$this->assertIsString($directive);
