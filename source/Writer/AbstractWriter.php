@@ -5,12 +5,15 @@ namespace t1gor\RobotsTxtParser\Writer;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Directive;
+use t1gor\RobotsTxtParser\Exception\EncodingFailedException;
 use t1gor\RobotsTxtParser\Exception\NoOutputException;
+use t1gor\RobotsTxtParser\Exception\WriteFailedException;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 use t1gor\RobotsTxtParser\Parser\HostName;
 use t1gor\RobotsTxtParser\Parser\Url;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 use t1gor\RobotsTxtParser\RunsQuietlyTrait;
+use t1gor\RobotsTxtParser\WarningMessages;
 
 /**
  * Everything both writers share: the rules tree in, a normalised robots.txt out, line by line.
@@ -72,11 +75,12 @@ abstract class AbstractWriter implements WriterInterface {
 	public function setEncoding(?string $encoding): static {
 		$this->encoding = $encoding;
 
-		return $this;
-	}
+		// said once here rather than per line, as the reader says it when the filter goes on
+		if (!$this->isUtf8($encoding)) {
+			$this->log(WarningMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
+		}
 
-	protected function encoding(): ?string {
-		return $this->encoding;
+		return $this;
 	}
 
 	public function setOutput($output): static {
@@ -102,6 +106,60 @@ abstract class AbstractWriter implements WriterInterface {
 
 	/** @return int bytes handed to the output */
 	abstract public function render(): int;
+
+	/**
+	 * The tree is UTF-8, so anything else is a conversion on the way out. A conversion that cannot
+	 * work throws rather than quietly writing UTF-8: bytes served under a charset they are not in,
+	 * or a rule missing from a policy file, are both worse than a failed render.
+	 *
+	 * Callers keep PHP's own diagnostics quiet around this - see {@see RunsQuietlyTrait::quietly()}.
+	 *
+	 * @throws EncodingFailedException
+	 */
+	protected function convert(string $text): string {
+		if ($this->isUtf8($this->encoding)) {
+			return $text;
+		}
+
+		$converted = iconv('UTF-8', $this->encoding, $text);
+
+		if (!is_string($converted)) {
+			throw new EncodingFailedException(strtr(
+				'Cannot write this robots.txt as {encoding}: the charset is unknown, or the content '
+				. 'has characters it cannot represent.',
+				['{encoding}' => (string) $this->encoding]
+			));
+		}
+
+		return $converted;
+	}
+
+	/**
+	 * @return int bytes the output took, which has to be all of them
+	 *
+	 * @throws WriteFailedException
+	 */
+	protected function write($output, string $bytes): int {
+		$count = fwrite($output, $bytes);
+
+		// false, or short: either way what is out there is not what was asked for
+		if (!is_int($count) || $count < strlen($bytes)) {
+			throw new WriteFailedException(sprintf(
+				'Output took %s of %d bytes.',
+				var_export($count, true),
+				strlen($bytes)
+			));
+		}
+
+		return $count;
+	}
+
+	/** Whatever PHP raised while writing; captured so a strict handler cannot turn it into a throw. */
+	protected function report(array $raised): void {
+		foreach ($raised as $message) {
+			$this->log('While writing: ' . $message, [], LogLevel::WARNING);
+		}
+	}
 
 	/**
 	 * The document a line at a time, UTF-8, each one already terminated - so a caller can push it
@@ -141,8 +199,12 @@ abstract class AbstractWriter implements WriterInterface {
 				$separator = '';
 			}
 
-			foreach ($group['rules'] as $rule) {
+			foreach ($this->ordered($group['rules']['allow'], $group['rules']['disallow']) as $rule) {
 				yield $rule . $this->eol;
+			}
+
+			foreach ($group['rules']['delays'] as $delay) {
+				yield $delay . $this->eol;
 			}
 
 			$separator = $this->eol;
@@ -168,18 +230,39 @@ abstract class AbstractWriter implements WriterInterface {
 
 			$lines = $this->rules(is_array($rules) ? $rules : [], $agent);
 
-			if (empty($lines)) {
+			if ([] === array_filter($lines)) {
 				$this->log("Nothing left to write for {$agent}, the group is dropped.");
 
 				continue;
 			}
 
-			$key                       = implode("\n", $lines);
+			$key = $this->groupKey($lines);
+
+			// a digest collision would merge two unrelated groups, so the rules already stored settle it
+			while (isset($byRules[$key]) && $byRules[$key]['rules'] !== $lines) {
+				$key .= '!';
+			}
+
 			$byRules[$key]['agents'][] = $agent;
 			$byRules[$key]['rules']    = $lines;
 		}
 
 		return $this->sortGroups($byRules);
+	}
+
+	/**
+	 * What decides that two user-agents carry the same rules. A digest rather than the rule text:
+	 * as an array key the text would be held a second time, which doubled peak memory on a big file.
+	 */
+	protected function groupKey(array $lines): string {
+		$digest = hash_init('xxh128');
+
+		// fed a piece at a time: joining first would hold the whole rule set a second time
+		array_walk_recursive($lines, static function (string $value) use ($digest): void {
+			hash_update($digest, $value . "\n");
+		});
+
+		return hash_final($digest);
 	}
 
 	/** Null when the name could not be written back out and read the same way. */
@@ -197,9 +280,15 @@ abstract class AbstractWriter implements WriterInterface {
 		return $trimmed;
 	}
 
-	/** The directive lines of one group; host and sitemap are taken out of it as they are file-wide. */
+	/**
+	 * One group's rules, kept as the tree's own path strings - sorted, but neither prefixed nor
+	 * concatenated. Formatting here would be a second copy of every path; {@see ordered()} builds
+	 * each line as it is written instead. Host and sitemap are taken out as they are file-wide.
+	 *
+	 * @return array{allow: string[], disallow: string[], delays: string[]}
+	 */
 	private function rules(array $rules, string $agent): array {
-		$paths  = [];
+		$paths  = [Directive::ALLOW->value => [], Directive::DISALLOW->value => []];
 		$delays = [];
 
 		foreach ($rules as $directive => $value) {
@@ -208,7 +297,7 @@ abstract class AbstractWriter implements WriterInterface {
 
 			match ($case) {
 				Directive::ALLOW,
-				Directive::DISALLOW    => $paths = array_merge($paths, $this->paths($case, $value, $agent)),
+				Directive::DISALLOW    => $paths[$case->value] = $this->paths($case, $value, $agent),
 				Directive::CRAWL_DELAY,
 				Directive::CACHE_DELAY => $delays = array_merge($delays, $this->delay($case, $value, $agent)),
 				Directive::HOST        => $this->collectHosts($value, $agent),
@@ -220,10 +309,14 @@ abstract class AbstractWriter implements WriterInterface {
 			};
 		}
 
-		return array_merge($this->pathLines($paths), $delays);
+		return [
+			'allow'    => $this->sorted($paths[Directive::ALLOW->value]),
+			'disallow' => $this->sorted($paths[Directive::DISALLOW->value]),
+			'delays'   => $delays,
+		];
 	}
 
-	/** @return array<int, array{directive: Directive, path: string}> kept apart so {@see pathLines()} can sort them */
+	/** @return string[] the tree's own strings, so the list costs a pointer per rule and no copies */
 	private function paths(Directive $directive, mixed $values, string $agent): array {
 		$kept = [];
 
@@ -238,28 +331,39 @@ abstract class AbstractWriter implements WriterInterface {
 				continue;
 			}
 
-			$kept[] = ['directive' => $directive, 'path' => $path];
+			$kept[] = $path;
 		}
 
 		return $kept;
 	}
 
+	/** Longest first, then alphabetically. Sorting moves pointers, so this copies no path. */
+	private function sorted(array $paths): array {
+		// negated length rather than swapped operands, so every key reads $a on the left
+		usort($paths, static fn (string $a, string $b): int => [-strlen($a), $a] <=> [-strlen($b), $b]);
+
+		return $paths;
+	}
+
 	/**
-	 * Longest rule first, and allow before an equally long disallow - the order the spec resolves
-	 * them in, so a reader that stops at the first match still lands on the same answer.
+	 * The two lists merged into the order the spec resolves them in: longest rule first, and allow
+	 * ahead of an equally long disallow, so a reader that stops at the first match still lands on
+	 * the same answer. Each line is built as it is yielded and not before.
 	 *
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
-	private function pathLines(array $paths): array {
-		// negated length rather than swapped operands, so every key reads $a on the left
-		usort($paths, static fn (array $a, array $b): int =>
-			[-strlen($a['path']), $a['directive']->value, $a['path']]
-			<=> [-strlen($b['path']), $b['directive']->value, $b['path']]);
+	private function ordered(array $allow, array $disallow): \Generator {
+		$a = 0;
+		$d = 0;
 
-		return array_map(
-			static fn (array $rule): string => $rule['directive']->label() . ': ' . $rule['path'],
-			$paths
-		);
+		while (isset($allow[$a]) || isset($disallow[$d])) {
+			$takeAllow = isset($allow[$a])
+				&& (!isset($disallow[$d]) || strlen($allow[$a]) >= strlen($disallow[$d]));
+
+			yield $takeAllow
+				? Directive::ALLOW->label() . ': ' . $allow[$a++]
+				: Directive::DISALLOW->label() . ': ' . $disallow[$d++];
+		}
 	}
 
 	/** @return string[] the single delay line, or nothing */

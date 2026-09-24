@@ -2,14 +2,11 @@
 
 namespace t1gor\RobotsTxtParser\Writer;
 
-use Psr\Log\LogLevel;
-use t1gor\RobotsTxtParser\WarningMessages;
-
 /**
- * Builds the whole document, encodes it, then writes it in one go.
+ * Builds the whole document, converts it, then writes it in one go.
  *
- * The simple one: it holds the finished robots.txt, so a conversion either works for all of it or
- * for none of it. {@see StreamWriter} trades that for not holding it at all.
+ * The simple one, and the quicker one by a few percent - a single write instead of one per line.
+ * {@see StreamWriter} trades that for never holding the document.
  */
 class StringWriter extends AbstractWriter {
 
@@ -20,34 +17,11 @@ class StringWriter extends AbstractWriter {
 			$rendered .= $line;
 		}
 
-		[$written] = $this->quietly(fn () => fwrite($this->output(), $this->encode($rendered)));
+		// one handler swap for the whole write, not one per call inside it
+		[$written, $raised] = $this->quietly(fn (): int => $this->write($this->output(), $this->convert($rendered)));
 
-		return (int) $written;
-	}
+		$this->report($raised);
 
-	/**
-	 * The tree is UTF-8, so anything else is a conversion on the way out - and a warning, since
-	 * the spec asks for UTF-8. A conversion that cannot work leaves the document as it was, the
-	 * way {@see \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::setEncoding()} reads as-is rather than failing.
-	 */
-	protected function encode(string $rendered): string {
-		if ($this->isUtf8($this->encoding())) {
-			return $rendered;
-		}
-
-		$this->log(WarningMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
-
-		[$converted, $raised] = $this->quietly(fn () => iconv('UTF-8', $this->encoding(), $rendered));
-
-		if (is_string($converted)) {
-			return $converted;
-		}
-
-		$this->log(strtr('Unsupported encoding {encoding}, the document stays UTF-8: {errors}', [
-			'{encoding}' => $this->encoding(),
-			'{errors}'   => implode('; ', $raised),
-		]), [], LogLevel::WARNING);
-
-		return $rendered;
+		return $written;
 	}
 }

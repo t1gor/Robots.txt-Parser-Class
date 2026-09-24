@@ -6,7 +6,9 @@ use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\Exception\EncodingFailedException;
 use t1gor\RobotsTxtParser\Exception\NoOutputException;
+use t1gor\RobotsTxtParser\Exception\WriteFailedException;
 use t1gor\RobotsTxtParser\Writer\StringWriter;
 use t1gor\RobotsTxtParser\Writer\WriterInterface;
 
@@ -421,19 +423,31 @@ class StringWriterTest extends TestCase {
 		$this->assertLogged('Encoding you are passing is different from UTF-8');
 	}
 
-	public function testAnEncodingIconvDoesNotKnowLeavesTheDocumentAsItWas() {
-		$rendered = $this->render(['*' => ['disallow' => ['/admin']]], 'NoSuchCharset');
+	/** Quietly writing UTF-8 instead would serve bytes under a charset they are not in. */
+	public function testRefusesAnEncodingIconvDoesNotKnow() {
+		$this->expectException(EncodingFailedException::class);
+		$this->expectExceptionMessage('Cannot write this robots.txt as NoSuchCharset');
 
-		$this->assertSame("User-agent: *\nDisallow: /admin\n", $rendered);
-		$this->assertLogged('Unsupported encoding NoSuchCharset, the document stays UTF-8');
+		$this->render(['*' => ['disallow' => ['/admin']]], 'NoSuchCharset');
 	}
 
-	/** An arrow has no Windows-1251 spelling, so the conversion fails rather than mangling it. */
-	public function testAnUnmappableCharacterLeavesTheDocumentAsItWas() {
-		$rendered = $this->render(['*' => ['disallow' => ['/a→b']]], 'Windows-1251');
+	/** An arrow has no Windows-1251 spelling, so the document cannot be written as one. */
+	public function testRefusesToWriteACharacterTheEncodingCannotRepresent() {
+		$this->expectException(EncodingFailedException::class);
 
-		$this->assertSame("User-agent: *\nDisallow: /a→b\n", $rendered);
-		$this->assertLogged('Unsupported encoding Windows-1251, the document stays UTF-8');
+		$this->render(['*' => ['disallow' => ['/a→b']]], 'Windows-1251');
+	}
+
+	public function testThrowsWhenTheOutputWillNotTakeTheBytes() {
+		$readOnly = fopen('php://memory', 'r');
+
+		$this->expectException(WriteFailedException::class);
+
+		try {
+			$this->writer->setTree(['*' => ['disallow' => ['/admin']]])->setOutput($readOnly)->render();
+		} finally {
+			fclose($readOnly);
+		}
 	}
 
 	/** The warning is about the encoding asked for, not about what the document held - as on the read side. */
@@ -464,6 +478,47 @@ class StringWriterTest extends TestCase {
 		fclose($out);
 	}
 
+	/**
+	 * Groups are keyed by a digest of their rules, so two different rule sets landing on the same
+	 * digest must still render as two groups rather than silently merging.
+	 */
+	public function testAGroupKeyCollisionDoesNotMergeUnrelatedGroups() {
+		$writer = new class extends StringWriter {
+			protected function groupKey(array $lines): string {
+				return 'always-the-same';
+			}
+		};
+
+		$out = fopen('php://memory', 'r+');
+		$writer->setTree(['abot' => ['disallow' => ['/a']], 'zbot' => ['disallow' => ['/z']]])
+			->setEol("\n")
+			->setOutput($out)
+			->render();
+		rewind($out);
+		$rendered = stream_get_contents($out);
+		fclose($out);
+
+		$this->assertSame(
+			"User-agent: abot\nDisallow: /a\n\nUser-agent: zbot\nDisallow: /z\n",
+			$rendered
+		);
+	}
+
+	/**
+	 * A stream that complains but still takes the bytes: the complaint has to reach the log rather
+	 * than be swallowed with the handler, which is how a dropped rule went unnoticed before.
+	 */
+	public function testDiagnosticsRaisedWhileWritingAreLogged() {
+		stream_wrapper_register('rtp.noisy', NoisyStream::class);
+
+		$noisy = fopen('rtp.noisy://out', 'w');
+		$this->writer->setTree(['*' => ['disallow' => ['/admin']]])->setEol("\n")->setOutput($noisy)->render();
+		fclose($noisy);
+		stream_wrapper_unregister('rtp.noisy');
+
+		$this->assertLogged('While writing: disk is grumpy');
+	}
+
 	/** Buffered until a logger arrives, so a writer built without one still works. */
 	public function testWorksWithoutALogger() {
 		$out = fopen('php://memory', 'r+');
@@ -473,5 +528,28 @@ class StringWriterTest extends TestCase {
 		$this->assertSame("User-agent: *\r\nDisallow: /\r\n", stream_get_contents($out));
 
 		fclose($out);
+	}
+}
+
+/** Takes every byte it is given and grumbles about it, so a test can see what the writer does with that. */
+class NoisyStream {
+
+	public $context;
+
+	public function stream_open(string $path, string $mode, int $options, ?string &$opened): bool {
+		return true;
+	}
+
+	public function stream_write(string $data): int {
+		trigger_error('disk is grumpy', E_USER_WARNING);
+
+		return strlen($data);
+	}
+
+	public function stream_flush(): bool {
+		return true;
+	}
+
+	public function stream_close(): void {
 	}
 }

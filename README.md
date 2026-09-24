@@ -135,7 +135,9 @@ echo $parser->render("\n", 'Windows-1251');    // read as one encoding, written 
 ```
 
 The rules tree is UTF-8 whatever the document was, so a second argument is a conversion on the way
-out - warned about, since the spec asks for UTF-8.
+out - warned about, since the spec asks for UTF-8. A conversion that cannot work throws
+`EncodingFailedException` rather than quietly writing UTF-8: bytes served under a charset they are
+not in, or a rule missing from a policy file, are both worse than a render that fails.
 
 The output is settled: parsing it and rendering again gives the same bytes.
 
@@ -149,7 +151,7 @@ $parser->renderTo(fopen('robots.txt', 'w'));
 $parser->renderTo($response, "\n", 'Windows-1251');
 ```
 
-Both return the number of bytes handed over.
+Both return the number of bytes the stream took, after any conversion.
 
 Behind those, `t1gor\RobotsTxtParser\Writer\AbstractWriter` holds all the normalising and two
 classes differ only in what they do with the result. Set what a render needs, then ask for it:
@@ -165,15 +167,18 @@ $bytes = (new StreamWriter())
     ->render();
 ```
 
-`StringWriter` builds the document, converts it, writes it once. `StreamWriter` writes each line as
-it is produced and hands the encoding to PHP's iconv filter, as the reader does on the way in - so a
-character with no spelling in the target encoding leaves the whole document as UTF-8 under the first
-and is reported by the filter under the second. Either way it is logged. `RobotsTxtParser` uses
-`StreamWriter` unless you pass your own `WriterInterface`.
+`StringWriter` builds the document, converts it, writes it once. `StreamWriter` converts and writes
+each line as it is produced. They follow the same rules and produce the same bytes, so which one you
+pick is a memory question: on a 50 MB document the streaming one peaks about the size of the document
+lower, and costs a few percent more time for a write per line. Under 10k rules there is nothing in
+it. `RobotsTxtParser` uses `StreamWriter` unless you pass your own `WriterInterface`.
 
-Groups are still assembled in full before the first line goes out - merging the user-agents that
-share a rule set, and putting the catch-all last, cannot be decided until every group has been seen.
-What streaming drops is the copy of the finished document, not the rules themselves.
+`bin/benchmark-writers.php` measures both across four sizes if you want the numbers on your hardware.
+
+Groups are still assembled before the first line goes out - merging the user-agents that share a
+rule set, and putting the catch-all last, cannot be decided until every group has been seen. What
+is held is the tree's own path strings in sorted order, a pointer each; the `Disallow: ` line is
+built as it is written, so neither writer keeps a second copy of the rules.
 
 ###### Bootstrapping the configuration from a framework
 

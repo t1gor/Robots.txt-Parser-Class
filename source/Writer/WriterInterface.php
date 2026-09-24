@@ -9,7 +9,7 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
 /**
  * Everything a render needs is set first; then render() writes it out and says how much it wrote.
  *
- * @see Writer       builds the document, then writes it in one go
+ * @see StringWriter builds the document, then writes it in one go
  * @see StreamWriter writes it a line at a time, never holding more than one
  */
 interface WriterInterface extends LoggerAwareInterface {

@@ -16,6 +16,7 @@ use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcherInterface;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 use t1gor\RobotsTxtParser\Stream\ReaderInterface;
 use t1gor\RobotsTxtParser\Writer\StreamWriter;
+use t1gor\RobotsTxtParser\Writer\StringWriter;
 use t1gor\RobotsTxtParser\Writer\WriterInterface;
 
 /**
@@ -391,19 +392,21 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	/**
 	 * The parsed rules back as a robots.txt - normalised, with anything invalid dropped and logged.
 	 *
-	 * @see Writer
+	 * @see StringWriter
 	 */
 	public function render(string $eol = WriterInterface::DEFAULT_EOL, ?string $encoding = null): string {
 		// php://temp spills to disk on its own, so asking for the string back costs no more than it has to
 		$buffer = fopen('php://temp', 'r+');
 
-		$this->renderTo($buffer, $eol, $encoding);
-		rewind($buffer);
+		try {
+			$this->renderTo($buffer, $eol, $encoding);
+			rewind($buffer);
 
-		$rendered = (string) stream_get_contents($buffer);
-		fclose($buffer);
-
-		return $rendered;
+			return (string) stream_get_contents($buffer);
+		} finally {
+			// a writer that threw must not leave the handle behind, least of all in a long-lived worker
+			fclose($buffer);
+		}
 	}
 
 	/**
@@ -422,7 +425,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			->render();
 	}
 
-	/** Streaming by default: it renders the same document as {@see Writer} and need not hold it. */
+	/** Streaming by default: it renders the same document as {@see StringWriter} and need not hold it. */
 	private function writer(): WriterInterface {
 		if (is_null($this->writer)) {
 			$this->log('Creating a default writer as none passed...');

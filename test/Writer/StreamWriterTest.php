@@ -6,6 +6,8 @@ use Monolog\Handler\TestHandler;
 use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\Exception\EncodingFailedException;
+use t1gor\RobotsTxtParser\Exception\WriteFailedException;
 use t1gor\RobotsTxtParser\Writer\StreamWriter;
 use t1gor\RobotsTxtParser\Writer\StringWriter;
 
@@ -92,31 +94,57 @@ class StreamWriterTest extends TestCase {
 		$this->writer->setOutput('robots.txt');
 	}
 
-	/** PHP's own iconv filter converts each chunk on the way out, as it does on the way in. */
-	public function testConvertsThroughAStreamFilter() {
-		[$out] = $this->writeOut(['*' => ['disallow' => ['/админка']]], "\n", 'Windows-1251');
+	public function testConvertsEachLineOnItsWayOut() {
+		[$out, $written] = $this->writeOut(['*' => ['disallow' => ['/админка']]], "\n", 'Windows-1251');
+		$expected        = iconv('UTF-8', 'Windows-1251', "User-agent: *\nDisallow: /админка\n");
 
-		$this->assertSame(iconv('UTF-8', 'Windows-1251', "User-agent: *\nDisallow: /админка\n"), $out);
+		$this->assertSame($expected, $out);
 		$this->assertTrue($this->logged('Encoding you are passing is different from UTF-8'));
+
+		// the count is what the stream took, not what was handed to a filter before it shrank
+		$this->assertSame(strlen($expected), $written);
+		$this->assertLessThan(strlen("User-agent: *\nDisallow: /админка\n"), $written);
 	}
 
-	public function testUtf8NeedsNoFilterAndNoWarning() {
+	public function testUtf8NeedsNoConversionAndNoWarning() {
 		[$out] = $this->writeOut(['*' => ['disallow' => ['/админка']]], "\n", 'utf8');
 
 		$this->assertSame("User-agent: *\nDisallow: /админка\n", $out);
 		$this->assertFalse($this->logged('Encoding you are passing is different from UTF-8'));
 	}
 
-	/** Never attach a filter that cannot work - the reader learned it gets stuck in the chain. */
-	public function testAnEncodingIconvDoesNotKnowLeavesTheDocumentAsItWas() {
-		[$out] = $this->writeOut(self::TREE, "\n", 'NoSuchCharset');
+	public function testRefusesAnEncodingIconvDoesNotKnow() {
+		$this->expectException(EncodingFailedException::class);
+		$this->expectExceptionMessage('Cannot write this robots.txt as NoSuchCharset');
 
-		$this->assertSame($this->naively(self::TREE), $out);
-		$this->assertTrue($this->logged('Unsupported encoding NoSuchCharset, the document stays UTF-8'));
+		$this->writeOut(self::TREE, "\n", 'NoSuchCharset');
 	}
 
-	/** The filter is the caller's stream's, not ours, so it must not outlive the call. */
-	public function testTheStreamIsLeftWithoutOurFilter() {
+	/**
+	 * The filter this used to lean on dropped the whole chunk it could not map, so the rule simply
+	 * vanished from the file and nothing said so - a Disallow silently becoming crawlable.
+	 */
+	public function testRefusesToDropARuleTheEncodingCannotRepresent() {
+		$this->expectException(EncodingFailedException::class);
+
+		$this->writeOut(['*' => ['disallow' => ['/a→b', '/ok']]], "\n", 'Windows-1251');
+	}
+
+	/** A write the stream will not take leaves an incomplete file, so it cannot pass unnoticed. */
+	public function testThrowsWhenTheOutputWillNotTakeTheBytes() {
+		$readOnly = fopen('php://memory', 'r');
+
+		$this->expectException(WriteFailedException::class);
+
+		try {
+			$this->writer->setTree(self::TREE)->setEol("\n")->setOutput($readOnly)->render();
+		} finally {
+			fclose($readOnly);
+		}
+	}
+
+	/** The stream is the caller's: nothing of ours may outlive the call. */
+	public function testTheCallersStreamIsLeftAlone() {
 		$stream = fopen('php://memory', 'r+');
 		$this->writer->setTree(self::TREE)->setEol("\n")->setEncoding('Windows-1251')->setOutput($stream)->render();
 

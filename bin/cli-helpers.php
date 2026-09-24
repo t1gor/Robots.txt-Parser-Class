@@ -26,3 +26,9 @@ function human(float $bytes): string {
 
 	return sprintf('%.2f %s', $bytes, $units[$index]);
 }
+
+/** User plus system time out of a getrusage() snapshot. */
+function cpuSeconds(array $usage): float {
+	return $usage['ru_utime.tv_sec'] + $usage['ru_utime.tv_usec'] / 1e6
+		+ $usage['ru_stime.tv_sec'] + $usage['ru_stime.tv_usec'] / 1e6;
+}

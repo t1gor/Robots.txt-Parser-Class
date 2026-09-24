@@ -87,10 +87,10 @@ enum Directive: string {
 
 	public static function attemptGetInline(string $rule): string|false {
 		// lowercased once, not once per directive
-		$needle = mb_strtolower($rule);
+		$haystack = mb_strtolower($rule);
 
 		foreach (self::getAll() as $directive) {
-			if (str_starts_with($needle, $directive . ':')) {
+			if (str_starts_with($haystack, $directive . ':')) {
 				return $directive;
 			}
 		}
