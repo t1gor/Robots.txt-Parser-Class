@@ -67,8 +67,13 @@ enum Directive: string {
 		return "/^(?!(" . implode('|', self::getAll()) . ")\s*:+).+/mui";
 	}
 
+	/**
+	 * The value has to open with "documents/period". The space before it sits inside the lookahead
+	 * on purpose: left outside, the engine could match none of it and the lookahead would then
+	 * always succeed, which dropped every Request-rate line there is.
+	 */
 	public static function getRequestRateRegex(): string {
-		return "/^" . self::REQUEST_RATE->value . ":+\s*(?![0-9]+\/[0-9]+).*/mui";
+		return "/^" . self::REQUEST_RATE->value . ":+(?![^\S\r\n]*[0-9]+\/[0-9]+).*/mui";
 	}
 
 	public static function getCrawlDelayRegex(): string {
