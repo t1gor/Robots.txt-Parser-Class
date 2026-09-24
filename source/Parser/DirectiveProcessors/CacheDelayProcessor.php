@@ -10,15 +10,21 @@ class CacheDelayProcessor extends AbstractDirectiveProcessor implements Directiv
 		return Directive::CACHE_DELAY;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
-		$parts              = explode(':', $line);
-		$filteredCacheDelay = filter_var($parts[1], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
+		$parts = explode(':', $line);
+		$entry = trim($parts[1]);
+
+		// VALIDATE, not SANITIZE: the sanitiser never fails, so it turned "abc" into "" and
+		// stored that, and returned a string where crawl-delay yields a float
+		$filteredCacheDelay = filter_var($entry, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
 		if (false === $filteredCacheDelay) {
-			$this->log('{directive} with value {faulty} dropped as invalid', [
+			$this->log(strtr('{directive} with value {faulty} dropped as invalid for {useragent}', [
 				'{directive}' => Directive::CACHE_DELAY,
-				'{faulty}'    => $parts[1],
-			]);
+				'{faulty}'    => $entry,
+				'{useragent}' => $currentUserAgent,
+			]));
+
 			return;
 		}
 
