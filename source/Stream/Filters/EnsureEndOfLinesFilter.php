@@ -26,7 +26,7 @@ class EnsureEndOfLinesFilter extends \php_user_filter implements CustomFilterInt
         // A CR at the very end may be the first half of a CRLF split across
         // chunks, so hold it back until the next pass shows what follows.
         $heldCr = '';
-        if (!$closing && substr($buffer, -1) === "\r") {
+        if (!$closing && str_ends_with($buffer, "\r")) {
             $buffer = substr($buffer, 0, -1);
             $heldCr = "\r";
         }

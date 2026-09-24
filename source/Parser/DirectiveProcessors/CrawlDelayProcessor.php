@@ -7,17 +7,17 @@ use t1gor\RobotsTxtParser\Directive;
 class CrawlDelayProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
-		return Directive::CRAWL_DELAY;
+		return Directive::CRAWL_DELAY->value;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts              = explode(':', $line);
 		$entry              = trim($parts[1]);
 		$filteredCrawlDelay = filter_var($entry, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
 		if (false === $filteredCrawlDelay) {
 			$this->log(strtr('{directive} with value {faulty} dropped as invalid for {useragent}', [
-				'{directive}' => Directive::CRAWL_DELAY,
+				'{directive}' => Directive::CRAWL_DELAY->value,
 				'{faulty}'    => $entry,
 				'{useragent}' => $currentUserAgent
 			]));
@@ -25,6 +25,6 @@ class CrawlDelayProcessor extends AbstractDirectiveProcessor implements Directiv
 			return;
 		}
 
-		$root[$currentUserAgent][Directive::CRAWL_DELAY] = $filteredCrawlDelay;
+		$root[$currentUserAgent][Directive::CRAWL_DELAY->value] = $filteredCrawlDelay;
 	}
 }

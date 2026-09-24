@@ -28,21 +28,21 @@ class DuplicateHandlingTest extends TestCase {
 
 		$rules = $parser->getRules('*');
 
-		$this->assertSame(['/admin'], $rules[Directive::DISALLOW]);
-		$this->assertSame(['/admin/public'], $rules[Directive::ALLOW]);
-		$this->assertSame(['https://example.test/sitemap.xml'], $rules[Directive::SITEMAP]);
+		$this->assertSame(['/admin'], $rules[Directive::DISALLOW->value]);
+		$this->assertSame(['/admin/public'], $rules[Directive::ALLOW->value]);
+		$this->assertSame(['https://example.test/sitemap.xml'], $rules[Directive::SITEMAP->value]);
 	}
 
 	/** A processor is handed the tree, so it cannot assume it filled every entry in it. */
 	public function testPreFilledTreeIsRespected() {
 		$processor = new DisallowProcessor();
 		$userAgent = 'Googlebot';
-		$tree      = [$userAgent => [Directive::DISALLOW => ['/already-here']]];
+		$tree      = [$userAgent => [Directive::DISALLOW->value => ['/already-here']]];
 
 		$processor->process('Disallow: /already-here', $tree, $userAgent);
 		$processor->process('Disallow: /new', $tree, $userAgent);
 
-		$this->assertSame(['/already-here', '/new'], $tree[$userAgent][Directive::DISALLOW]);
+		$this->assertSame(['/already-here', '/new'], $tree[$userAgent][Directive::DISALLOW->value]);
 	}
 
 	/** The tree builder is kept between documents; what the last one held must not carry over. */
@@ -50,10 +50,10 @@ class DuplicateHandlingTest extends TestCase {
 		$parser = new RobotsTxtParser();
 
 		$parser->setContent("User-agent: *\nDisallow: /a\n");
-		$this->assertSame(['/a'], $parser->getRules('*')[Directive::DISALLOW]);
+		$this->assertSame(['/a'], $parser->getRules('*')[Directive::DISALLOW->value]);
 
 		$parser->setContent("User-agent: *\nDisallow: /a\nDisallow: /b\n");
-		$this->assertSame(['/a', '/b'], $parser->getRules('*')[Directive::DISALLOW]);
+		$this->assertSame(['/a', '/b'], $parser->getRules('*')[Directive::DISALLOW->value]);
 	}
 
 	/**
@@ -72,14 +72,14 @@ class DuplicateHandlingTest extends TestCase {
 
 		$content = implode("\n", $lines);
 		$parser  = (new RobotsTxtParser())->setContent($content);
-		$rules   = $parser->getRules('*')[Directive::DISALLOW];
+		$rules   = $parser->getRules('*')[Directive::DISALLOW->value];
 
 		$this->assertCount(400, $rules);
 		$this->assertSame(array_values(array_unique($rules)), $rules);
 
 		$parser->setContent($content);
 
-		$this->assertCount(400, $parser->getRules('*')[Directive::DISALLOW], 'the index outlived the document');
+		$this->assertCount(400, $parser->getRules('*')[Directive::DISALLOW->value], 'the index outlived the document');
 	}
 
 	/** Stacked user-agents share one rule set, so a repeat under either name is still a repeat. */
@@ -94,7 +94,7 @@ class DuplicateHandlingTest extends TestCase {
 			'Disallow: /tmp',
 		]));
 
-		$this->assertSame(['/admin', '/tmp'], $parser->getRules('Googlebot')[Directive::DISALLOW]);
-		$this->assertSame(['/admin', '/tmp'], $parser->getRules('Bingbot')[Directive::DISALLOW]);
+		$this->assertSame(['/admin', '/tmp'], $parser->getRules('Googlebot')[Directive::DISALLOW->value]);
+		$this->assertSame(['/admin', '/tmp'], $parser->getRules('Bingbot')[Directive::DISALLOW->value]);
 	}
 }

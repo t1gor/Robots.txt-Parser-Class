@@ -42,19 +42,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// default encoding
 	const DEFAULT_ENCODING = 'UTF-8';
 
-	// rules set
-	protected $rules = [];
-
-	// host set
-	protected $host = null;
-
 	// robots.txt http status code
 	protected ?int $httpStatusCode = null;
 
-	// UserAgent
-	private $userAgent      = '*';
-
-	private array                      $tree = [];
+	private array $tree = [];
 
 	/** Matching a user-agent walks every name in the tree, so the answer is kept until the tree changes. */
 	private array $matched = [];
@@ -233,14 +224,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 * @link https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml#simultaneous
-	 *
-	 * @param string $rule      - rule to check
-	 * @param string $path      - path to check
-	 * @param string $userAgent - which robot to check for
-	 *
-	 * @return bool
 	 */
-	protected function checkRules(string $rule, string $path, string $userAgent = '*'): bool {
+	protected function checkRules(Directive $rule, string $path, string $userAgent = '*'): bool {
 		// check for disallowed http status code
 		if ($this->checkHttpStatusCodeRule()) {
 			return ($rule === Directive::DISALLOW);
@@ -252,11 +237,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		// allow goes last so that it takes an equally specific disallow over on a tie
 		foreach ([Directive::DISALLOW, Directive::ALLOW] as $directive) {
-			if (!isset($this->tree[$userAgent][$directive])) {
+			if (!isset($this->tree[$userAgent][$directive->value])) {
 				continue;
 			}
 
-			foreach ($this->tree[$userAgent][$directive] as $robotRule) {
+			foreach ($this->tree[$userAgent][$directive->value] as $robotRule) {
 				if ($this->checkRuleSwitch($robotRule, $path) && strlen($robotRule) >= $longest) {
 					$longest = strlen($robotRule);
 					$winner  = $directive;
@@ -315,10 +300,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	protected function prepareRegexRule(string $value): string {
-		$anchored = mb_substr($value, -1) === '$';
+		$anchored = str_ends_with($value, '$');
 
 		if ($anchored) {
-			$value = mb_substr($value, 0, -1);
+			// '$' is ASCII, so no UTF-8 continuation byte can be cut here
+			$value = substr($value, 0, -1);
 		}
 
 		// both sides of the comparison must be percent-encoded, and getPath() already encodes the path
@@ -344,24 +330,25 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return $this->checkRules(Directive::DISALLOW, $this->pathToMatch($url), $userAgent);
 	}
 
-	public function getDelay(string $userAgent = "*", string $type = Directive::CRAWL_DELAY) {
+	public function getDelay(string $userAgent = "*", Directive $type = Directive::CRAWL_DELAY): int|float {
 		$this->buildTree();
 
-		$directive = in_array($type, [Directive::CACHE, Directive::CACHE_DELAY])
-			? Directive::CACHE_DELAY
-			: Directive::CRAWL_DELAY;
+		$directive = match ($type) {
+			Directive::CACHE, Directive::CACHE_DELAY => Directive::CACHE_DELAY,
+			default                                  => Directive::CRAWL_DELAY,
+		};
 
-		if (isset($this->tree[$userAgent][$directive])) {
+		if (isset($this->tree[$userAgent][$directive->value])) {
 			// return delay for requested directive
-			return $this->tree[$userAgent][$directive];
+			return $this->tree[$userAgent][$directive->value];
 		}
 
-		if (isset($this->tree[$userAgent][Directive::CRAWL_DELAY])) {
-			$this->log("{$directive} directive (unofficial): Not found, fallback to " . Directive::CRAWL_DELAY . " directive");
-			return $this->tree[$userAgent][Directive::CRAWL_DELAY];
+		if (isset($this->tree[$userAgent][Directive::CRAWL_DELAY->value])) {
+			$this->log("{$directive->value} directive (unofficial): Not found, fallback to " . Directive::CRAWL_DELAY->value . " directive");
+			return $this->tree[$userAgent][Directive::CRAWL_DELAY->value];
 		}
 
-		$this->log("$directive directive: Not found");
+		$this->log("{$directive->value} directive: Not found");
 
 		return 0;
 	}
@@ -369,21 +356,20 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function getCleanParam(): array {
 		$this->buildTree();
 
-		if (!isset($this->tree[Directive::CLEAN_PARAM]) || empty($this->tree[Directive::CLEAN_PARAM])) {
-			$this->log(Directive::CLEAN_PARAM . ' directive: Not found');
+		if (!isset($this->tree[Directive::CLEAN_PARAM->value]) || empty($this->tree[Directive::CLEAN_PARAM->value])) {
+			$this->log(Directive::CLEAN_PARAM->value . ' directive: Not found');
 		}
 
-		return $this->tree[Directive::CLEAN_PARAM];
+		// a document without the directive is the normal case, not a TypeError
+		return $this->tree[Directive::CLEAN_PARAM->value] ?? [];
 	}
 
 	/**
 	 * Render
 	 *
 	 * @param string $eol
-	 *
-	 * @return string
 	 */
-	public function render($eol = "\r\n") {
+	public function render(string $eol = "\r\n"): string {
 		$input = $this->getRules();
 		krsort($input);
 		$output = [];
@@ -421,7 +407,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return implode($eol, $output);
 	}
 
-	public function getRules(?string $userAgent = null) {
+	public function getRules(?string $userAgent = null): array {
 		$this->buildTree();
 
 		// return all rules
@@ -454,14 +440,14 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return string[]|string|null
 	 */
-	public function getHost(?string $userAgent = null) {
+	public function getHost(?string $userAgent = null): array|string|null {
 		$this->buildTree();
 
 		if (!is_null($userAgent)) {
 			$userAgent = $this->matchUserAgent($userAgent);
 
-			if (isset($this->tree[$userAgent][Directive::HOST]) && !empty($this->tree[$userAgent][Directive::HOST])) {
-				return $this->tree[$userAgent][Directive::HOST];
+			if (isset($this->tree[$userAgent][Directive::HOST->value]) && !empty($this->tree[$userAgent][Directive::HOST->value])) {
+				return $this->tree[$userAgent][Directive::HOST->value];
 			}
 
 			return null;
@@ -470,8 +456,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$hosts = [];
 
 		foreach ($this->tree as $userAgentBased) {
-			if (isset($userAgentBased[Directive::HOST]) && !empty($userAgentBased[Directive::HOST])) {
-				array_push($hosts, $userAgentBased[Directive::HOST]);
+			if (isset($userAgentBased[Directive::HOST->value]) && !empty($userAgentBased[Directive::HOST->value])) {
+				array_push($hosts, $userAgentBased[Directive::HOST->value]);
 			}
 		}
 
@@ -485,13 +471,13 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		if (!is_null($userAgent)) {
 			$userAgent = $this->matchUserAgent($userAgent);
 
-			if (isset($this->tree[$userAgent][Directive::SITEMAP]) && !empty($this->tree[$userAgent][Directive::SITEMAP])) {
-				return $this->tree[$userAgent][Directive::SITEMAP];
+			if (isset($this->tree[$userAgent][Directive::SITEMAP->value]) && !empty($this->tree[$userAgent][Directive::SITEMAP->value])) {
+				return $this->tree[$userAgent][Directive::SITEMAP->value];
 			}
 		} else {
 			foreach ($this->tree as $userAgentBased) {
-				if (isset($userAgentBased[Directive::SITEMAP]) && !empty($userAgentBased[Directive::SITEMAP])) {
-					$maps = array_merge($maps, $userAgentBased[Directive::SITEMAP]);
+				if (isset($userAgentBased[Directive::SITEMAP->value]) && !empty($userAgentBased[Directive::SITEMAP->value])) {
+					$maps = array_merge($maps, $userAgentBased[Directive::SITEMAP->value]);
 				}
 			}
 		}

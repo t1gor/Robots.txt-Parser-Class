@@ -27,7 +27,7 @@ class DirectiveNameMatchingTest extends TestCase {
 				return $this->name;
 			}
 
-			public function process(string $line, array &$root, string &$currentUserAgent = '*', string $prevLine = '') {}
+			public function process(string $line, array &$root, string &$currentUserAgent = '*', string $prevLine = ''): void {}
 		};
 	}
 

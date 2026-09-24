@@ -35,7 +35,7 @@ class SitemapProcessorTest extends TestCase {
 		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
-		$this->assertArrayHasKey(Directive::SITEMAP, $tree['*']);
+		$this->assertArrayHasKey(Directive::SITEMAP->value, $tree['*']);
 	}
 
 	public function testAddsSitemapDirectiveForCustomUserAgent() {
@@ -46,14 +46,14 @@ class SitemapProcessorTest extends TestCase {
 		$this->processor->process($line, $tree, $userAgent);
 
 		$this->assertArrayHasKey('Google', $tree);
-		$this->assertArrayHasKey(Directive::SITEMAP, $tree[$userAgent]);
+		$this->assertArrayHasKey(Directive::SITEMAP->value, $tree[$userAgent]);
 	}
 
 	public function testAddsSitemapSkipsExistingAndLogsIt() {
 		$userAgent = 'Google';
 		$tree = [
 			$userAgent => [
-				Directive::SITEMAP => [
+				Directive::SITEMAP->value => [
 					'https://www.example.com/sitemap.xml'
 				]
 			]
@@ -63,7 +63,7 @@ class SitemapProcessorTest extends TestCase {
 		$this->processor->process($line, $tree, $userAgent);
 
 		$this->assertArrayHasKey('Google', $tree);
-		$this->assertArrayHasKey(Directive::SITEMAP, $tree[$userAgent]);
+		$this->assertArrayHasKey(Directive::SITEMAP->value, $tree[$userAgent]);
 
 		/** @var TestHandler $handler */
 		$handler = $this->processor->getLogger()->getHandlers()[0];

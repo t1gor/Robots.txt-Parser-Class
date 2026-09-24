@@ -35,6 +35,20 @@ class CacheDelayTest extends TestCase {
 		$this->assertEquals(8, $this->parser->getDelay('AhrefsBot', Directive::CACHE_DELAY));
 	}
 
+	public function testCacheDelayIsNormalisedToANumber() {
+		// the sanitising filter used to hand back a string here, unlike crawl-delay
+		$this->assertIsFloat($this->parser->getDelay('GoogleBot', Directive::CACHE_DELAY));
+		$this->assertIsFloat($this->parser->getDelay('AhrefsBot', Directive::CACHE_DELAY));
+	}
+
+	public function testInvalidCacheDelayIsDroppedRatherThanStored() {
+		$parser = (new RobotsTxtParser())->setContent("User-Agent: *\nCache-Delay: abc\n");
+
+		// sanitising turned this into "" and stored it; validating drops it, so the default stands
+		$this->assertSame(0, $parser->getDelay('*', Directive::CACHE_DELAY));
+		$this->assertArrayNotHasKey(Directive::CACHE_DELAY->value, $parser->getRules('*'));
+	}
+
 	public function testCacheDelayFallsBackForNonStandardCacheDirective() {
 		$this->assertEquals(0.5, $this->parser->getDelay('*', Directive::CACHE));
 		$this->assertEquals(3.7, $this->parser->getDelay('GoogleBot', Directive::CACHE));
