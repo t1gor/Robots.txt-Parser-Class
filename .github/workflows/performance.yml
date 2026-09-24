@@ -24,14 +24,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Budgets sit roughly 10x over a local run - they catch a collapse like issue #62, not drift.
-          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 20,  memory: '256M', lookups: 1000 }
-          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 45,  memory: '256M', lookups: 1000 }
-          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 75,  memory: '256M', lookups: 1000 }
+          # Budgets are ~1.6-2x the slowest of three measured runs per case - see PERFORMANCE-BUDGETS.md.
+          # The margin is not padding: the same code varies by up to 2.3x here because each matrix
+          # entry lands on its own runner and the fleet is not uniform. A cap tighter than that
+          # fails on unchanged code, so these catch a collapse or a large regression, not drift.
+          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 6,   memory: '256M', lookups: 1000 }
+          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 14,  memory: '256M', lookups: 1000 }
+          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 24,  memory: '256M', lookups: 1000 }
           # Every line a rule: the shape that puts the load on the tree builder instead of the filters.
-          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 120, memory: '1G',   lookups: 200 }
+          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 32,  memory: '1G',   lookups: 200 }
           # Huge groups under one user-agent - this took ~110 s before the dedupe stopped scanning the list.
-          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 30, memory: '512M', lookups: 20 }
+          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 5, memory: '512M', lookups: 20 }
 
     steps:
       - uses: actions/checkout@v7
