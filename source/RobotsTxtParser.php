@@ -53,6 +53,12 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	/** A client asks about a handful of agents; past this it has stopped being a cache, so start over. */
 	private const MAX_MATCHED = 512;
 
+	/** Rule text to its compiled pattern, see {@see checkBasicRule()}. */
+	private array $patterns = [];
+
+	/** Only bounds the pathological document; protected so a test can lower it. */
+	protected const MAX_PATTERNS = 100000;
+
 	private ?array $treeUserAgents = null;
 
 	/** Dependencies only, so a container can resolve this once and hand it round. */
@@ -98,6 +104,9 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		// a new document: nothing from the last one still holds
 		$this->tree           = [];
 		$this->httpStatusCode = null;
+
+		// still correct for the old rules, but they are dead weight now
+		$this->patterns = [];
 
 		$this->forgetUserAgents();
 
@@ -198,10 +207,18 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function isAllowed(string $url, ?string $userAgent = '*'): bool {
 		$this->buildTree();
 
-		$url = new Url($url);
-		$url->setLogger($this->logger());
+		return $this->checkRules(Directive::ALLOW, $this->pathToMatch($url), $userAgent);
+	}
 
-		return $this->checkRules(Directive::ALLOW, $url->getPath(), $userAgent);
+	/** Url is a value object and cannot log, so the caller reports what it could not reduce. */
+	private function pathToMatch(string $url): string {
+		$parsed = new Url($url);
+
+		if (!$parsed->isReducedToPath()) {
+			$this->log("Could not extract a path from {$url}, matching rules against it whole");
+		}
+
+		return $parsed->getPath();
 	}
 
 	/**
@@ -274,7 +291,18 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * Check basic rule
 	 */
 	private function checkBasicRule(string $rule, string $path): bool {
-		if (preg_match('@' . $this->prepareRegexRule($rule) . '@', $path)) {
+		// checkRules() walks every rule in the group per lookup; the pattern only depends on $rule
+		if (!isset($this->patterns[$rule])) {
+			if (count($this->patterns) >= static::MAX_PATTERNS) {
+				$this->patterns = [];
+			}
+
+			$this->patterns[$rule] = '@' . $this->prepareRegexRule($rule) . '@';
+		}
+
+		$pattern = $this->patterns[$rule];
+
+		if (preg_match($pattern, $path)) {
 			$this->log('Rule match: Path');
 			return true;
 		}
@@ -316,10 +344,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function isDisallowed(string $url, string $userAgent = '*'): bool {
 		$this->buildTree();
 
-		$url = new Url($url);
-		$url->setLogger($this->logger());
-
-		return $this->checkRules(Directive::DISALLOW, $url->getPath(), $userAgent);
+		return $this->checkRules(Directive::DISALLOW, $this->pathToMatch($url), $userAgent);
 	}
 
 	public function getDelay(string $userAgent = "*", Directive $type = Directive::CRAWL_DELAY): int|float {
