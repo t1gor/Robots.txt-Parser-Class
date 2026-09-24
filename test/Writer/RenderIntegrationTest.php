@@ -188,6 +188,25 @@ class RenderIntegrationTest extends TestCase {
 		);
 	}
 
+	/** The extended standard survives the round trip as well as the core directives do. */
+	public function testRendersTheExtendedStandardBack() {
+		$parser = (new RobotsTxtParser())->setContent(
+			fopen(__DIR__ . '/../Fixtures/extended-standard.txt', 'r')
+		);
+
+		$once = $this->render($parser);
+
+		$this->assertStringContainsString("Robot-version: 2.0\nVisit-time: 0600-0845\n", $once);
+		$this->assertStringContainsString("Request-rate: 1/5m 0600-0845\nRequest-rate: 2/1h 0900-1730\n", $once);
+		$this->assertStringContainsString("Comment: regenerated nightly by the CMS\n", $once);
+		$this->assertStringContainsString("Noindex: /drafts\n", $once);
+
+		// nothing BadBot carried could be written, so the group goes with it
+		$this->assertStringNotContainsString('BadBot', $once);
+
+		$this->assertSame($once, $this->render((new RobotsTxtParser())->setContent($once)));
+	}
+
 	/** Either writer, same tree, same bytes - only how they get there differs. */
 	public function testBothWritersProduceTheSameDocument() {
 		$parser = (new RobotsTxtParser())->setContent(
