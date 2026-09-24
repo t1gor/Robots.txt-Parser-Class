@@ -6,6 +6,8 @@ use t1gor\RobotsTxtParser\Directive;
 
 class SitemapProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
+	use DeduplicatesEntriesTrait;
+
 	public function getDirectiveName(): string {
 		return Directive::SITEMAP;
 	}
@@ -20,14 +22,16 @@ class SitemapProcessor extends AbstractDirectiveProcessor implements DirectivePr
 			$root[$currentUserAgent][Directive::SITEMAP] = [];
 		}
 
-		if (!in_array($entry, $root[$currentUserAgent][Directive::SITEMAP])) {
-			$root[$currentUserAgent][Directive::SITEMAP][] = $entry;
-		} else {
+		if ($this->isDuplicate($root[$currentUserAgent][Directive::SITEMAP], $currentUserAgent, $entry)) {
 			$this->log(strtr('{directive} with value {faulty} skipped as already exists for {useragent}', [
 				'{directive}' => Directive::SITEMAP,
 				'{faulty}'    => $entry,
 				'{useragent}' => $currentUserAgent,
 			]));
+
+			return;
 		}
+
+		$root[$currentUserAgent][Directive::SITEMAP][] = $entry;
 	}
 }

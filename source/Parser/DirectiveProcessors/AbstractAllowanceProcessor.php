@@ -4,6 +4,8 @@ namespace t1gor\RobotsTxtParser\Parser\DirectiveProcessors;
 
 abstract class AbstractAllowanceProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
+	use DeduplicatesEntriesTrait;
+
 	public function process(string $line, array &$root, string &$currentUserAgent = '*', string $prevLine = '') {
 		$parts     = explode(':', $line);
 		$entry     = trim($parts[1]);
@@ -32,14 +34,16 @@ abstract class AbstractAllowanceProcessor extends AbstractDirectiveProcessor imp
 			$root[$currentUserAgent][$directive] = [];
 		}
 
-		if (!in_array($entry, $root[$currentUserAgent][$directive])) {
-			$root[$currentUserAgent][$directive][] = $entry;
-		} else {
+		if ($this->isDuplicate($root[$currentUserAgent][$directive], $currentUserAgent, $entry)) {
 			$this->log(strtr('{directive} with value {faulty} skipped as already exists for {useragent}', [
 				'{directive}' => $directive,
 				'{faulty}'    => $entry,
 				'{useragent}' => $currentUserAgent,
 			]));
+
+			return;
 		}
+
+		$root[$currentUserAgent][$directive][] = $entry;
 	}
 }

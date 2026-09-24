@@ -1,7 +1,7 @@
 Robots.txt php parser class
 =====================
 
-[![CI](https://github.com/t1gor/Robots.txt-Parser-Class/actions/workflows/ci.yml/badge.svg)](https://github.com/t1gor/Robots.txt-Parser-Class/actions/workflows/ci.yml) [![Code Climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/gpa.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![Test Coverage](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class/badges/coverage.svg)](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) [![License](https://poser.pugx.org/t1gor/robots-txt-parser/license.svg)](https://packagist.org/packages/t1gor/robots-txt-parser) [![Total Downloads](https://poser.pugx.org/t1gor/robots-txt-parser/downloads.svg)](https://packagist.org/packages/t1gor/robots-txt-parser)
+[![CI](https://github.com/t1gor/Robots.txt-Parser-Class/actions/workflows/ci.yml/badge.svg)](https://github.com/t1gor/Robots.txt-Parser-Class/actions/workflows/ci.yml) [![Performance](https://github.com/t1gor/Robots.txt-Parser-Class/actions/workflows/performance.yml/badge.svg)](https://github.com/t1gor/Robots.txt-Parser-Class/actions/workflows/performance.yml) [![Coverage](https://codecov.io/gh/t1gor/Robots.txt-Parser-Class/branch/master/graph/badge.svg)](https://codecov.io/gh/t1gor/Robots.txt-Parser-Class) [![PHP](https://img.shields.io/packagist/php-v/t1gor/robots-txt-parser/dev-master)](https://packagist.org/packages/t1gor/robots-txt-parser) [![Latest release](https://img.shields.io/packagist/v/t1gor/robots-txt-parser)](https://packagist.org/packages/t1gor/robots-txt-parser) [![License](https://img.shields.io/packagist/l/t1gor/robots-txt-parser)](https://packagist.org/packages/t1gor/robots-txt-parser) [![Downloads](https://img.shields.io/packagist/dt/t1gor/robots-txt-parser)](https://packagist.org/packages/t1gor/robots-txt-parser)
 
 PHP class to parse robots.txt rules according to Google, Yandex, W3C and The Web Robots Pages specifications.
 
@@ -188,10 +188,36 @@ Even more code samples could be found in the [tests folder](https://github.com/t
 * [Some inspirational code](http://socoder.net/index.php?snippet=23824), and [some more](http://www.the-art-of-web.com/php/parse-robots/)
 * [Google Webmaster tools Robots.txt testing tool](https://www.google.com/webmasters/tools/robots-testing-tool)
 
+### Benchmarks
+Large files are the subject of [#62](https://github.com/t1gor/Robots.txt-Parser-Class/issues/62), so CI parses generated ones of 250 MB, 600 MB and 1 GB against a time budget. They are built on the runner and never committed:
+
+```sh
+php bin/generate-robots.php --size=250MB --out=/tmp/robots.txt
+php bin/benchmark.php --file=/tmp/robots.txt --max-seconds=20 --memory-limit=256M
+```
+
+`--density` is the share of lines carrying a rule; the default 0.02 matches a real oversized robots.txt, where most of the file is HTML and comments. The benchmark parses with no byte limit, reports wall time, CPU and peak memory, and exits non-zero past `--max-seconds`.
+
+Locally on PHP 8.3:
+
+| file | parse | throughput | peak memory | tree |
+| --- | --- | --- | --- | --- |
+| 250 MB | 1.2 s | 210 MB/s | 8 MB | 92k rules, 1.3k user-agents |
+| 600 MB | 2.9 s | 209 MB/s | 14 MB | 220k rules, 3.2k user-agents |
+| 1 GB | 5.0 s | 205 MB/s | 22 MB | 377k rules, 5.4k user-agents |
+| 250 MB, every line a rule (`--density=1`) | 12.4 s | 20 MB/s | 559 MB | 11M rules, 157k user-agents |
+| 25 MB, 50k rules per user-agent (`--group=50000`) | 1.3 s | 20 MB/s | 82 MB | 1.2M rules, 37 user-agents |
+
+Throughput holds flat as the file grows - memory tracks the rules kept, not the bytes read.
+
+Lookups are measured too. `isAllowed()` has to work out which user-agent block applies, which walks every name in the file, so the parser keeps that answer until the document changes - on the 32k-user-agent tree above that moved lookups from 380/s to 50,543/s.
+
+That last row took **40 s** until recently: a repeated rule was spotted by scanning everything kept so far, so one big group cost O(n squared). Past a few hundred rules for the same user-agent there is an index instead, and below that the scan stays - it is quicker there, and costs no memory. Every other row above is unchanged by it, to the megabyte.
+
 ### Contributing
 First of all - thank you for your interest and a desire to help! If you found an issue and know how to fix it, please submit a pull request to the dev branch. Please do not forget the following:
 - Your fixed issue should be covered with tests (we are using phpUnit)
-- Please mind the [code climate](https://codeclimate.com/github/t1gor/Robots.txt-Parser-Class) recommendations. It some-how helps to keep things simpler, or at least seems to :)
+- Please keep an eye on `composer complexity` - CI fails when the total grows, and it some-how helps to keep things simpler :)
 - Following the coding standard would also be much appreciated (4 tabs as an indent, camelCase, etc.)
 
 I would really appreciate if you could share the link to your project that is utilizing the lib.
