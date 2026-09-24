@@ -73,10 +73,11 @@ abstract class AbstractWriter implements WriterInterface {
 	}
 
 	public function setEncoding(?string $encoding): static {
-		$this->encoding = $encoding;
+		// null once it is settled, so the hot path is a null check rather than this test per line
+		$this->encoding = $this->isUtf8($encoding) ? null : $encoding;
 
-		// said once here rather than per line, as the reader says it when the filter goes on
-		if (!$this->isUtf8($encoding)) {
+		// said once here, as the reader says it when the conversion is set up rather than used
+		if (!is_null($this->encoding)) {
 			$this->log(WarningMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
 		}
 
@@ -117,7 +118,7 @@ abstract class AbstractWriter implements WriterInterface {
 	 * @throws EncodingFailedException
 	 */
 	protected function convert(string $text): string {
-		if ($this->isUtf8($this->encoding)) {
+		if (is_null($this->encoding)) {
 			return $text;
 		}
 
@@ -199,9 +200,7 @@ abstract class AbstractWriter implements WriterInterface {
 				$separator = '';
 			}
 
-			foreach ($this->ordered($group['rules']['allow'], $group['rules']['disallow']) as $rule) {
-				yield $rule . $this->eol;
-			}
+			yield from $this->ordered($group['rules']['allow'], $group['rules']['disallow']);
 
 			foreach ($group['rules']['delays'] as $delay) {
 				yield $delay . $this->eol;
@@ -337,10 +336,14 @@ abstract class AbstractWriter implements WriterInterface {
 		return $kept;
 	}
 
-	/** Longest first, then alphabetically. Sorting moves pointers, so this copies no path. */
+	/**
+	 * Longest first, then alphabetically. Sorting moves pointers, so this copies no path.
+	 *
+	 * Two scalar comparisons rather than one of a pair of arrays: the tidier `[-strlen($a), $a] <=>
+	 * [-strlen($b), $b]` builds two arrays on every comparison, which measured twice as slow.
+	 */
 	private function sorted(array $paths): array {
-		// negated length rather than swapped operands, so every key reads $a on the left
-		usort($paths, static fn (string $a, string $b): int => [-strlen($a), $a] <=> [-strlen($b), $b]);
+		usort($paths, static fn (string $a, string $b): int => strlen($b) <=> strlen($a) ?: strcmp($a, $b));
 
 		return $paths;
 	}
@@ -353,16 +356,20 @@ abstract class AbstractWriter implements WriterInterface {
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	private function ordered(array $allow, array $disallow): \Generator {
-		$a = 0;
-		$d = 0;
+		// the same two prefixes for every rule in the file, so build them before the loop
+		$allows    = Directive::ALLOW->label() . ': ';
+		$disallows = Directive::DISALLOW->label() . ': ';
+		$a         = 0;
+		$d         = 0;
 
 		while (isset($allow[$a]) || isset($disallow[$d])) {
 			$takeAllow = isset($allow[$a])
 				&& (!isset($disallow[$d]) || strlen($allow[$a]) >= strlen($disallow[$d]));
 
+			// the line ending goes on here rather than at the yield site: one allocation, not two
 			yield $takeAllow
-				? Directive::ALLOW->label() . ': ' . $allow[$a++]
-				: Directive::DISALLOW->label() . ': ' . $disallow[$d++];
+				? $allows . $allow[$a++] . $this->eol
+				: $disallows . $disallow[$d++] . $this->eol;
 		}
 	}
 
@@ -478,7 +485,7 @@ abstract class AbstractWriter implements WriterInterface {
 	}
 
 	/** "utf8", "UTF-8", "utf_8", nothing at all - all the same thing, and nothing to convert. */
-	protected function isUtf8(?string $encoding): bool {
+	private function isUtf8(?string $encoding): bool {
 		return in_array(strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $encoding)), ['', 'UTF8'], true);
 	}
 

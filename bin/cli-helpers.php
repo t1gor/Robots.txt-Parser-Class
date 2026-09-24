@@ -32,3 +32,8 @@ function cpuSeconds(array $usage): float {
 	return $usage['ru_utime.tv_sec'] + $usage['ru_utime.tv_usec'] / 1e6
 		+ $usage['ru_stime.tv_sec'] + $usage['ru_stime.tv_usec'] / 1e6;
 }
+
+/** Always megabytes, so a column of them compares at a glance. */
+function megabytes(float $bytes): string {
+	return sprintf('%.3f', $bytes / 1024 / 1024);
+}

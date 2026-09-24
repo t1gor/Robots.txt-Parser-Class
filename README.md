@@ -119,66 +119,90 @@ earlier is replayed as soon as a logger turns up.
 
 ###### Writing it back out
 
-`render()` turns the parsed rules back into a robots.txt. It normalises rather than echoes: anything that cannot be valid is dropped, duplicates go, directive names get their canonical
-casing, `Host`, `Clean-param` and `Sitemap` are collected into one block at the end since they apply
-to the whole file, and user-agents carrying the same rules share a group. Rules are written longest
-first, with `Allow` ahead of an equally long `Disallow` - the order [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2)
-resolves them in, so a reader that stops at the first match still gets the same answer. Everything
-dropped is logged, so a file that comes back shorter says why.
+The writers are separate from the parser - it parses, they write, and nothing that only reads a
+robots.txt pays for them. Hand one the rules and ask for the document:
 
 ```php
-$parser = (new RobotsTxtParser())->setContent(fopen('robots.txt', 'r'));
+use t1gor\RobotsTxtParser\Writer\StringWriter;
 
-echo $parser;                                 // the naive way in: CRLF and UTF-8, as robots.txt is served
-echo $parser->render("\n");                    // or whatever line ending you need
-echo $parser->render("\n", 'Windows-1251');    // read as one encoding, written back as it
+$bytes = (new StringWriter($logger))
+    ->setTree($parser->getRules())
+    ->setEol("\n")
+    ->setOutput(fopen('robots.txt', 'w'))
+    ->render();
 ```
 
-The rules tree is UTF-8 whatever the document was, so a second argument is a conversion on the way
-out - warned about, since the spec asks for UTF-8. A conversion that cannot work throws
-`EncodingFailedException` rather than quietly writing UTF-8: bytes served under a charset they are
-not in, or a rule missing from a policy file, are both worse than a render that fails.
+It normalises rather than echoes: anything that cannot be valid is dropped, duplicates go, directive
+names get their canonical casing, `Host`, `Clean-param` and `Sitemap` are collected into one block at
+the end since they apply to the whole file, and user-agents carrying the same rules share a group.
+Rules are written longest first, with `Allow` ahead of an equally long `Disallow` - the order
+[RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2) resolves them in, so a reader that
+stops at the first match still gets the same answer. Everything dropped is logged, so a file that
+comes back shorter says why. Pass the parser's own logger and both halves report to one place.
 
-The output is settled: parsing it and rendering again gives the same bytes.
+The output is settled: parsing what comes out and writing it again gives the same bytes.
 
-###### Writing without holding the document
+###### Choosing a writer
 
-`render()` builds the whole thing in memory. `renderTo()` does not - it pushes a line at a time
-straight into your stream, the way the reader pulls a line at a time out of one:
-
-```php
-$parser->renderTo(fopen('robots.txt', 'w'));
-$parser->renderTo($response, "\n", 'Windows-1251');
-```
-
-Both return the number of bytes the stream took, after any conversion.
-
-Behind those, `t1gor\RobotsTxtParser\Writer\AbstractWriter` holds all the normalising and two
-classes differ only in what they do with the result. Set what a render needs, then ask for it:
+`StringWriter` and `StreamWriter` answer the same `WriterInterface` - setters for the tree, line
+ending, encoding and output, then `render()`, which returns how many bytes it wrote.
 
 ```php
 use t1gor\RobotsTxtParser\Writer\StreamWriter;
 
 $bytes = (new StreamWriter())
     ->setTree($parser->getRules())
-    ->setEol("\n")
     ->setEncoding('Windows-1251')
     ->setOutput(fopen('robots.txt', 'w'))
     ->render();
 ```
 
-`StringWriter` builds the document, converts it, writes it once. `StreamWriter` converts and writes
-each line as it is produced. They follow the same rules and produce the same bytes, so which one you
-pick is a memory question: on a 50 MB document the streaming one peaks about the size of the document
-lower, and costs a few percent more time for a write per line. Under 10k rules there is nothing in
-it. `RobotsTxtParser` uses `StreamWriter` unless you pass your own `WriterInterface`.
+`StringWriter` builds the document, converts it and writes it in one go; `StreamWriter` converts and
+writes each line as it is produced. They emit the same bytes and neither holds anything once
+`render()` returns, so the choice is only ever about peak memory:
 
-`bin/benchmark-writers.php` measures both across four sizes if you want the numbers on your hardware.
+**Use `StringWriter`** unless you have a reason not to. A real robots.txt is kilobytes, where both
+finish in well under a millisecond, and it is the simpler and slightly quicker of the two.
 
-Groups are still assembled before the first line goes out - merging the user-agents that share a
-rule set, and putting the catch-all last, cannot be decided until every group has been seen. What
-is held is the tree's own path strings in sorted order, a pointer each; the `Disallow: ` line is
-built as it is written, so neither writer keeps a second copy of the rules.
+**Use `StreamWriter`** when the document is large or you do not control its size - it peaks at about
+half the document rather than one and a half times it, and that gap widens as the file grows. You
+only reach that territory deliberately: the parser reads 500 KiB by default, so a tree big enough to
+matter here means you passed `byteLimit: null`.
+
+Measured on PHP 8.3, best of five, output to `/dev/null`:
+
+| rules | document | `StringWriter` | `StreamWriter` |
+| --- | --- | --- | --- |
+| 100 | 5 KB | 0.0001 s, 0.02 MB | 0.0001 s, 0.02 MB |
+| 10k | 0.49 MB | 0.0127 s, 0.71 MB | 0.0149 s, 0.28 MB |
+| 250k | 12.7 MB | 0.3615 s, 19.1 MB | 0.4051 s, 7.27 MB |
+| 1M | 51.5 MB | 1.5061 s, 76.8 MB | 1.6858 s, 27.0 MB |
+
+So streaming costs 10-17% more time - a write per line instead of one for the lot - and saves
+roughly two thirds of the peak. Below 10k rules there is nothing in it either way.
+`bin/benchmark-writers.php` runs this on your own hardware.
+
+Want the document as a string rather than in a file? Give it a `php://temp` - it spills to disk on
+its own, so it costs no more than it has to:
+
+```php
+$buffer = fopen('php://temp', 'r+');
+(new StringWriter())->setTree($parser->getRules())->setOutput($buffer)->render();
+rewind($buffer);
+
+echo stream_get_contents($buffer);
+```
+
+The rules tree is UTF-8 whatever the document was, so `setEncoding()` is a conversion on the way out
+- warned about, since the spec asks for UTF-8. A conversion that cannot work throws
+`EncodingFailedException` rather than quietly writing UTF-8: bytes served under a charset they are
+not in, or a rule missing from a policy file, are both worse than a render that fails. A write the
+output will not take throws `WriteFailedException` for the same reason.
+
+Groups are assembled before the first line goes out - merging the user-agents that share a rule set,
+and putting the catch-all last, cannot be decided until every group has been seen. What is held is
+the tree's own path strings in sorted order, a pointer each; the `Disallow: ` line is built as it is
+written, so neither writer keeps a second copy of the rules.
 
 ###### Bootstrapping the configuration from a framework
 
@@ -239,9 +263,6 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `setContent` | `resource\|string $content, ?string $encoding` | `self` | The document to parse; resets anything left from the previous one |
 | `getReader` | `-` | `ReaderInterface` | The reader holding the current document - filters, raw content, truncation |
 | `getConfiguration` | `-` | `Configuration` | The options the parser was built with |
-| `render` | `string $eol = "\r\n", ?string $encoding` | `string` | The rules back as a normalised robots.txt, see [Writing it back out](#writing-it-back-out) |
-| `renderTo` | `resource $stream, string $eol = "\r\n", ?string $encoding` | `int` | The same document, written a line at a time; returns the bytes handed to the stream |
-| `__toString` | `-` | `string` | `render()` with its defaults |
 
 #### `Directive` is an enum
 

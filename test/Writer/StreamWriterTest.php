@@ -7,12 +7,14 @@ use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Exception\EncodingFailedException;
+use t1gor\RobotsTxtParser\Exception\NoOutputException;
 use t1gor\RobotsTxtParser\Exception\WriteFailedException;
 use t1gor\RobotsTxtParser\Writer\StreamWriter;
 use t1gor\RobotsTxtParser\Writer\StringWriter;
 
 /**
  * @covers \t1gor\RobotsTxtParser\Writer\StreamWriter
+ * @covers \t1gor\RobotsTxtParser\Writer\AbstractWriter
  */
 class StreamWriterTest extends TestCase {
 
@@ -85,6 +87,14 @@ class StreamWriterTest extends TestCase {
 		$this->assertSame('', $out);
 		$this->assertSame(0, $written);
 		$this->assertTrue($this->logged('Nothing valid left to render'), 'the reason should be logged');
+	}
+
+	/** It has nowhere to put a line but the stream, so unlike StringWriter it cannot do without one. */
+	public function testRefusesToRenderWithNowhereToWriteTo() {
+		$this->expectException(NoOutputException::class);
+		$this->expectExceptionMessage('Nowhere to write to - call setOutput() first.');
+
+		$this->writer->setTree(self::TREE)->render();
 	}
 
 	public function testRejectsAnOutputThatIsNotAStream() {

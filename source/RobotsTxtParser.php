@@ -15,9 +15,6 @@ use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcher;
 use t1gor\RobotsTxtParser\Parser\UserAgent\UserAgentMatcherInterface;
 use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 use t1gor\RobotsTxtParser\Stream\ReaderInterface;
-use t1gor\RobotsTxtParser\Writer\StreamWriter;
-use t1gor\RobotsTxtParser\Writer\StringWriter;
-use t1gor\RobotsTxtParser\Writer\WriterInterface;
 
 /**
  * Class for parsing robots.txt files
@@ -69,8 +66,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		protected readonly ?Configuration $config = new Configuration(),
 		protected ?TreeBuilderInterface $treeBuilder = null,
 		protected ?ReaderInterface $reader = null,
-		protected ?UserAgentMatcherInterface $userAgentMatcher = null,
-		protected ?WriterInterface $writer = null
+		protected ?UserAgentMatcherInterface $userAgentMatcher = null
 	) {
 		// a hand-built Configuration has been through no checks; warnings buffer until a logger lands
 		ConfigurationFactory::validate($this->config, $this->logger());
@@ -187,10 +183,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
 			$this->userAgentMatcher->setLogger($logger);
-		}
-
-		if ($this->writer instanceof LoggerAwareInterface) {
-			$this->writer->setLogger($logger);
 		}
 	}
 
@@ -387,58 +379,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		// a document without the directive is the normal case, not a TypeError
 		return $this->tree[Directive::CLEAN_PARAM->value] ?? [];
-	}
-
-	/**
-	 * The parsed rules back as a robots.txt - normalised, with anything invalid dropped and logged.
-	 *
-	 * @see StringWriter
-	 */
-	public function render(string $eol = WriterInterface::DEFAULT_EOL, ?string $encoding = null): string {
-		// php://temp spills to disk on its own, so asking for the string back costs no more than it has to
-		$buffer = fopen('php://temp', 'r+');
-
-		try {
-			$this->renderTo($buffer, $eol, $encoding);
-			rewind($buffer);
-
-			return (string) stream_get_contents($buffer);
-		} finally {
-			// a writer that threw must not leave the handle behind, least of all in a long-lived worker
-			fclose($buffer);
-		}
-	}
-
-	/**
-	 * The same document, written into $stream.
-	 *
-	 * @param resource $stream
-	 *
-	 * @return int bytes handed to the stream
-	 */
-	public function renderTo($stream, string $eol = WriterInterface::DEFAULT_EOL, ?string $encoding = null): int {
-		return $this->writer()
-			->setTree($this->getRules())
-			->setEol($eol)
-			->setEncoding($encoding)
-			->setOutput($stream)
-			->render();
-	}
-
-	/** Streaming by default: it renders the same document as {@see StringWriter} and need not hold it. */
-	private function writer(): WriterInterface {
-		if (is_null($this->writer)) {
-			$this->log('Creating a default writer as none passed...');
-
-			$this->writer = new StreamWriter($this->logger());
-		}
-
-		return $this->writer;
-	}
-
-	/** The naive way in: {@see render()} with its defaults. Throws like it does, which PHP 8 allows. */
-	public function __toString(): string {
-		return $this->render();
 	}
 
 	public function getRules(?string $userAgent = null): array {

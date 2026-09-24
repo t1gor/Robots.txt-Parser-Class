@@ -45,11 +45,11 @@ ini_set('memory_limit', (string) ($options['memory-limit'] ?? '1G'));
 
 $results = [];
 
-printf("%s\n", str_repeat('=', 86));
+printf("%s\n", str_repeat('=', 90));
 printf("  Writers, %d run(s) each, best kept  (PHP %s, out=%s, encoding=%s)\n", $repeat, PHP_VERSION, $out, $encoding ?? 'UTF-8');
-printf("%s\n", str_repeat('=', 86));
-printf("  %-4s %-13s %10s %10s %12s %12s %10s\n", 'size', 'writer', 'wall', 'cpu', 'render peak', 'written', 'MB/s');
-printf("%s\n", str_repeat('-', 86));
+printf("%s\n", str_repeat('=', 90));
+printf("  %-4s %-13s %10s %10s %12s %12s %12s\n", 'size', 'writer', 'wall', 'cpu', 'peak MB', 'held MB', 'written MB');
+printf("%s\n", str_repeat('-', 90));
 
 foreach ($wanted as $size) {
 	$tree = buildTree(SIZES[$size]['agents'], SIZES[$size]['rules']);
@@ -69,14 +69,14 @@ foreach ($wanted as $size) {
 		$results[] = $best + ['size' => $size, 'writer' => $name] + SIZES[$size];
 
 		printf(
-			"  %-4s %-13s %9.4fs %9.4fs %12s %12s %10.1f\n",
+			"  %-4s %-13s %9.4fs %9.4fs %12s %12s %12s\n",
 			$size,
 			$name,
 			$best['wall_seconds'],
 			$best['cpu_seconds'],
-			human($best['peak_memory']),
-			human($best['bytes']),
-			$best['bytes'] / 1024 / 1024 / max($best['wall_seconds'], 1e-9)
+			megabytes($best['peak_memory']),
+			megabytes(max($best['held_after'], 0)),
+			megabytes($best['bytes'])
 		);
 	}
 
@@ -84,21 +84,19 @@ foreach ($wanted as $size) {
 	gc_collect_cycles();
 }
 
-printf("%s\n", str_repeat('-', 86));
+printf("%s\n", str_repeat('-', 90));
 
 foreach ($wanted as $size) {
 	$pair = array_values(array_filter($results, static fn (array $r): bool => $r['size'] === $size));
 	[$string, $stream] = $pair;
 
 	printf(
-		"  %-4s tree %9s | stream vs string: %+5.0f%% wall, %+5.0f%% cpu, %s peak (%.1fx)\n",
+		"  %-4s tree %10s MB | stream vs string: %+5.0f%% wall, %+5.0f%% cpu, %10s MB peak (%.1fx)\n",
 		$size,
-		human($string['resting']),
+		megabytes($string['resting']),
 		100 * ($stream['wall_seconds'] / max($string['wall_seconds'], 1e-9) - 1),
 		100 * ($stream['cpu_seconds'] / max($string['cpu_seconds'], 1e-9) - 1),
-		$stream['peak_memory'] <= $string['peak_memory']
-			? human($string['peak_memory'] - $stream['peak_memory']) . ' less'
-			: human($stream['peak_memory'] - $string['peak_memory']) . ' more',
+		megabytes($stream['peak_memory'] - $string['peak_memory']),
 		$string['peak_memory'] / max($stream['peak_memory'], 1)
 	);
 }
@@ -128,12 +126,16 @@ function measure(object $writer, array $tree, string $out, ?string $encoding): a
 	// not the real_usage figure: that rounds to 2 MB chunks and hides the difference entirely
 	$peak = memory_get_peak_usage() - $resting;
 
+	// still alive now the render is over - StringWriter keeps the document, StreamWriter keeps nothing
+	$held = memory_get_usage() - $resting;
+
 	fclose($handle);
 
 	return [
 		'wall_seconds' => round($wall, 4),
 		'cpu_seconds'  => round($cpu, 4),
 		'peak_memory'  => $peak,
+		'held_after'   => $held,
 		'resting'      => $resting,
 		'bytes'        => $bytes,
 	];
