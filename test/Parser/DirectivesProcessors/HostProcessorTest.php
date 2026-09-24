@@ -35,7 +35,7 @@ class HostProcessorTest extends TestCase {
 		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
-		$this->assertArrayHasKey(Directive::HOST, $tree['*']);
+		$this->assertArrayHasKey(Directive::HOST->value, $tree['*']);
 		$this->assertContains('www.example.com', $tree['*'], json_encode($tree));
 	}
 
@@ -46,7 +46,7 @@ class HostProcessorTest extends TestCase {
 		$this->processor->process($line, $tree);
 
 		$this->assertArrayNotHasKey('*', $tree);
-		$this->assertArrayNotHasKey(Directive::HOST, $tree);
+		$this->assertArrayNotHasKey(Directive::HOST->value, $tree);
 
 		/** @var TestHandler $handler */
 		$handler = $this->processor->getLogger()->getHandlers()[0];
@@ -67,7 +67,7 @@ class HostProcessorTest extends TestCase {
 		$this->processor->process($line, $tree);
 
 		$this->assertArrayNotHasKey('*', $tree);
-		$this->assertArrayNotHasKey(Directive::HOST, $tree);
+		$this->assertArrayNotHasKey(Directive::HOST->value, $tree);
 
 		/** @var TestHandler $handler */
 		$handler = $this->processor->getLogger()->getHandlers()[0];

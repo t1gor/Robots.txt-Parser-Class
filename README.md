@@ -168,7 +168,7 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `setHttpStatusCode` | `int $code` | `void` | Set HTTP response code for allowance checks |
 | `isAllowed` | `string $url, ?string $userAgent` | `bool` | If no `$userAgent` is passed, will return for `*` |
 | `isDisallowed` | `string $url, ?string $userAgent` | `bool` | If no `$userAgent` is passed, will return for `*` |
-| `getDelay` | `string $userAgent, string $type = 'crawl-delay'` | `float` | Get any of the delays, e.g. `Crawl-delay`, `Cache-delay`, etc. |
+| `getDelay` | `string $userAgent, Directive $type = Directive::CRAWL_DELAY` | `int\|float` | Get any of the delays, e.g. `Crawl-delay`, `Cache-delay`, etc. |
 | `getCleanParam` | `-` | `[ string => string[] ]` | Where key is the path, and values are params |
 | `getRules` | `?string $userAgent` | `array` | Get the rules the parser read in a tree-line structure |
 | `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
@@ -177,6 +177,19 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `getReader` | `-` | `ReaderInterface` | The reader holding the current document - filters, raw content, truncation |
 | `getConfiguration` | `-` | `Configuration` | The options the parser was built with |
 | `render` | `-` | `string` | **Deprecated.** Please `getReader()->getContentRaw()` |
+
+#### `Directive` is an enum
+
+`Directive` is a string-backed enum, so a directive is a case rather than a bare string. Pass the
+case where one is expected, and use `->value` wherever a string is - notably the keys of the tree
+`getRules()` returns:
+
+```php
+use t1gor\RobotsTxtParser\Directive;
+
+$parser->getDelay('GoogleBot', Directive::CACHE_DELAY);       // the case itself
+$parser->getRules('*')[Directive::DISALLOW->value];           // ->value for a tree key
+```
 
 Even more code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
 

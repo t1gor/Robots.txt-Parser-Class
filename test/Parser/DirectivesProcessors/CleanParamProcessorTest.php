@@ -33,10 +33,10 @@ class CleanParamProcessorTest extends TestCase {
 
 		$this->processor->process($line, $tree);
 
-		$this->assertArrayHasKey(Directive::CLEAN_PARAM, $tree);
-		$this->assertArrayHasKey('/only/here', $tree[Directive::CLEAN_PARAM], json_encode($tree[Directive::CLEAN_PARAM]));
-		$this->assertContains('some', $tree[Directive::CLEAN_PARAM]['/only/here'], json_encode($tree[Directive::CLEAN_PARAM]));
-		$this->assertContains('someMore', $tree[Directive::CLEAN_PARAM]['/only/here'], json_encode($tree[Directive::CLEAN_PARAM]));
+		$this->assertArrayHasKey(Directive::CLEAN_PARAM->value, $tree);
+		$this->assertArrayHasKey('/only/here', $tree[Directive::CLEAN_PARAM->value], json_encode($tree[Directive::CLEAN_PARAM->value]));
+		$this->assertContains('some', $tree[Directive::CLEAN_PARAM->value]['/only/here'], json_encode($tree[Directive::CLEAN_PARAM->value]));
+		$this->assertContains('someMore', $tree[Directive::CLEAN_PARAM->value]['/only/here'], json_encode($tree[Directive::CLEAN_PARAM->value]));
 	}
 
 	public function testProcessesCorrectlyWithNoPath() {
@@ -45,9 +45,9 @@ class CleanParamProcessorTest extends TestCase {
 
 		$this->processor->process($line, $tree);
 
-		$this->assertArrayHasKey(Directive::CLEAN_PARAM, $tree);
-		$this->assertArrayHasKey('/*', $tree[Directive::CLEAN_PARAM], json_encode($tree[Directive::CLEAN_PARAM]));
-		$this->assertContains('some', $tree[Directive::CLEAN_PARAM]['/*'], json_encode($tree[Directive::CLEAN_PARAM]));
-		$this->assertContains('someMore', $tree[Directive::CLEAN_PARAM]['/*'], json_encode($tree[Directive::CLEAN_PARAM]));
+		$this->assertArrayHasKey(Directive::CLEAN_PARAM->value, $tree);
+		$this->assertArrayHasKey('/*', $tree[Directive::CLEAN_PARAM->value], json_encode($tree[Directive::CLEAN_PARAM->value]));
+		$this->assertContains('some', $tree[Directive::CLEAN_PARAM->value]['/*'], json_encode($tree[Directive::CLEAN_PARAM->value]));
+		$this->assertContains('someMore', $tree[Directive::CLEAN_PARAM->value]['/*'], json_encode($tree[Directive::CLEAN_PARAM->value]));
 	}
 }

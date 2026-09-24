@@ -35,8 +35,8 @@ class CrawlDelayProcessorTest extends TestCase {
 		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
-		$this->assertArrayHasKey(Directive::CRAWL_DELAY, $tree['*']);
-		$this->assertEquals(25, $tree['*'][Directive::CRAWL_DELAY], json_encode($tree));
+		$this->assertArrayHasKey(Directive::CRAWL_DELAY->value, $tree['*']);
+		$this->assertEquals(25, $tree['*'][Directive::CRAWL_DELAY->value], json_encode($tree));
 	}
 
 	public function testSavesValidCrawlDelayDecimal() {
@@ -46,8 +46,8 @@ class CrawlDelayProcessorTest extends TestCase {
 		$this->processor->process($line, $tree);
 
 		$this->assertArrayHasKey('*', $tree);
-		$this->assertArrayHasKey(Directive::CRAWL_DELAY, $tree['*']);
-		$this->assertEquals(0.5, $tree['*'][Directive::CRAWL_DELAY], json_encode($tree));
+		$this->assertArrayHasKey(Directive::CRAWL_DELAY->value, $tree['*']);
+		$this->assertEquals(0.5, $tree['*'][Directive::CRAWL_DELAY->value], json_encode($tree));
 	}
 
 	public function testSkipsInvalidAndLogs() {

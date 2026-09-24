@@ -2,71 +2,71 @@
 
 namespace t1gor\RobotsTxtParser;
 
-abstract class Directive {
+enum Directive: string {
 
 	/**
 	 * @link https://yandex.com/support/webmaster/robot-workings/allow-disallow.html#allow-disallow
 	 */
-	const ALLOW = 'allow';
-	const DISALLOW = 'disallow';
+	case ALLOW = 'allow';
+	case DISALLOW = 'disallow';
 
-	const HOST = 'host';
+	case HOST = 'host';
 
 	/**
 	 * @link https://yandex.com/support/webmaster/robot-workings/sitemap.html#sitemap
 	 */
-	const SITEMAP = 'sitemap';
+	case SITEMAP = 'sitemap';
 
 	/**
 	 * @link https://yandex.com/support/webmaster/robot-workings/user-agent.html#user-agent
 	 */
-	const USERAGENT = 'user-agent';
-	const CACHE = 'cache';
-	const CACHE_DELAY = 'cache-delay';
+	case USERAGENT = 'user-agent';
+
+	/** Never appears in a file: an alias {@see RobotsTxtParser::getDelay()} accepts for CACHE_DELAY. */
+	case CACHE = 'cache';
+	case CACHE_DELAY = 'cache-delay';
 
 	/**
 	 * @link https://yandex.com/support/webmaster/robot-workings/clean-param.html#clean-param
 	 */
-	const CLEAN_PARAM = 'clean-param';
+	case CLEAN_PARAM = 'clean-param';
 
 	/**
 	 * @link https://yandex.com/support/webmaster/robot-workings/crawl-delay.html#crawl-delay
 	 */
-	const CRAWL_DELAY = 'crawl-delay';
+	case CRAWL_DELAY = 'crawl-delay';
 
 	/**
 	 * Extended standard directives
 	 *
 	 * @link http://www.conman.org/people/spc/robots2.html
 	 */
-	const REQUEST_RATE = 'request-rate';
-	const VISIT_TIME = 'visit-time';
+	case REQUEST_RATE = 'request-rate';
+	case VISIT_TIME = 'visit-time';
 
+	/**
+	 * Names a file may actually carry, so CACHE is excluded - it is only an argument alias, and
+	 * listing it would make SkipUnsupportedDirectivesFilter start keeping "Cache:" lines.
+	 *
+	 * @return string[]
+	 */
 	public static function getAll(): array {
-		return [
-			self::ALLOW,
-			self::DISALLOW,
-			self::HOST,
-			self::SITEMAP,
-			self::USERAGENT,
-			self::CRAWL_DELAY,
-			self::CACHE_DELAY,
-			self::CLEAN_PARAM,
-			self::REQUEST_RATE,
-			self::VISIT_TIME,
-		];
+		return array_map(
+			fn (self $directive): string => $directive->value,
+			array_filter(self::cases(), fn (self $directive): bool => self::CACHE !== $directive)
+		);
 	}
 
 	public static function getRegex(): string {
-		return "/^(?!(" . implode('|', Directive::getAll()) . ")\s*:+).+/mui";
+		return "/^(?!(" . implode('|', self::getAll()) . ")\s*:+).+/mui";
 	}
 
 	public static function getRequestRateRegex(): string {
-		return "/^" . self::REQUEST_RATE . ":+\s*(?![0-9]+\/[0-9]+).*/mui";
+		return "/^" . self::REQUEST_RATE->value . ":+\s*(?![0-9]+\/[0-9]+).*/mui";
 	}
 
 	public static function getCrawlDelayRegex(): string {
-		return "/^" . self::CRAWL_DELAY . ":+\s*(\D+)$/mui";
+		return "/^" . self::CRAWL_DELAY->value . ":+\s*(\D+)$/mui";
 	}
 
 	/**
@@ -76,14 +76,14 @@ abstract class Directive {
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	public static function getAllowDisallowRegex(): string {
-		return "/^(" . self::ALLOW . "|" . self::DISALLOW . "):+[^\S\\r\\n]*(?![\/\s])\S.*$/mui";
+		return "/^(" . self::ALLOW->value . "|" . self::DISALLOW->value . "):+[^\S\\r\\n]*(?![\/\s])\S.*$/mui";
 	}
 
 	public static function attemptGetInline(string $rule): string|false {
 		// lowercased once, not once per directive
 		$needle = mb_strtolower($rule);
 
-		foreach (static::getAll() as $directive) {
+		foreach (self::getAll() as $directive) {
 			if (str_starts_with($needle, $directive . ':')) {
 				return $directive;
 			}
@@ -93,7 +93,7 @@ abstract class Directive {
 	}
 
 	public static function stripInline(string $rule): string {
-		$directive = static::attemptGetInline($rule);
+		$directive = self::attemptGetInline($rule);
 
 		if ($directive !== false) {
 			$rule = trim(str_ireplace($directive . ':', '', $rule));

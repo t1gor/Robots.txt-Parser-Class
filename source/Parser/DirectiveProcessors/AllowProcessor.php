@@ -7,6 +7,6 @@ use t1gor\RobotsTxtParser\Directive;
 class AllowProcessor extends AbstractAllowanceProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
-		return Directive::ALLOW;
+		return Directive::ALLOW->value;
 	}
 }

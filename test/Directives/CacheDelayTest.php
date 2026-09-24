@@ -46,7 +46,7 @@ class CacheDelayTest extends TestCase {
 
 		// sanitising turned this into "" and stored it; validating drops it, so the default stands
 		$this->assertSame(0, $parser->getDelay('*', Directive::CACHE_DELAY));
-		$this->assertArrayNotHasKey(Directive::CACHE_DELAY, $parser->getRules('*'));
+		$this->assertArrayNotHasKey(Directive::CACHE_DELAY->value, $parser->getRules('*'));
 	}
 
 	public function testCacheDelayFallsBackForNonStandardCacheDirective() {
