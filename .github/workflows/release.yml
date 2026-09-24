@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  # Manual runs only preview what the next release section would look like.
+  workflow_dispatch:
+
+permissions:
+  # The changelog commit goes back to master and the release body is published.
+  contents: write
+
+# One release at a time, and never cancel a half-pushed one.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Changelog and release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # git-cliff walks tags and history, so a shallow clone will not do.
+          fetch-depth: 0
+
+      - name: Render the changelog section
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            bin/changelog.sh --write --current | tee "$RUNNER_TEMP/notes.md"
+          else
+            bin/changelog.sh --unreleased
+          fi
+
+      - name: Push CHANGELOG.md back to master
+        if: github.ref_type == 'tag'
+        run: |
+          # A release tag with no entries means the section was lost, not that it is empty.
+          if git diff --quiet -- CHANGELOG.md; then
+            echo "::error::No changelog entries rendered for $GITHUB_REF_NAME"
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "docs(changelog): $GITHUB_REF_NAME" -- CHANGELOG.md
+          # HEAD is the tagged commit, so this fast-forwards master onto it plus the commit above.
+          git push origin HEAD:refs/heads/master
+
+      - name: Publish the GitHub release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Re-running a tag should refresh the notes, not fail on the existing release.
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag \
+              --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md"
+          fi

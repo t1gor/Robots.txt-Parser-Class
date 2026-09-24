@@ -1,0 +1,69 @@
+# git-cliff configuration - see https://git-cliff.org/docs/configuration
+#
+# Renders one Keep-a-Changelog section per release. `bin/changelog.sh` splices the
+# output into CHANGELOG.md above the sentinel; 0.3.0 and older stay hand-written.
+
+[changelog]
+# The `# Changelog` title and the Keep-a-Changelog preamble already live in CHANGELOG.md.
+header = ""
+footer = ""
+trim = true
+
+# A release with nothing left after the parsers renders as nothing at all.
+body = """
+{%- if commits | length > 0 %}
+{% set repo = "https://github.com/t1gor/Robots.txt-Parser-Class" -%}
+{% if version -%}
+    {% set ver = version | trim_start_matches(pat="v") -%}
+    {% if previous.version -%}
+## [{{ ver }}]({{ repo }}/compare/{{ previous.version }}...{{ version }}) - {{ timestamp | date(format="%Y-%m-%d") }}
+    {%- else -%}
+## [{{ ver }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+    {%- endif %}
+{%- else %}
+## [Unreleased]
+{%- endif %}
+{% for group, scoped in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in scoped %}
+- {% if commit.scope %}**{{ commit.scope }}**: {% endif %}\
+{{ commit.message | split(pat="\n") | first | trim | upper_first }}
+{%- endfor %}
+{% endfor %}
+{%- endif %}"""
+
+[git]
+conventional_commits = true
+# Dependabot and the older `Add …` subjects are not conventional but still belong here.
+filter_unconventional = false
+sort_commits = "oldest"
+tag_pattern = "v[0-9]*"
+
+commit_preprocessors = [
+	# `fix(#62): subject (#140)` - the scope is the issue, the suffix the squashed PR.
+	{ pattern = '(?m)^([a-z]+!?)\(#(\d+)\):[ \t]*(.*?)[ \t]*\(#(\d+)\)[ \t]*$', replace = '$1: $3 ([#$4](https://github.com/t1gor/Robots.txt-Parser-Class/pull/$4), closes [#$2](https://github.com/t1gor/Robots.txt-Parser-Class/issues/$2))' },
+	# Same, pushed straight to master - no PR number to pick up.
+	{ pattern = '(?m)^([a-z]+!?)\(#(\d+)\):[ \t]*(.*\S)[ \t]*$', replace = '$1: $3 (closes [#$2](https://github.com/t1gor/Robots.txt-Parser-Class/issues/$2))' },
+	# Everything else GitHub squashed: keep the subject, link the trailing PR number.
+	{ pattern = '(?m)^(.*\S)[ \t]*\(#(\d+)\)[ \t]*$', replace = '$1 ([#$2](https://github.com/t1gor/Robots.txt-Parser-Class/pull/$2))' },
+]
+
+commit_parsers = [
+	{ message = '^Merge (pull request|branch|remote)', skip = true },
+	# The release workflow's own commit, which would otherwise show up next release.
+	{ message = '^docs\(changelog\)', skip = true },
+	{ message = '^(WIP|wip)\b', skip = true },
+	{ message = '^[a-z]+(\(.+\))?!:', group = "<!-- 0 -->Breaking" },
+	# Dependabot, plus anything filed as `chore(deps)`.
+	{ message = '^[Bb]ump ', group = "<!-- 5 -->Dependencies" },
+	{ message = '^chore\(deps', group = "<!-- 5 -->Dependencies" },
+	{ message = '^feat', group = "<!-- 1 -->Added" },
+	{ message = '^(perf|refactor|style|revert)', group = "<!-- 2 -->Changed" },
+	{ message = '^fix', group = "<!-- 3 -->Fixed" },
+	{ message = '^docs', group = "<!-- 4 -->Documentation" },
+	{ message = '^(chore|ci|build|test)', group = "<!-- 6 -->Internal" },
+	# Pre-conventional subjects still in use: `Adds a filter …`, `Add a matrix …`.
+	{ message = '^[Aa]dds? ', group = "<!-- 1 -->Added" },
+	{ message = '^[Ff]ix', group = "<!-- 3 -->Fixed" },
+	{ message = '.*', group = "<!-- 2 -->Changed" },
+]
