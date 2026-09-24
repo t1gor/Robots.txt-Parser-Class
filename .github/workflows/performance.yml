@@ -29,14 +29,15 @@ jobs:
           #            the same commit has parsed 1 GB in 6.0 s and 13.8 s here, because each
           #            matrix entry gets its own runner and the fleet is not uniform.
           #   ratio  - parse time over a calibration loop timed in the same process, so machine
-          #            speed cancels out. This is the one that catches drift.
-          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 6,   ratio: 10, memory: '256M', lookups: 1000 }
-          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 14,  ratio: 24, memory: '256M', lookups: 1000 }
-          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 24,  ratio: 40, memory: '256M', lookups: 1000 }
+          #            speed cancels out. This is the one that catches drift. Measure it on CI:
+          #            it is not comparable with a local run, only between runs of this workflow.
+          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 6,   ratio: 15, memory: '256M', lookups: 1000 }
+          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 14,  ratio: 33, memory: '256M', lookups: 1000 }
+          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 24,  ratio: 63, memory: '256M', lookups: 1000 }
           # Every line a rule: the shape that puts the load on the tree builder instead of the filters.
-          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 32,  ratio: 74, memory: '1G',   lookups: 200 }
+          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 32,  ratio: 108, memory: '1G',   lookups: 200 }
           # Huge groups under one user-agent - this took ~110 s before the dedupe stopped scanning the list.
-          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 5, ratio: 8, memory: '512M', lookups: 20 }
+          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 5, ratio: 11, memory: '512M', lookups: 20 }
 
     steps:
       - uses: actions/checkout@v7

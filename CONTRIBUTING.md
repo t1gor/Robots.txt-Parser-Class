@@ -36,9 +36,6 @@ included, is hand-written and never regenerated.
 is exceeded. This records where those numbers come from, so tightening them later is a measurement
 rather than a guess.
 
-`performance.yml` fails a job when a parse runs past its `budget` (seconds). This records where
-those numbers come from, so tightening them later is a measurement rather than a guess.
-
 ### How they were set
 
 Three Performance runs per side, same code within a side, `parse_seconds` from each job's
@@ -78,56 +75,65 @@ time, so the minimum is the cleanest estimate of what the CPU can do. Cost is ab
 
 #### Ratio budgets
 
-`parse_ratio` scales linearly with file size for a fixed shape (measured: 0.0320, 0.0310 and
-0.0330 ratio per MB at 50, 100 and 200 MB of the same shape), so a budget can be derived per case
-from the shape's ratio-per-MB. Budgets are ~1.15x the measured value.
+Measure these **on CI**, three runs, and take the slowest per case. The ratio is comparable
+between runs of this workflow but *not* with a local run: the probe is small enough to sit in
+cache while a multi-hundred-MB parse is bound by memory bandwidth, so the balance between the two
+shifts with the hardware. Ratios measured on a laptop came out ~30% below the runners' and, used
+as budgets, failed every case on code that was in fact faster.
 
-| case | shape | ratio/MB | expected | ratio budget |
+| case | three CI runs | worst | spread | ratio budget |
 | --- | --- | --- | --- | --- |
-| 250 MB | density 0.02 | 0.032 | 8.0 | 10 |
-| 600 MB | density 0.02 | 0.032 | 19.2 | 24 |
-| 1 GB | density 0.02 | 0.032 | 32.8 | 40 |
-| 250 MB rules only | density 1, group 100 | 0.260 | 65.0 | 74 |
-| Few agents, 50k rules each | density 1, group 50k | 0.271 | 7.1 | 8 |
+| 250 MB | 12.2 / 12.4 / 12.5 | 12.5 | 2% | 15 |
+| 600 MB | 24.4 / 27.2 / 28.4 | 28.4 | 16% | 33 |
+| 1 GB | 45.8 / 52.8 / 54.1 | 54.1 | 18% | 63 |
+| 250 MB rules only | 85.2 / 87.6 / 93.6 | 93.6 | 10% | 108 |
+| Few agents, 50k rules each | 9.1 / 9.3 / 9.6 | 9.6 | 5% | 11 |
 
-#### How it was validated
+#### Why it is worth having
 
-Machine speed was varied deliberately with `docker run --cpus`, rather than waiting for the runner
-lottery, and each point was measured against both this code and master.
+The ratio is far steadier than wall clock on the cases where wall clock is useless. Over the same
+three runs, 1 GB moved 130% in seconds and 18% in ratio; the clearest single instance is a run
+where the parse went from 10.96 s to 9.21 s - 16% - while the ratio moved from 54.1 to 52.8, all
+of 2%, because the calibration moved with it (0.203 s to 0.174 s).
 
-| cpus | master s | branch s | calibration s | master ratio | branch ratio |
-| --- | --- | --- | --- | --- | --- |
-| 0.4 | 3.99 | 3.20 | 0.3814 | 10.2 | 8.4 |
-| 0.7 | 1.90 | 1.61 | 0.2069 | 8.9 | 7.8 |
-| 1.0 | 1.33 | 1.19 | 0.1558 | 8.6 | 7.6 |
-| 2.0 | 1.38 | 1.10 | 0.1529 | 9.0 | 7.2 |
-
-- **Machine-independent.** Across a 199% swing in wall clock the ratio moved 17%, and most of that
-  is the 0.4-cpu point, where CFS throttling hits a long parse harder than a short probe round.
-  Between 0.7 and 2.0 cpus the ratio holds inside 5-8%.
-- **Still sensitive to code.** master 8.6-10.2 against 7.2-8.4 here: the ranges do not overlap, so
-  the gate separates the two. End to end, at the configured budgets, this code passes and master
-  fails on both rule-heavy shapes.
+| case | wall-clock spread | ratio spread |
+| --- | --- | --- |
+| 250 MB | 4% | 2% |
+| 600 MB | 155% | 16% |
+| 1 GB | 130% | 18% |
+| 250 MB rules only | 18% | 10% |
+| Few agents, 50k rules each | 3% | 5% |
 
 #### The honest limit
 
-The win being defended is 17-20%, and the ratio's residual spread is 5-8% on a normal runner. The
-budgets above therefore sit about 15% over measured - enough to catch a regression of roughly that
-size, but not with much room to spare. If a case turns out to flake, the fix is not a looser budget
-but a quieter measurement: raise `CALIBRATION_ROUNDS`, or parse more than once and keep the
-fastest. The latter is cheap for `Few agents` and expensive for `1 GB`, which is why it is not on
-by default.
+Budgets sit ~15% over the slowest measured run, so a case catches a regression of roughly its own
+spread and worse: ~13% on 250 MB, ~20% on 600 MB and 1 GB. The memoisation win these defend is
+17-20% measured locally, which those two cases would only just catch.
 
-Both gates stay. Wall clock catches a collapse even if the probe itself is ever wrong; the ratio
-catches drift.
+If a case flakes, the answer is a quieter measurement rather than a looser budget: raise
+`CALIBRATION_ROUNDS`, or parse more than once and keep the fastest. The latter is cheap for
+`Few agents` and expensive for `1 GB`, which is why it is not on by default.
+
+Note also what the local `docker run --cpus` check could *not* show. Throttling a container scales
+the probe and the parse together by construction, so it confirms the arithmetic and says nothing
+about whether the probe tracks the parser across genuinely different hardware. Only repeated CI
+runs answer that.
+
+Both gates stay. Wall clock catches a collapse even if the probe is ever wrong; the ratio catches
+drift.
 
 ### Re-measuring
 
+Dispatch the runs **one at a time**: the workflow's concurrency group has
+`cancel-in-progress` on for non-`master` refs, so two dispatches in a row kill the first.
+
 ```sh
-gh workflow run performance.yml --ref <branch>          # repeat 3x
-gh run download <run-id> -D <dir>                       # benchmark.json per case
+gh workflow run performance.yml --ref <branch>
+gh run list --workflow=performance.yml --branch=<branch> --limit 1   # wait for completed
+gh run download <run-id> -D <dir>                                    # benchmark.json per case
 ```
 
-Take the slowest of three per case, apply the same margin, and update both the table above and the
-`budget` values in `performance.yml`. For the ratio, read `parse_ratio` out of the same
-`benchmark.json` - it needs no scaling between machines, which is the point of it.
+Repeat three times, then per case take the slowest `parse_seconds` for the wall-clock budget and
+the slowest `parse_ratio` for the ratio budget, apply the margins above, and update both the tables
+here and the `budget` / `ratio` values in `performance.yml`. Do not shortcut this by measuring
+locally - see the note under Ratio budgets for what that cost last time.

@@ -150,7 +150,8 @@ if ($result['over_seconds']) {
 if ($result['over_ratio']) {
 	fwrite(STDERR, sprintf(
 		"\nParsing %s cost %.1f calibration units, over the %.1f budget (parse %.2fs / calibration %.4fs).\n"
-		. "The ratio is machine-independent, so this is a regression in the parser rather than a slow runner.\n",
+		. "The ratio divides out machine speed, so a slow runner alone should not cause this - but check\n"
+		. "the budget was measured on CI for this case rather than extrapolated. CONTRIBUTING.md says how.\n",
 		$label, $ratio, $maxRatio, $parsed, $calibration
 	));
 }
