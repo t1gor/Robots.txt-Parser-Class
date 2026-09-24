@@ -207,10 +207,21 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function isAllowed(string $url, ?string $userAgent = '*'): bool {
 		$this->buildTree();
 
-		$url = new Url($url);
-		$url->setLogger($this->logger());
+		return $this->checkRules(Directive::ALLOW, $this->pathToMatch($url), $userAgent);
+	}
 
-		return $this->checkRules(Directive::ALLOW, $url->getPath(), $userAgent);
+	/**
+	 * Url is a value object, so it cannot log for itself: anything it could not reduce to a path
+	 * comes back whole and rules end up matched against the whole URL, which is worth a line.
+	 */
+	private function pathToMatch(string $url): string {
+		$parsed = new Url($url);
+
+		if (!$parsed->isReducedToPath()) {
+			$this->log("Could not extract a path from {$url}, matching rules against it whole");
+		}
+
+		return $parsed->getPath();
 	}
 
 	/**
@@ -330,10 +341,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function isDisallowed(string $url, string $userAgent = '*'): bool {
 		$this->buildTree();
 
-		$url = new Url($url);
-		$url->setLogger($this->logger());
-
-		return $this->checkRules(Directive::DISALLOW, $url->getPath(), $userAgent);
+		return $this->checkRules(Directive::DISALLOW, $this->pathToMatch($url), $userAgent);
 	}
 
 	public function getDelay(string $userAgent = "*", string $type = Directive::CRAWL_DELAY) {

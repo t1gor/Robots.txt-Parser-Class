@@ -2,62 +2,19 @@
 
 namespace t1gor\RobotsTxtParser\Parser;
 
-use Psr\Log\LoggerAwareInterface;
-use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
+use League\Uri\Exceptions\SyntaxError;
+use League\Uri\UriString;
 
-class Url implements LoggerAwareInterface {
-
-	use LogsIfAvailableTrait;
-
-	protected string $in = '';
-
-	public function __construct(string $in) {
-		$this->in = static::encode(trim($in));
-	}
+/**
+ * A URL reduced to the string rules are matched against. Immutable: everything is worked out in
+ * the constructor, so repeated checks against the same URL cost nothing.
+ */
+class Url {
 
 	/**
-	 * URL encoder according to RFC 3986
-	 * Returns a string containing the encoded URL with disallowed characters converted to their percentage encodings.
-	 *
-	 * Rules are encoded through here too: RFC 9309 requires both sides of a comparison
-	 * to be percent-encoded first.
-	 *
-	 * @link http://publicmind.in/blog/url-encoding/
-	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
-	 *
-	 * @param string $url
-	 *
-	 * @return string
-	 */
-	public static function encode(string $url): string {
-		$reserved = [
-			':' => '!%3A!ui',
-			'/' => '!%2F!ui',
-			'?' => '!%3F!ui',
-			'#' => '!%23!ui',
-			'[' => '!%5B!ui',
-			']' => '!%5D!ui',
-			'@' => '!%40!ui',
-			'!' => '!%21!ui',
-			'$' => '!%24!ui',
-			'&' => '!%26!ui',
-			"'" => '!%27!ui',
-			'(' => '!%28!ui',
-			')' => '!%29!ui',
-			'*' => '!%2A!ui',
-			'+' => '!%2B!ui',
-			',' => '!%2C!ui',
-			';' => '!%3B!ui',
-			'=' => '!%3D!ui',
-			'%' => '!%25!ui',
-		];
-
-		return preg_replace(array_values($reserved), array_keys($reserved), rawurlencode($url));
-	}
-
-	/**
-	 * Supported schemes and the port each one defaults to. getservbyname() reads /etc/services,
-	 * which slim containers do not ship - a missing entry used to invalidate the whole URL.
+	 * Supported schemes and the port each one defaults to. league/uri happily parses any RFC-valid
+	 * scheme, which is wider than robots.txt needs, so this doubles as the whitelist. The ports
+	 * themselves play no part in matching - they document what each scheme implies.
 	 */
 	const DEFAULT_PORTS = [
 		'http'  => 80,
@@ -66,57 +23,75 @@ class Url implements LoggerAwareInterface {
 		'sftp'  => 22,
 	];
 
+	/**
+	 * Everything that survives encoding untouched: RFC 3986 unreserved (§2.3) and reserved (§2.2),
+	 * plus '%' itself. Every other byte becomes a percent-encoded triplet.
+	 */
+	private const REGEX_NEEDS_ENCODING = '/[^A-Za-z0-9\-._~:\/?#\[\]@!$&\'()*+,;=%]/';
+
+	private string $encoded;
+	private ?string $path;
+
+	public function __construct(string $in) {
+		$this->encoded = static::encode(trim($in));
+		$this->path    = $this->parse($this->encoded);
+	}
+
+	/**
+	 * URL encoder according to RFC 3986: disallowed characters are converted to their percentage
+	 * encodings, the reserved ones are left as written.
+	 *
+	 * Rules are encoded through here too: RFC 9309 requires both sides of a comparison
+	 * to be percent-encoded first.
+	 *
+	 * Deliberately not league/uri's Encoder: its encodePath() also escapes '#', '?', '[', ']' and
+	 * a bare '%', which would both break the path+'?'+query string getPath() hands back and
+	 * double-encode any rule containing a literal '%'. Encoding has to be idempotent here, because
+	 * a rule is encoded per wildcard-separated literal and a path is encoded on every check.
+	 *
+	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
+	 * @link https://www.rfc-editor.org/rfc/rfc3986#section-2
+	 */
+	public static function encode(string $url): string {
+		return preg_replace_callback(
+			self::REGEX_NEEDS_ENCODING,
+			fn (array $matched): string => rawurlencode($matched[0]),
+			$url
+		);
+	}
+
 	public static function isValidScheme(string $scheme): bool {
 		return isset(self::DEFAULT_PORTS[$scheme]);
 	}
 
 	/**
-	 * Parse URL
-	 *
-	 * @param string $url
-	 *
-	 * @return array|false
+	 * Path + query as one string - what rules are matched against - or null when the input is not
+	 * a URL we can reduce to a path.
 	 */
-	protected function parse(string $url) {
-		$parsed = parse_url($url);
-
-		if ($parsed === false) {
-			$this->log("Failed to parse URL from {$url}");
-
-			return false;
+	private function parse(string $url): ?string {
+		try {
+			$parsed = UriString::parse($url);
+		} catch (SyntaxError) {
+			// malformed authority, unparseable port, IP-literal host that is not one
+			return null;
 		}
 
-		if (!isset($parsed['scheme']) || !static::isValidScheme($parsed['scheme'])) {
-			$this->log("URL scheme invalid or missing for {$url}");
-
-			return false;
+		// casts fold "missing" into "invalid" - both leave us without a path to match on
+		if (!static::isValidScheme((string) $parsed['scheme']) || !HostName::isValid((string) $parsed['host'])) {
+			return null;
 		}
 
-		if (!isset($parsed['host']) || !HostName::isValid($parsed['host'])) {
-			$this->log("URL host invalid or missing for {$url}");
-
-			return false;
-		}
-
-		if (!isset($parsed['port'])) {
-			$port = getservbyname($parsed['scheme'], 'tcp');
-
-			// the scheme is known to be valid by now, so the fallback always resolves
-			$parsed['port'] = is_int($port) ? $port : self::DEFAULT_PORTS[$parsed['scheme']];
-		}
-
-		$parsed['custom'] = ($parsed['path'] ?? '/') . (isset($parsed['query']) ? '?' . $parsed['query'] : '');
-
-		return $parsed;
+		// an authority-only URL means the root; the fragment plays no part in matching
+		return ('' === $parsed['path'] ? '/' : $parsed['path'])
+			. (null === $parsed['query'] ? '' : '?' . $parsed['query']);
 	}
 
-	public function getPath() {
-		$parsed = $this->parse($this->in);
+	/** False means getPath() hands back the whole URL, because it did not reduce to a path. */
+	public function isReducedToPath(): bool {
+		return null !== $this->path;
+	}
 
-		if ($parsed !== false) {
-			return $parsed['custom'];
-		}
-
-		return $this->in;
+	public function getPath(): string {
+		return $this->path ?? $this->encoded;
 	}
 }
