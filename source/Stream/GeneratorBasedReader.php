@@ -139,7 +139,7 @@ class GeneratorBasedReader implements ReaderInterface {
 
 		// one byte past the limit tells us there was more
 		$copied          = stream_copy_to_stream($stream, $bounded, $limit + 1);
-		$this->truncated = is_int($copied) && $copied > $limit;
+		$this->truncated = (int) $copied > $limit;
 
 		if ($this->truncated) {
 			$this->trimToLastLine($bounded, $limit);
@@ -148,7 +148,7 @@ class GeneratorBasedReader implements ReaderInterface {
 			], LogLevel::WARNING);
 		}
 
-		if ($this->ownsStream && is_resource($stream)) {
+		if ($this->ownsStream) {
 			fclose($stream);
 		}
 

@@ -42,6 +42,7 @@
 		}
 	},
 	"scripts": {
-		"test": "phpunit"
+		"test": "phpunit",
+		"complexity": "php bin/complexity.php --max=280 --method-max=8"
 	}
 }

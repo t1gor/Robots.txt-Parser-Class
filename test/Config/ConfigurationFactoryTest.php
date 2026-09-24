@@ -61,14 +61,14 @@ class ConfigurationFactoryTest extends TestCase {
 		];
 	}
 
-	public function testUnknownOptionSuggestsTheNearestOne() {
+	public function testUnknownOptionNamesWhatIsAvailable() {
 		$this->expectException(UnknownOptionException::class);
-		$this->expectExceptionMessage('Did you mean "byte_limit"?');
+		$this->expectExceptionMessage('Unknown configuration option "byte_limitt"');
 
 		ConfigurationFactory::fromArray(['byte_limitt' => 100000]);
 	}
 
-	public function testWildlyUnknownOptionListsWhatIsAvailable() {
+	public function testUnknownOptionListsTheKnownOnes() {
 		$this->expectException(UnknownOptionException::class);
 		$this->expectExceptionMessage('Known options: byte_limit.');
 

@@ -31,9 +31,7 @@ final class BufferedLogger extends AbstractLogger {
 		$this->records[] = ['level' => $level, 'message' => $message, 'context' => $context];
 
 		// the tail of a parse explains more than its opening
-		if (count($this->records) > self::MAX_RECORDS) {
-			array_shift($this->records);
-		}
+		$this->records = array_slice($this->records, -self::MAX_RECORDS);
 	}
 
 	public function attach(LoggerInterface $target): void {

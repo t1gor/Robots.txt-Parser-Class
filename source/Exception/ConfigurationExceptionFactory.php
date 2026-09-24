@@ -12,14 +12,11 @@ final class ConfigurationExceptionFactory {
 	 * @param string[] $known
 	 */
 	public static function unknownOption(string $given, array $known): UnknownOptionException {
-		$suggestion = self::closest($given, $known);
-
-		return new UnknownOptionException(strtr('Unknown configuration option "{given}". {hint}', [
-			'{given}' => $given,
-			'{hint}'  => is_null($suggestion)
-				? 'Known options: ' . implode(', ', $known) . '.'
-				: sprintf('Did you mean "%s"?', $suggestion),
-		]));
+		return new UnknownOptionException(sprintf(
+			'Unknown configuration option "%s". Known options: %s.',
+			$given,
+			implode(', ', $known)
+		));
 	}
 
 	public static function notAByteCount(string $option, mixed $given): InvalidByteCountException {
@@ -36,25 +33,5 @@ final class ConfigurationExceptionFactory {
 			$option,
 			$given
 		));
-	}
-
-	/**
-	 * @param string[] $known
-	 */
-	private static function closest(string $given, array $known): ?string {
-		$best     = null;
-		$distance = PHP_INT_MAX;
-
-		foreach ($known as $option) {
-			$current = levenshtein($given, $option);
-
-			if ($current < $distance) {
-				$distance = $current;
-				$best     = $option;
-			}
-		}
-
-		// far enough away and a suggestion is only noise
-		return $distance <= (int) ceil(mb_strlen($given) / 2) ? $best : null;
 	}
 }

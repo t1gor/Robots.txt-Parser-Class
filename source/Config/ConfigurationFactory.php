@@ -72,7 +72,7 @@ final class ConfigurationFactory {
 	 */
 	public static function validate(Configuration $config, ?LoggerInterface $logger = null): void {
 		// 0 is what people reach for when they mean null, and reading nothing is never meaningful
-		if (!is_null($config->byteLimit) && $config->byteLimit <= 0) {
+		if (($config->byteLimit ?? 1) <= 0) {
 			throw ConfigurationExceptionFactory::notPositive(
 				Configuration::OPTION_BYTE_LIMIT,
 				$config->byteLimit

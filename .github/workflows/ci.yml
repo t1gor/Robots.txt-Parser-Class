@@ -89,6 +89,11 @@ jobs:
         env:
           XDEBUG_MODE: coverage
 
+      # Codecov reports the same number; fail here so a rise is seen before review.
+      - name: Check complexity
+        if: matrix.php == '8.3' && matrix.os == 'ubuntu-latest'
+        run: composer complexity
+
       - name: Upload coverage to Codecov
         # One upload is enough; the rest only adds noise.
         if: matrix.php == '8.3' && matrix.os == 'ubuntu-latest'

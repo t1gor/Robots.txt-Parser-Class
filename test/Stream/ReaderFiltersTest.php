@@ -15,7 +15,7 @@ use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 
 /**
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::filters
- * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::filters
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getReader
  */
 class ReaderFiltersTest extends TestCase {
 
