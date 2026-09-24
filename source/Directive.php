@@ -80,11 +80,15 @@ abstract class Directive {
 	}
 
 	public static function attemptGetInline(string $rule) {
+		// lowercased once, not once per directive
+		$needle = mb_strtolower($rule);
+
 		foreach (static::getAll() as $directive) {
-			if (0 === strpos(mb_strtolower($rule), $directive . ':')) {
+			if (str_starts_with($needle, $directive . ':')) {
 				return $directive;
 			}
 		}
+
 		return false;
 	}
 

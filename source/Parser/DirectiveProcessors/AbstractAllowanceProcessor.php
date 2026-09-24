@@ -20,7 +20,7 @@ abstract class AbstractAllowanceProcessor extends AbstractDirectiveProcessor imp
 			return;
 		}
 
-		if (!preg_match("/^\//", $entry)) {
+		if (!str_starts_with($entry, '/')) {
 			$this->log(strtr('{directive} with invalid value "{faulty}" found for {useragent}, skipping', [
 				'{directive}' => $directive,
 				'{faulty}'    => $entry,

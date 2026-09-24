@@ -295,10 +295,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	protected function prepareRegexRule(string $value): string {
-		$anchored = mb_substr($value, -1) === '$';
+		$anchored = str_ends_with($value, '$');
 
 		if ($anchored) {
-			$value = mb_substr($value, 0, -1);
+			// '$' is ASCII, so no UTF-8 continuation byte can be cut here
+			$value = substr($value, 0, -1);
 		}
 
 		// both sides of the comparison must be percent-encoded, and getPath() already encodes the path
