@@ -316,7 +316,6 @@ That last row took **40 s** until recently: a repeated rule was spotted by scann
 ### Contributing
 First of all - thank you for your interest and a desire to help! If you found an issue and know how to fix it, please submit a pull request to the dev branch. Please do not forget the following:
 - Your fixed issue should be covered with tests (we are using phpUnit)
-- Please keep an eye on `composer complexity` - CI fails when the total grows, and it some-how helps to keep things simpler :)
 - Following the coding standard would also be much appreciated (4 tabs as an indent, camelCase, etc.)
 
 I would really appreciate if you could share the link to your project that is utilizing the lib.

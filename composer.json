@@ -43,7 +43,6 @@
 	},
 	"scripts": {
 		"test": "phpunit",
-		"complexity": "php bin/complexity.php --max=287 --method-max=8",
 		"changelog": "bin/changelog.sh"
 	}
 }
