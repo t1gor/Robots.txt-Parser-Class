@@ -1,0 +1,86 @@
+name: Performance
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  benchmark:
+    name: "Parse ${{ matrix.name }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      # One size failing says nothing about the others.
+      fail-fast: false
+      matrix:
+        include:
+          # Budgets sit roughly 10x over a local run - they catch a collapse like issue #62, not drift.
+          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 20,  memory: '256M', lookups: 1000 }
+          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 45,  memory: '256M', lookups: 1000 }
+          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 75,  memory: '256M', lookups: 1000 }
+          # Every line a rule: the shape that puts the load on the tree builder instead of the filters.
+          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 120, memory: '1G',   lookups: 200 }
+          # Huge groups under one user-agent - this took ~110 s before the dedupe stopped scanning the list.
+          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 30, memory: '512M', lookups: 20 }
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, iconv, json
+          coverage: none
+          ini-values: error_reporting=E_ALL, display_errors=On
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress --no-dev
+
+      # RUNNER_TEMP, not the workspace: these files are gigabytes and must never reach the repo.
+      - name: Generate robots.txt
+        run: |
+          php bin/generate-robots.php \
+            --size=${{ matrix.size }} \
+            --density=${{ matrix.density }} \
+            --group=${{ matrix.group }} \
+            --out="$RUNNER_TEMP/robots.txt"
+          df -h /
+
+      - name: Benchmark
+        run: |
+          {
+            echo "### ${{ matrix.name }} (density ${{ matrix.density }})"
+            echo
+            echo "| file | size | parse | throughput | cpu | peak memory | budget | |"
+            echo "| --- | --- | --- | --- | --- | --- | --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # GNU time adds the kernel's own view of memory and CPU, independent of what PHP reports
+          [ -x /usr/bin/time ] && MEASURE="/usr/bin/time -v" || MEASURE=""
+
+          $MEASURE php bin/benchmark.php \
+            --file="$RUNNER_TEMP/robots.txt" \
+            --label="${{ matrix.name }}" \
+            --max-seconds=${{ matrix.budget }} \
+            --memory-limit=${{ matrix.memory }} \
+            --lookups=${{ matrix.lookups }} \
+            --json="$RUNNER_TEMP/benchmark.json"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-${{ matrix.size }}-${{ matrix.density }}-${{ matrix.group }}
+          path: ${{ runner.temp }}/benchmark.json
+          if-no-files-found: ignore

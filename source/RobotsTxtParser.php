@@ -56,6 +56,14 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 	private array                      $tree = [];
 
+	/** Matching a user-agent walks every name in the tree, so the answer is kept until the tree changes. */
+	private array $matched = [];
+
+	/** A client asks about a handful of agents; past this it has stopped being a cache, so start over. */
+	private const MAX_MATCHED = 512;
+
+	private ?array $treeUserAgents = null;
+
 	/** Dependencies only, so a container can resolve this once and hand it round. */
 	public function __construct(
 		protected readonly ?Configuration $config = new Configuration(),
@@ -100,6 +108,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->tree           = [];
 		$this->httpStatusCode = null;
 
+		$this->forgetUserAgents();
+
 		return $this;
 	}
 
@@ -134,6 +144,28 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		$this->treeBuilder->setContent($this->reader()->getContentIterated());
 		$this->tree = $this->treeBuilder->build();
+
+		$this->forgetUserAgents();
+	}
+
+	private function forgetUserAgents(): void {
+		$this->matched        = [];
+		$this->treeUserAgents = null;
+	}
+
+	/** Which name in the tree serves this user-agent. */
+	private function matchUserAgent(string $userAgent): string {
+		if (!isset($this->matched[$userAgent])) {
+			if (count($this->matched) >= self::MAX_MATCHED) {
+				$this->matched = [];
+			}
+
+			$this->treeUserAgents ??= array_keys($this->tree);
+
+			$this->matched[$userAgent] = $this->userAgentMatcher->getMatching($userAgent, $this->treeUserAgents);
+		}
+
+		return $this->matched[$userAgent];
 	}
 
 	public function getConfiguration(): Configuration {
@@ -203,7 +235,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			return ($rule === Directive::DISALLOW);
 		}
 
-		$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+		$userAgent = $this->matchUserAgent($userAgent);
 		$winner    = null;
 		$longest   = -1;
 
@@ -389,7 +421,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			return $this->tree;
 		}
 
-		$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+		$userAgent = $this->matchUserAgent($userAgent);
 
 		// direct match
 		if (isset($this->tree[$userAgent])) {
@@ -418,7 +450,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->buildTree();
 
 		if (!is_null($userAgent)) {
-			$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+			$userAgent = $this->matchUserAgent($userAgent);
 
 			if (isset($this->tree[$userAgent][Directive::HOST]) && !empty($this->tree[$userAgent][Directive::HOST])) {
 				return $this->tree[$userAgent][Directive::HOST];
@@ -443,7 +475,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$maps = [];
 
 		if (!is_null($userAgent)) {
-			$userAgent = $this->userAgentMatcher->getMatching($userAgent, array_keys($this->tree));
+			$userAgent = $this->matchUserAgent($userAgent);
 
 			if (isset($this->tree[$userAgent][Directive::SITEMAP]) && !empty($this->tree[$userAgent][Directive::SITEMAP])) {
 				return $this->tree[$userAgent][Directive::SITEMAP];
