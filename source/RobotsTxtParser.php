@@ -331,9 +331,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	public function getDelay(string $userAgent = "*", string $type = Directive::CRAWL_DELAY) {
 		$this->buildTree();
 
-		$directive = in_array($type, [Directive::CACHE, Directive::CACHE_DELAY])
-			? Directive::CACHE_DELAY
-			: Directive::CRAWL_DELAY;
+		$directive = match ($type) {
+			Directive::CACHE, Directive::CACHE_DELAY => Directive::CACHE_DELAY,
+			default                                  => Directive::CRAWL_DELAY,
+		};
 
 		if (isset($this->tree[$userAgent][$directive])) {
 			// return delay for requested directive
