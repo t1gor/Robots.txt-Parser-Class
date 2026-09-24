@@ -42,19 +42,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	// default encoding
 	const DEFAULT_ENCODING = 'UTF-8';
 
-	// rules set
-	protected $rules = [];
-
-	// host set
-	protected $host = null;
-
 	// robots.txt http status code
 	protected ?int $httpStatusCode = null;
 
-	// UserAgent
-	private $userAgent      = '*';
-
-	private array                      $tree = [];
+	private array $tree = [];
 
 	/** Matching a user-agent walks every name in the tree, so the answer is kept until the tree changes. */
 	private array $matched = [];
