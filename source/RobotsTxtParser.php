@@ -328,7 +328,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return $this->checkRules(Directive::DISALLOW, $url->getPath(), $userAgent);
 	}
 
-	public function getDelay(string $userAgent = "*", string $type = Directive::CRAWL_DELAY) {
+	public function getDelay(string $userAgent = "*", string $type = Directive::CRAWL_DELAY): int|float {
 		$this->buildTree();
 
 		$directive = match ($type) {
@@ -365,10 +365,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * Render
 	 *
 	 * @param string $eol
-	 *
-	 * @return string
 	 */
-	public function render($eol = "\r\n") {
+	public function render(string $eol = "\r\n"): string {
 		$input = $this->getRules();
 		krsort($input);
 		$output = [];
@@ -406,7 +404,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return implode($eol, $output);
 	}
 
-	public function getRules(?string $userAgent = null) {
+	public function getRules(?string $userAgent = null): array {
 		$this->buildTree();
 
 		// return all rules
@@ -439,7 +437,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 *
 	 * @return string[]|string|null
 	 */
-	public function getHost(?string $userAgent = null) {
+	public function getHost(?string $userAgent = null): array|string|null {
 		$this->buildTree();
 
 		if (!is_null($userAgent)) {

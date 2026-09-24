@@ -43,10 +43,10 @@ interface CustomFilterInterface {
 	 * @return bool
 	 *   Your implementation of this method should return FALSE on failure, or TRUE on success.
 	 */
-	public function onCreate();
+	public function onCreate(): bool;
 
 	/**
 	 * Called when closing the filter.
 	 */
-	public function onClose();
+	public function onClose(): void;
 }

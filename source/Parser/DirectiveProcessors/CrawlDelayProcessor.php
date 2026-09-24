@@ -10,7 +10,7 @@ class CrawlDelayProcessor extends AbstractDirectiveProcessor implements Directiv
 		return Directive::CRAWL_DELAY;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts              = explode(':', $line);
 		$entry              = trim($parts[1]);
 		$filteredCrawlDelay = filter_var($entry, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_FRACTION);

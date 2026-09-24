@@ -11,7 +11,7 @@ class HostProcessor extends AbstractDirectiveProcessor implements DirectiveProce
 		return Directive::HOST;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts = explode(':', $line);
 		array_shift($parts);
 		$trimmed     = array_map('trim', $parts);

@@ -10,7 +10,7 @@ class UserAgentProcessor extends AbstractDirectiveProcessor implements Directive
 		return Directive::USERAGENT;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts = explode(':', $line);
 		$newUserAgent = trim($parts[1]);
 

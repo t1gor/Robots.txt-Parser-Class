@@ -79,7 +79,7 @@ abstract class Directive {
 		return "/^(" . self::ALLOW . "|" . self::DISALLOW . "):+[^\S\\r\\n]*(?![\/\s])\S.*$/mui";
 	}
 
-	public static function attemptGetInline(string $rule) {
+	public static function attemptGetInline(string $rule): string|false {
 		// lowercased once, not once per directive
 		$needle = mb_strtolower($rule);
 

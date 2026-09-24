@@ -231,7 +231,7 @@ class GeneratorBasedReader implements ReaderInterface {
 	 *
 	 * @param string $encoding
 	 */
-	public function setEncoding(string $encoding) {
+	public function setEncoding(string $encoding): void {
 		$encoding = trim($encoding);
 
 		// "utf8", "UTF-8", "utf_8" - all the same thing, and nothing to convert

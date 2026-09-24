@@ -10,7 +10,7 @@ class CleanParamProcessor extends AbstractDirectiveProcessor implements Directiv
 		return Directive::CLEAN_PARAM;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts                               = explode(':', $line);
 		$cleanParams                         = explode(' ', trim($parts[1]));
 		$path                                = $cleanParams[1] ?? '/*';
