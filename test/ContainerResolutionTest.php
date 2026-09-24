@@ -8,6 +8,7 @@ use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Configuration;
 use t1gor\RobotsTxtParser\Exception\NoContentException;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
+use t1gor\RobotsTxtParser\Stream\GeneratorBasedReader;
 
 /**
  * A container builds a service once, from its dependencies, and hands it round - so the content
@@ -114,5 +115,25 @@ class ContainerResolutionTest extends TestCase {
 
 			$this->assertTrue($parser->getReader()->wasTruncated(), $round . ' was not bounded');
 		}
+	}
+
+	/** An injected reader was built with a limit of its own, so the configuration cannot reach it. */
+	public function testPassingBothAReaderAndAConfigurationSaysSoRatherThanSilentlyIgnoringOne() {
+		$handler = new TestHandler(LogLevel::DEBUG);
+		$logger  = new Logger(static::class);
+		$logger->pushHandler($handler);
+
+		$parser = new RobotsTxtParser(
+			new Configuration(100000),
+			null,
+			GeneratorBasedReader::fromString("User-agent: *\nDisallow: /admin\n")
+		);
+		$parser->setLogger($logger);
+
+		$this->assertTrue(
+			$handler->hasRecordThatContains('configuration is not applied to the reader', Level::Debug),
+			stringifyLogs($handler->getRecords())
+		);
+		$this->assertTrue($parser->isDisallowed('/admin'), 'the injected reader is still used');
 	}
 }

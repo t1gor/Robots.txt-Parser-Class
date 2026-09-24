@@ -13,6 +13,7 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::bound
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::trimToLastLine
  * @covers \t1gor\RobotsTxtParser\Stream\GeneratorBasedReader::wasTruncated
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getConfiguration
  */
 class ByteLimitTest extends TestCase {
 

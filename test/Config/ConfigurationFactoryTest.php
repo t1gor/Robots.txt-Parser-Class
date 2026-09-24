@@ -105,6 +105,31 @@ class ConfigurationFactoryTest extends TestCase {
 	}
 
 	/**
+	 * Every other case injects an array, so this is the only one touching the real environment.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testFromEnvironmentReadsAnActualEnvironmentVariable() {
+		putenv('RTP_BYTE_LIMIT=100000');
+
+		$this->assertSame(100000, ConfigurationFactory::fromEnvironment()->byteLimit);
+	}
+
+	/**
+	 * A constant only answers when no environment variable does.
+	 *
+	 * @runInSeparateProcess
+	 * @preserveGlobalState disabled
+	 */
+	public function testTheEnvironmentWinsOverAConstant() {
+		putenv('RTP_BYTE_LIMIT=100000');
+		define('RTP_BYTE_LIMIT', 200000);
+
+		$this->assertSame(100000, ConfigurationFactory::fromEnvironment()->byteLimit);
+	}
+
+	/**
 	 * WordPress has no environment convention - wp-config.php defines constants.
 	 *
 	 * @runInSeparateProcess
