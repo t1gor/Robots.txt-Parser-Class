@@ -4,9 +4,7 @@ use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 /**
- * checkBasicRule() keeps the pattern it compiled for each rule. The cap only matters for a
- * document with more distinct rules than any real one carries, so it is lowered here rather than
- * building a hundred thousand of them.
+ * The cap is lowered here rather than building a hundred thousand distinct rules.
  *
  * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::checkBasicRule
  */
@@ -18,7 +16,7 @@ class PatternCacheTest extends TestCase {
 		return (new RobotsTxtParser())->setContent(self::ROBOTS);
 	}
 
-	/** A cache is only correct if it is invisible, so the answers must not depend on it. */
+	/** A cache is only correct if it is invisible. */
 	public function testAnswersDoNotChangeWhenThePatternCacheEvicts() {
 		$tiny = new class extends RobotsTxtParser {
 			protected const MAX_PATTERNS = 2;
@@ -29,7 +27,7 @@ class PatternCacheTest extends TestCase {
 
 		$paths = ['/alpha', '/alpha/public', '/beta/x', '/gamma', '/delta/y', '/unlisted'];
 
-		// more distinct rules than the cap, so it clears part-way through every lookup
+		// more rules than the cap, so it evicts part-way through every lookup
 		foreach ($paths as $path) {
 			$this->assertSame(
 				$plain->isAllowed($path),
@@ -52,7 +50,6 @@ class PatternCacheTest extends TestCase {
 		$this->assertFalse($parser->isAllowed('/alpha'), '/alpha is disallowed');
 	}
 
-	/** A pattern is only valid for the rule it was built from, so a new document must not reuse it. */
 	public function testCacheDoesNotLeakAcrossDocuments() {
 		$parser = $this->parser();
 

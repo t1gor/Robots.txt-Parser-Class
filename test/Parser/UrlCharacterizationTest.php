@@ -6,13 +6,10 @@ use PHPUnit\Framework\TestCase;
 use t1gor\RobotsTxtParser\Parser\Url;
 
 /**
- * Byte-for-byte snapshot of what Url does today. Rules go through the same encoder as paths
- * ({@see \t1gor\RobotsTxtParser\RobotsTxtParser::prepareRegexRule()}), so any drift here silently
- * flips allow/disallow outcomes - which is why this is pinned at the character level and not
- * described in prose.
+ * Byte-for-byte snapshot of Url. Rules share this encoder with paths, so any drift here flips
+ * allow/disallow outcomes - hence pinning characters rather than describing them.
  *
  * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
- * @link https://www.rfc-editor.org/rfc/rfc3986#section-2
  *
  * @covers \t1gor\RobotsTxtParser\Parser\Url
  */
@@ -24,11 +21,7 @@ class UrlCharacterizationTest extends TestCase {
 	/** RFC 3986 §2.2: gen-delims + sub-delims */
 	const RESERVED = ":/?#[]@!$&'()*+,;=";
 
-	/**
-	 * The one rule the whole encoder boils down to: unreserved, reserved and '%' are handed back
-	 * untouched, every other byte becomes an uppercase %XX triplet. Exhaustive so that a
-	 * replacement cannot quietly re-encode or re-decode a single byte.
-	 */
+	/** Exhaustive over all 256 bytes, so no replacement can re-encode one quietly. */
 	public function testEveryByteIsEncodedTheSameWayAsBefore() {
 		$passthrough = self::UNRESERVED . self::RESERVED . '%';
 
@@ -40,9 +33,7 @@ class UrlCharacterizationTest extends TestCase {
 		}
 	}
 
-	/**
-	 * @dataProvider unreservedProvider
-	 */
+	/** @dataProvider unreservedProvider */
 	public function testUnreservedCharactersSurviveVerbatim(string $char) {
 		$this->assertSame($char, Url::encode($char));
 	}
@@ -52,8 +43,7 @@ class UrlCharacterizationTest extends TestCase {
 	}
 
 	/**
-	 * The re-decode step: rawurlencode() escapes these, and encode() puts every one of them back.
-	 * Rules such as `/out?url=https://example.com/` depend on it.
+	 * Reserved characters survive encoding - rules like `/out?url=https://x/` need them.
 	 *
 	 * @dataProvider reservedProvider
 	 */
@@ -65,9 +55,7 @@ class UrlCharacterizationTest extends TestCase {
 		return array_map(fn (string $c): array => [$c], str_split(self::RESERVED . '%'));
 	}
 
-	/**
-	 * @dataProvider encodedCharacterProvider
-	 */
+	/** @dataProvider encodedCharacterProvider */
 	public function testCharactersOutsideTheAllowedSetAreEncoded(string $char, string $expected) {
 		$this->assertSame($expected, Url::encode($char));
 	}
@@ -93,9 +81,7 @@ class UrlCharacterizationTest extends TestCase {
 		];
 	}
 
-	/**
-	 * @dataProvider stringProvider
-	 */
+	/** @dataProvider stringProvider */
 	public function testEncode(string $in, string $expected) {
 		$this->assertSame($expected, Url::encode($in));
 	}
@@ -118,8 +104,7 @@ class UrlCharacterizationTest extends TestCase {
 			'regex metachars kept'   => ['/pri$ce/b[c]/u+v/a.b/d)e/path(foo', '/pri$ce/b[c]/u+v/a.b/d)e/path(foo'],
 			'regex metachars gone'   => ['/x|y/p^q/a{2}/s\\t', '/x%7Cy/p%5Eq/a%7B2%7D/s%5Ct'],
 			'wildcard survives'      => ['/café/*/photo', '/caf%C3%A9/*/photo'],
-			// a '%' is passed through rather than escaped, so anything that looks percent-encoded
-			// stays exactly as written - valid triplet or not, upper or lower case hex
+			// '%' passes through, so anything percent-encoded stays as written
 			'triplet uppercase hex'  => ['%2F', '%2F'],
 			'triplet lowercase hex'  => ['%2f', '%2f'],
 			'triplet space'          => ['%20', '%20'],
@@ -135,8 +120,7 @@ class UrlCharacterizationTest extends TestCase {
 	}
 
 	/**
-	 * Both sides of an RFC 9309 comparison are encoded, sometimes more than once (a rule is
-	 * encoded per wildcard-separated literal), so encoding twice has to be a no-op.
+	 * Rules are encoded per literal, so encoding twice must be a no-op.
 	 *
 	 * @dataProvider idempotencyProvider
 	 */
@@ -154,23 +138,18 @@ class UrlCharacterizationTest extends TestCase {
 		return array_combine($cases, array_map(fn (string $c): array => [$c], $cases));
 	}
 
-	/** The constructor trims before encoding, so surrounding whitespace never becomes %20. */
+	/** The constructor trims first, so surrounding whitespace never becomes %20. */
 	public function testConstructorTrimsBeforeEncoding() {
 		$this->assertSame('/spaced', (new Url('  /spaced  '))->getPath());
 		$this->assertSame('', (new Url('   '))->getPath());
 	}
 
-	/**
-	 * @dataProvider getPathProvider
-	 */
+	/** @dataProvider getPathProvider */
 	public function testGetPath(string $url, string $expected) {
 		$this->assertSame($expected, (new Url($url))->getPath());
 	}
 
-	/**
-	 * Anything that does not parse into scheme + valid host comes back whole (encoded), because
-	 * that is what the matcher then compares rules against.
-	 */
+	/** Anything without a scheme and valid host comes back whole - that is what rules match. */
 	public function getPathProvider(): array {
 		return [
 			// parses: path + query, fragment dropped, port ignored
@@ -207,7 +186,7 @@ class UrlCharacterizationTest extends TestCase {
 			'no scheme'              => ['example.com/p', 'example.com/p'],
 			'unparseable port'       => ['http://example.com:abc/p', 'http://example.com:abc/p'],
 			'empty input'            => ['', ''],
-			// the host is percent-encoded by then, which no longer validates as a hostname
+			// the host is percent-encoded by then and no longer validates
 			'idn host'               => [
 				'https://пример.рф/путь',
 				'https://%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80.%D1%80%D1%84/%D0%BF%D1%83%D1%82%D1%8C',
@@ -215,7 +194,7 @@ class UrlCharacterizationTest extends TestCase {
 		];
 	}
 
-	/** Only the four whitelisted schemes are accepted; RFC-valid but unlisted ones are not. */
+	/** Only the whitelisted schemes; RFC-valid but unlisted ones are not. */
 	public function testIsValidScheme() {
 		foreach (array_keys(Url::DEFAULT_PORTS) as $scheme) {
 			$this->assertTrue(Url::isValidScheme($scheme), "{$scheme} is supported");
@@ -226,7 +205,7 @@ class UrlCharacterizationTest extends TestCase {
 		}
 	}
 
-	/** getPath() is a pure read - calling it repeatedly gives the same answer. */
+	/** getPath() is a pure read. */
 	public function testGetPathIsRepeatable() {
 		$url = new Url('http://example.com/catalog/?q=1#frag');
 

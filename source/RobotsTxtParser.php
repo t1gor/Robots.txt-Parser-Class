@@ -53,17 +53,10 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	/** A client asks about a handful of agents; past this it has stopped being a cache, so start over. */
 	private const MAX_MATCHED = 512;
 
-	/** Rule text to the pattern compiled from it, see {@see checkBasicRule()}. */
+	/** Rule text to its compiled pattern, see {@see checkBasicRule()}. */
 	private array $patterns = [];
 
-	/**
-	 * Only the matched group's rules ever land here, so in practice this tracks one group. The cap
-	 * is for the pathological document - one enormous group with the byte limit disabled - where
-	 * the patterns would otherwise rival the tree itself for memory.
-	 *
-	 * Read through static:: so a subclass can lower it, which is how the eviction path is tested
-	 * without building a document of a hundred thousand distinct rules.
-	 */
+	/** Only bounds the pathological document; protected so a test can lower it. */
 	protected const MAX_PATTERNS = 100000;
 
 	private ?array $treeUserAgents = null;
@@ -112,7 +105,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->tree           = [];
 		$this->httpStatusCode = null;
 
-		// a pattern stays correct whatever the document, but the old rules are dead weight now
+		// still correct for the old rules, but they are dead weight now
 		$this->patterns = [];
 
 		$this->forgetUserAgents();
@@ -217,10 +210,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return $this->checkRules(Directive::ALLOW, $this->pathToMatch($url), $userAgent);
 	}
 
-	/**
-	 * Url is a value object, so it cannot log for itself: anything it could not reduce to a path
-	 * comes back whole and rules end up matched against the whole URL, which is worth a line.
-	 */
+	/** Url is a value object and cannot log, so the caller reports what it could not reduce. */
 	private function pathToMatch(string $url): string {
 		$parsed = new Url($url);
 
@@ -301,8 +291,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * Check basic rule
 	 */
 	private function checkBasicRule(string $rule, string $path): bool {
-		// checkRules() has no early exit - it needs the longest match, so it walks every rule in
-		// the group on every lookup. The pattern only depends on the rule text, so build it once.
+		// checkRules() walks every rule in the group per lookup; the pattern only depends on $rule
 		if (!isset($this->patterns[$rule])) {
 			if (count($this->patterns) >= static::MAX_PATTERNS) {
 				$this->patterns = [];

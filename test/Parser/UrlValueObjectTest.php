@@ -12,8 +12,7 @@ use t1gor\RobotsTxtParser\Parser\Url;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 /**
- * Url stopped being logger-aware when it became a value object; the one log line it used
- * to emit now comes from the parser, which is the only thing that knows the URL was user input.
+ * Url is a value object now; the log line it used to emit comes from the parser.
  *
  * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/139
  *
@@ -21,15 +20,13 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
  */
 class UrlValueObjectTest extends TestCase {
 
-	/** BC break, deliberate: nothing about a parsed URL is mutable any more. */
+	/** Deliberate BC break. */
 	public function testUrlIsNoLongerLoggerAware() {
 		$this->assertNotInstanceOf(LoggerAwareInterface::class, new Url('http://example.com/'));
 		$this->assertFalse(method_exists(Url::class, 'setLogger'));
 	}
 
-	/**
-	 * @dataProvider reductionProvider
-	 */
+	/** @dataProvider reductionProvider */
 	public function testIsReducedToPath(string $url, bool $expected) {
 		$this->assertSame($expected, (new Url($url))->isReducedToPath());
 	}

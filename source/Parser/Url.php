@@ -2,17 +2,10 @@
 
 namespace t1gor\RobotsTxtParser\Parser;
 
-/**
- * A URL reduced to the string rules are matched against. Immutable: everything is worked out in
- * the constructor, so repeated checks against the same URL cost nothing.
- */
+/** A URL reduced to the string rules are matched against. Immutable. */
 class Url {
 
-	/**
-	 * Supported schemes and the port each one defaults to. Doubles as the whitelist: robots.txt
-	 * needs a far narrower set than a URL parser will accept. The ports themselves play no part
-	 * in matching - they document what each scheme implies.
-	 */
+	/** Also the scheme whitelist; the ports play no part in matching. */
 	const DEFAULT_PORTS = [
 		'http'  => 80,
 		'https' => 443,
@@ -20,10 +13,7 @@ class Url {
 		'sftp'  => 22,
 	];
 
-	/**
-	 * Everything that survives encoding untouched: RFC 3986 unreserved (§2.3) and reserved (§2.2),
-	 * plus '%' itself. Every other byte becomes a percent-encoded triplet.
-	 */
+	/** RFC 3986 unreserved and reserved, plus '%'. Everything else gets encoded. */
 	private const REGEX_NEEDS_ENCODING = '/[^A-Za-z0-9\-._~:\/?#\[\]@!$&\'()*+,;=%]/';
 
 	private string $encoded;
@@ -35,19 +25,12 @@ class Url {
 	}
 
 	/**
-	 * URL encoder according to RFC 3986: disallowed characters are converted to their percentage
-	 * encodings, the reserved ones are left as written.
+	 * Rules come through here too: RFC 9309 compares both sides percent-encoded.
 	 *
-	 * Rules are encoded through here too: RFC 9309 requires both sides of a comparison
-	 * to be percent-encoded first.
-	 *
-	 * Not a URI library's path encoder - league/uri's escapes '#', '?', '[', ']' and a bare '%',
-	 * which would both break the path+'?'+query string getPath() hands back and double-encode any
-	 * rule containing a literal '%'. Encoding has to be idempotent here, because a rule is encoded
-	 * per wildcard-separated literal and a path is encoded on every check.
+	 * Must stay idempotent - rules are encoded per literal, paths on every check - which is why
+	 * '%' is left alone, and '?' must survive for the path+query getPath() returns.
 	 *
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
-	 * @link https://www.rfc-editor.org/rfc/rfc3986#section-2
 	 */
 	public static function encode(string $url): string {
 		return preg_replace_callback(
@@ -61,18 +44,10 @@ class Url {
 		return isset(self::DEFAULT_PORTS[$scheme]);
 	}
 
-	/**
-	 * Path + query as one string - what rules are matched against - or null when the input is not
-	 * a URL we can reduce to a path.
-	 *
-	 * parse_url() rather than a URI library: measured against league/uri it agreed on 20 URL
-	 * shapes bar an out-of-range port, where parse_url() is the stricter of the two, and cost
-	 * 19% less per construction. See the notes on #139.
-	 */
+	/** Path + query, or null when the input does not reduce to a path. */
 	private function parse(string $url): ?string {
 		$parsed = parse_url($url);
 
-		// false is a malformed URL; a missing scheme or host leaves us without a path to match on
 		if (false === $parsed || !isset($parsed['scheme'], $parsed['host'])) {
 			return null;
 		}
@@ -81,12 +56,12 @@ class Url {
 			return null;
 		}
 
-		// an authority-only URL means the root; the fragment plays no part in matching
+		// authority-only means the root; the fragment never matters for matching
 		return ($parsed['path'] ?? '/')
 			. (isset($parsed['query']) ? '?' . $parsed['query'] : '');
 	}
 
-	/** False means getPath() hands back the whole URL, because it did not reduce to a path. */
+	/** False means getPath() returns the whole URL instead of a path. */
 	public function isReducedToPath(): bool {
 		return null !== $this->path;
 	}
