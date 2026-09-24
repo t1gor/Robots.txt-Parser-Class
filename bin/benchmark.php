@@ -207,11 +207,6 @@ function calibrationRound(int $iterations): float {
 	return (hrtime(true) - $start) / 1e9;
 }
 
-function cpuSeconds(array $usage): float {
-	return $usage['ru_utime.tv_sec'] + $usage['ru_utime.tv_usec'] / 1e6
-		+ $usage['ru_stime.tv_sec'] + $usage['ru_stime.tv_usec'] / 1e6;
-}
-
 function countRules($directives): int {
 	$count = 0;
 

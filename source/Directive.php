@@ -57,6 +57,12 @@ enum Directive: string {
 		);
 	}
 
+	/** How the directive is written into a robots.txt: "User-agent", "Clean-param". */
+	public function label(): string {
+		// no case carries a multibyte name
+		return ucfirst($this->value);
+	}
+
 	public static function getRegex(): string {
 		return "/^(?!(" . implode('|', self::getAll()) . ")\s*:+).+/mui";
 	}
@@ -81,10 +87,10 @@ enum Directive: string {
 
 	public static function attemptGetInline(string $rule): string|false {
 		// lowercased once, not once per directive
-		$needle = mb_strtolower($rule);
+		$haystack = mb_strtolower($rule);
 
 		foreach (self::getAll() as $directive) {
-			if (str_starts_with($needle, $directive . ':')) {
+			if (str_starts_with($haystack, $directive . ':')) {
 				return $directive;
 			}
 		}

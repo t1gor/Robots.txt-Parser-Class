@@ -5,8 +5,6 @@ Thank you for your interest, and for wanting to help.
 Pull requests go to `master`. Please keep an eye on the following:
 
 - A fix should come with a test that fails without it (phpUnit).
-- `composer complexity` must stay green - CI fails when the total grows, which somehow does keep
-  things simpler.
 - Coding standard: tabs for indentation, camelCase, and match the file you are editing.
 - No local PHP needed: `docker run --rm -v "$PWD":/app -w /app php:8.3-cli vendor/bin/phpunit`
   works, and any of the `php:8.2`-`php:8.5` images will do.

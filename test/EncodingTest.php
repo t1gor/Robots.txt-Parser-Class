@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
-use t1gor\RobotsTxtParser\WarmingMessages;
+use t1gor\RobotsTxtParser\WarningMessages;
 
 class EncodingTest extends TestCase {
 
@@ -27,7 +27,7 @@ class EncodingTest extends TestCase {
 		$handler = $parser->getLogger()->getHandlers()[0];
 
 		$this->assertTrue(
-			$handler->hasRecord(WarmingMessages::ENCODING_NOT_UTF8, Level::Warning),
+			$handler->hasRecord(WarningMessages::ENCODING_NOT_UTF8, Level::Warning),
 			stringifyLogs($handler->getRecords())
 		);
 

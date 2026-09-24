@@ -5,6 +5,7 @@ namespace t1gor\RobotsTxtParser\Stream;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Configuration;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
+use t1gor\RobotsTxtParser\RunsQuietlyTrait;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 use t1gor\RobotsTxtParser\Stream\Filters\EnsureEndOfLinesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipDirectivesWithInvalidValuesFilter;
@@ -13,11 +14,12 @@ use t1gor\RobotsTxtParser\Stream\Filters\SkipCommentedLinesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipEmptyLinesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\SkipUnsupportedDirectivesFilter;
 use t1gor\RobotsTxtParser\Stream\Filters\TrimSpacesLeftFilter;
-use t1gor\RobotsTxtParser\WarmingMessages;
+use t1gor\RobotsTxtParser\WarningMessages;
 
 class GeneratorBasedReader implements ReaderInterface {
 
 	use LogsIfAvailableTrait;
+	use RunsQuietlyTrait;
 
 	private $stream;
 
@@ -97,7 +99,7 @@ class GeneratorBasedReader implements ReaderInterface {
 		fwrite($stream, $input);
 		fseek($stream, 0);
 
-		$reader->log(WarmingMessages::STRING_INIT_DEPRECATE);
+		$reader->log(WarningMessages::STRING_INIT_DEPRECATE);
 		$reader->ownsStream = true;
 
 		return $reader->setStream($reader->bound($stream, $config));
@@ -143,7 +145,7 @@ class GeneratorBasedReader implements ReaderInterface {
 
 		if ($this->truncated) {
 			$this->trimToLastLine($bounded, $limit);
-			$this->log(WarmingMessages::BYTE_LIMIT_REACHED, [
+			$this->log(WarningMessages::BYTE_LIMIT_REACHED, [
 				Configuration::OPTION_BYTE_LIMIT => $limit,
 			], LogLevel::WARNING);
 		}
@@ -246,7 +248,7 @@ class GeneratorBasedReader implements ReaderInterface {
 			return;
 		}
 
-		$this->log(WarmingMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
+		$this->log(WarningMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
 
 		// swapping encodings must replace the filter, not add a second one
 		$this->removeEncodingFilter();
@@ -272,29 +274,6 @@ class GeneratorBasedReader implements ReaderInterface {
 
 		$this->encodingFilterName = $filterName;
 		$this->encodingFilter     = $filter;
-	}
-
-	/**
-	 * Runs $action with PHP's diagnostics captured rather than emitted: `@` only silences
-	 * handlers that respect error_reporting(), and a strict one would turn a warning here
-	 * into an exception.
-	 *
-	 * @return array{0: mixed, 1: string[]} the return value, and every message raised
-	 */
-	private function quietly(callable $action): array {
-		$raised = [];
-
-		set_error_handler(function (int $number, string $message) use (&$raised): bool {
-			$raised[] = $message;
-
-			return true;
-		});
-
-		try {
-			return [$action(), $raised];
-		} finally {
-			restore_error_handler();
-		}
 	}
 
 	/** Dropping it means the content is read as-is, which still leaves ASCII directives readable. */

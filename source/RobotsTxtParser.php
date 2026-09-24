@@ -257,12 +257,12 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		if (is_null($winner)) {
 			$this->log(strtr('No rule matched {path}, allowed by default', ['{path}' => $path]));
+
+			// nothing matched - allowed by default
+			return $rule === Directive::ALLOW;
 		}
 
-		// nothing matched - allowed by default
-		return is_null($winner)
-			? ($rule === Directive::ALLOW)
-			: ($rule === $winner);
+		return $rule === $winner;
 	}
 
 	/**
@@ -379,49 +379,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		// a document without the directive is the normal case, not a TypeError
 		return $this->tree[Directive::CLEAN_PARAM->value] ?? [];
-	}
-
-	/**
-	 * Render
-	 *
-	 * @param string $eol
-	 */
-	public function render(string $eol = "\r\n"): string {
-		$input = $this->getRules();
-		krsort($input);
-		$output = [];
-		foreach ($input as $userAgent => $rules) {
-			$output[] = 'User-agent: ' . $userAgent;
-			foreach ($rules as $directive => $value) {
-				// Not multibyte
-				$directive = ucfirst($directive);
-				if (is_array($value)) {
-					// Shorter paths later; a bool return is deprecated for usort() since PHP 8.3
-					usort($value, function ($a, $b) {
-						return mb_strlen($b) <=> mb_strlen($a);
-					});
-					foreach ($value as $subValue) {
-						$output[] = $directive . ': ' . $subValue;
-					}
-				} else {
-					$output[] = $directive . ': ' . $value;
-				}
-			}
-			$output[] = '';
-		}
-
-		$host = $this->getHost();
-		if ($host !== null) {
-			$output[] = 'Host: ' . $host;
-		}
-
-		$sitemaps = $this->getSitemaps();
-		foreach ($sitemaps as $sitemap) {
-			$output[] = 'Sitemap: ' . $sitemap;
-		}
-
-		$output[] = '';
-		return implode($eol, $output);
 	}
 
 	public function getRules(?string $userAgent = null): array {

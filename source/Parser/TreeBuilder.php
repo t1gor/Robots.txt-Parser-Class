@@ -49,13 +49,6 @@ class TreeBuilder implements TreeBuilderInterface {
 	}
 
 	/**
-	 * @return \Iterator
-	 */
-	public function getContent(): \Iterator {
-		return $this->content;
-	}
-
-	/**
 	 * @param \Iterator $content
 	 */
 	public function setContent(\Iterator $content): void {
