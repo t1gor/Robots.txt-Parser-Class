@@ -58,4 +58,20 @@ class DirectiveTest extends TestCase {
 		$this->assertFalse(Directive::attemptGetInline('Cache: 5'));
 		$this->assertFalse(Directive::attemptGetInline('Nonsense: 5'));
 	}
+
+	public function testAttemptGetInlineIsCaseInsensitive() {
+		$this->assertSame('disallow', Directive::attemptGetInline('DISALLOW: /admin'));
+		$this->assertSame('user-agent', Directive::attemptGetInline('User-Agent: *'));
+	}
+
+	public function testStripInlineRemovesTheDirectiveAndSurroundingSpace() {
+		$this->assertSame('/admin', Directive::stripInline('Disallow: /admin'));
+		$this->assertSame('/admin', Directive::stripInline('disallow:/admin'));
+		$this->assertSame('*', Directive::stripInline('User-Agent:   *  '));
+	}
+
+	public function testStripInlineLeavesAnUnrecognisedLineAlone() {
+		$this->assertSame('Nonsense: /admin', Directive::stripInline('Nonsense: /admin'));
+		$this->assertSame('', Directive::stripInline(''));
+	}
 }
