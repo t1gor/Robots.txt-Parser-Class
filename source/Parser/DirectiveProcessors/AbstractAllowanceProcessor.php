@@ -6,7 +6,7 @@ abstract class AbstractAllowanceProcessor extends AbstractDirectiveProcessor imp
 
 	use DeduplicatesEntriesTrait;
 
-	public function process(string $line, array &$root, string &$currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array &$root, string &$currentUserAgent = '*', string $prevLine = ''): void {
 		$parts     = explode(':', $line);
 		$entry     = trim($parts[1]);
 		$directive = $this->getDirectiveName();
@@ -20,7 +20,7 @@ abstract class AbstractAllowanceProcessor extends AbstractDirectiveProcessor imp
 			return;
 		}
 
-		if (!preg_match("/^\//", $entry)) {
+		if (!str_starts_with($entry, '/')) {
 			$this->log(strtr('{directive} with invalid value "{faulty}" found for {useragent}, skipping', [
 				'{directive}' => $directive,
 				'{faulty}'    => $entry,

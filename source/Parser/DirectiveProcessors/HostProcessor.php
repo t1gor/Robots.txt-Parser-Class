@@ -8,22 +8,22 @@ use t1gor\RobotsTxtParser\Parser\HostName;
 class HostProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
-		return Directive::HOST;
+		return Directive::HOST->value;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts = explode(':', $line);
 		array_shift($parts);
 		$trimmed     = array_map('trim', $parts);
 		$entry       = implode(':', $trimmed);
 
 		if (HostName::isValid($entry)) {
-			$root[$currentUserAgent][Directive::HOST] = $entry;
+			$root[$currentUserAgent][Directive::HOST->value] = $entry;
 			return;
 		}
 
 		$this->log(strtr('{directive} with value {faulty} dropped for {useragent} as invalid{ipAddress}', [
-			'{directive}' => Directive::HOST,
+			'{directive}' => Directive::HOST->value,
 			'{faulty}'    => $entry,
 			'{useragent}' => $currentUserAgent,
 			'{ipAddress}' => HostName::isIpAddress($entry) ? ' (IP address is not a valid hostname)' : '',

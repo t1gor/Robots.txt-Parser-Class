@@ -7,10 +7,10 @@ use t1gor\RobotsTxtParser\Directive;
 class UserAgentProcessor extends AbstractDirectiveProcessor implements DirectiveProcessorInterface {
 
 	public function getDirectiveName(): string {
-		return Directive::USERAGENT;
+		return Directive::USERAGENT->value;
 	}
 
-	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = '') {
+	public function process(string $line, array & $root, string & $currentUserAgent = '*', string $prevLine = ''): void {
 		$parts = explode(':', $line);
 		$newUserAgent = trim($parts[1]);
 

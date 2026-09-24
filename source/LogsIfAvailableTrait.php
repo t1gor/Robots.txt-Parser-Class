@@ -31,7 +31,7 @@ trait LogsIfAvailableTrait {
 	protected function onLoggerSet(LoggerInterface $logger): void {
 	}
 
-	protected function log(string $message, array $context = [], string $level = LogLevel::DEBUG) {
+	protected function log(string $message, array $context = [], string $level = LogLevel::DEBUG): void {
 		$this->logger()->log($level, $message, $context);
 	}
 }

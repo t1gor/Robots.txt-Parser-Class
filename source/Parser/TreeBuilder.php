@@ -37,7 +37,7 @@ class TreeBuilder implements TreeBuilderInterface {
 	/**
 	 * Wrapper to check that processor is available
 	 */
-	protected function processDirective(string $directive, string $line, &$tree, string &$userAgent, string $prevLine = '') {
+	protected function processDirective(string $directive, string $line, &$tree, string &$userAgent, string $prevLine = ''): void {
 		if (!isset($this->processors[$directive])) {
 			$this->log(strtr('{directive} met, but no processor found for it. Skipping.', [
 				'{directive}' => $directive,

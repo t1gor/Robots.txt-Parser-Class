@@ -24,14 +24,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Budgets sit roughly 10x over a local run - they catch a collapse like issue #62, not drift.
-          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 20,  memory: '256M', lookups: 1000 }
-          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 45,  memory: '256M', lookups: 1000 }
-          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 75,  memory: '256M', lookups: 1000 }
+          # Two gates per case, both in CONTRIBUTING.md:
+          #   budget - wall clock, ~1.6-2x the slowest of three measured runs. Coarse on purpose:
+          #            the same commit has parsed 1 GB in 6.0 s and 13.8 s here, because each
+          #            matrix entry gets its own runner and the fleet is not uniform.
+          #   ratio  - parse time over a calibration loop timed in the same process, so machine
+          #            speed cancels out. This is the one that catches drift. Measure it on CI:
+          #            it is not comparable with a local run, only between runs of this workflow.
+          - { name: '250 MB',            size: '250MB', density: '0.02', group: 100,   budget: 6,   ratio: 15, memory: '256M', lookups: 1000 }
+          - { name: '600 MB',            size: '600MB', density: '0.02', group: 100,   budget: 14,  ratio: 33, memory: '256M', lookups: 1000 }
+          - { name: '1 GB',              size: '1GB',   density: '0.02', group: 100,   budget: 24,  ratio: 63, memory: '256M', lookups: 1000 }
           # Every line a rule: the shape that puts the load on the tree builder instead of the filters.
-          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 120, memory: '1G',   lookups: 200 }
+          - { name: '250 MB rules only', size: '250MB', density: '1',    group: 100,   budget: 32,  ratio: 108, memory: '1G',   lookups: 200 }
           # Huge groups under one user-agent - this took ~110 s before the dedupe stopped scanning the list.
-          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 30, memory: '512M', lookups: 20 }
+          - { name: 'Few agents, 50k rules each', size: '25MB', density: '1', group: 50000, budget: 5, ratio: 11, memory: '512M', lookups: 20 }
 
     steps:
       - uses: actions/checkout@v7
@@ -62,8 +68,8 @@ jobs:
           {
             echo "### ${{ matrix.name }} (density ${{ matrix.density }})"
             echo
-            echo "| file | size | parse | throughput | cpu | peak memory | budget | |"
-            echo "| --- | --- | --- | --- | --- | --- | --- | --- |"
+            echo "| file | size | parse | throughput | cpu | peak memory | ratio | ratio budget | budget | |"
+            echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           # GNU time adds the kernel's own view of memory and CPU, independent of what PHP reports
@@ -73,6 +79,7 @@ jobs:
             --file="$RUNNER_TEMP/robots.txt" \
             --label="${{ matrix.name }}" \
             --max-seconds=${{ matrix.budget }} \
+            --max-ratio=${{ matrix.ratio }} \
             --memory-limit=${{ matrix.memory }} \
             --lookups=${{ matrix.lookups }} \
             --json="$RUNNER_TEMP/benchmark.json"

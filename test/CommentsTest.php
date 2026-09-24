@@ -29,9 +29,9 @@ class CommentsTest extends TestCase
 		{
 			$parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 			$this->assertNotEmpty($parser->getRules('*'), 'expected data');
-			$this->assertArrayHasKey(Directive::DISALLOW, $parser->getRules('*'));
-			$this->assertNotEmpty($parser->getRules('*')[Directive::DISALLOW], 'disallow expected');
-			$this->assertEquals($expectedDisallowValue, $parser->getRules('*')[Directive::DISALLOW][0]);
+			$this->assertArrayHasKey(Directive::DISALLOW->value, $parser->getRules('*'));
+			$this->assertNotEmpty($parser->getRules('*')[Directive::DISALLOW->value], 'disallow expected');
+			$this->assertEquals($expectedDisallowValue, $parser->getRules('*')[Directive::DISALLOW->value][0]);
 		}
 
 		/**

@@ -122,41 +122,29 @@ final class ConfigurationFactory {
 	}
 
 	private static function readEnv(string $name, ?array $env): ?string {
-		if (!is_null($env)) {
-			$value = $env[$name] ?? null;
-		} elseif (false !== ($fromEnv = getenv($name))) {
-			$value = $fromEnv;
-		} else {
-			$value = defined($name) ? constant($name) : null;
-		}
+		$value = match (true) {
+			!is_null($env)                       => $env[$name] ?? null,
+			false !== ($fromEnv = getenv($name)) => $fromEnv,
+			defined($name)                       => constant($name),
+			default                              => null,
+		};
 
 		return is_scalar($value) ? (string) $value : null;
 	}
 
 	/** Config layers hand over strings as often as ints. @throws InvalidByteCountException */
 	private static function toByteCount(string $option, mixed $value): ?int {
-		if (is_null($value)) {
-			return null;
-		}
+		// null for anything non-string, so the string arms below simply never match
+		$normalised = is_string($value) ? strtolower(trim($value)) : null;
 
-		// before any is_scalar check, or a bool silently becomes 1
-		if (is_int($value)) {
-			return $value;
-		}
-
-		if (is_string($value)) {
-			$normalised = strtolower(trim($value));
-
-			if (in_array($normalised, self::UNLIMITED_ALIASES, true)) {
-				return null;
-			}
-
+		return match (true) {
+			is_null($value) => null,
+			// ahead of any is_scalar check, or a bool silently becomes 1
+			is_int($value)  => $value,
+			in_array($normalised, self::UNLIMITED_ALIASES, true) => null,
 			// whole numbers only: "5.5" and "1e3" are too ambiguous to guess at
-			if (1 === preg_match('/^-?\d+$/', $normalised)) {
-				return (int) $normalised;
-			}
-		}
-
-		throw ConfigurationExceptionFactory::notAByteCount($option, $value);
+			1 === preg_match('/^-?\d+$/', (string) $normalised)  => (int) $normalised,
+			default => throw ConfigurationExceptionFactory::notAByteCount($option, $value),
+		};
 	}
 }
