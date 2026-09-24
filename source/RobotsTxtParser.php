@@ -352,7 +352,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			$this->log(Directive::CLEAN_PARAM->value . ' directive: Not found');
 		}
 
-		return $this->tree[Directive::CLEAN_PARAM->value];
+		// a document without the directive is the normal case, not a TypeError
+		return $this->tree[Directive::CLEAN_PARAM->value] ?? [];
 	}
 
 	/**

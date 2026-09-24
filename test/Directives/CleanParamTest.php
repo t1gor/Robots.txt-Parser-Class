@@ -29,6 +29,25 @@ class CleanParamTest extends TestCase
 		$this->parser = null;
 	}
 
+	public function testReturnsAnEmptyArrayAndLogsWhenTheDirectiveIsAbsent() {
+		$log = new Logger(static::class);
+		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
+
+		$parser = (new RobotsTxtParser())->setContent("User-Agent: *\nDisallow: /admin\n");
+		$parser->setLogger($log);
+
+		// this used to warn on an undefined key and then fail the array return type outright
+		$this->assertSame([], $parser->getCleanParam());
+
+		/** @var TestHandler $handler */
+		$handler = $parser->getLogger()->getHandlers()[0];
+
+		$this->assertTrue(
+			$handler->hasRecord('clean-param directive: Not found', Level::Debug),
+			stringifyLogs($handler->getRecords())
+		);
+	}
+
 	public function testCleanParam() {
 		$this->assertArrayHasKey('/forum/showthread.php', $this->parser->getCleanParam());
 		$this->assertEquals(['abc'], $this->parser->getCleanParam()['/forum/showthread.php']);
