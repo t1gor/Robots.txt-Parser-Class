@@ -53,6 +53,16 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	/** A client asks about a handful of agents; past this it has stopped being a cache, so start over. */
 	private const MAX_MATCHED = 512;
 
+	/** Rule text to the pattern compiled from it, see {@see checkBasicRule()}. */
+	private array $patterns = [];
+
+	/**
+	 * Only the matched group's rules ever land here, so in practice this tracks one group. The cap
+	 * is for the pathological document - one enormous group with the byte limit disabled - where
+	 * the patterns would otherwise rival the tree itself for memory.
+	 */
+	private const MAX_PATTERNS = 100000;
+
 	private ?array $treeUserAgents = null;
 
 	/** Dependencies only, so a container can resolve this once and hand it round. */
@@ -98,6 +108,9 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		// a new document: nothing from the last one still holds
 		$this->tree           = [];
 		$this->httpStatusCode = null;
+
+		// a pattern stays correct whatever the document, but the old rules are dead weight now
+		$this->patterns = [];
 
 		$this->forgetUserAgents();
 
@@ -285,7 +298,19 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * Check basic rule
 	 */
 	private function checkBasicRule(string $rule, string $path): bool {
-		if (preg_match('@' . $this->prepareRegexRule($rule) . '@', $path)) {
+		// checkRules() has no early exit - it needs the longest match, so it walks every rule in
+		// the group on every lookup. The pattern only depends on the rule text, so build it once.
+		if (!isset($this->patterns[$rule])) {
+			if (count($this->patterns) >= self::MAX_PATTERNS) {
+				$this->patterns = [];
+			}
+
+			$this->patterns[$rule] = '@' . $this->prepareRegexRule($rule) . '@';
+		}
+
+		$pattern = $this->patterns[$rule];
+
+		if (preg_match($pattern, $path)) {
 			$this->log('Rule match: Path');
 			return true;
 		}
