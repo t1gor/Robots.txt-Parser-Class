@@ -20,6 +20,13 @@ abstract class AbstractDirectiveProcessor implements DirectiveProcessorInterface
 	/** The directive name never changes, so neither does the pattern built from it. */
 	private ?string $pattern = null;
 
+	/** Everything past the first colon: a value may hold colons of its own. */
+	protected function value(string $line): string {
+		$colon = strpos($line, ':');
+
+		return false === $colon ? '' : trim(substr($line, $colon + 1));
+	}
+
 	public function matches(string $line): bool {
 		// Whitespace around the colon is optional: "disallow:/" is as valid as "disallow: /".
 		// Built once per processor: every line is offered to every processor until one matches.

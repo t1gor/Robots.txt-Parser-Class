@@ -1,0 +1,26 @@
+# The extended standard, as documented at http://www.conman.org/people/spc/robots2.html
+User-agent: *
+Robot-version: 2.0
+Visit-time: 0600-0845
+Request-rate: 1/5m 0600-0845
+Request-rate: 2/1h 0900-1730
+Comment: regenerated nightly by the CMS
+Noindex: /drafts
+Disallow: /admin
+
+User-agent: GoogleBot
+Robot-version: 2.0.1
+Visit-time: 2300-0200
+Request-rate: 1/300
+Comment: hello Google
+Noindex: /drafts
+Noindex: /drafts
+Noindex: not-a-path
+Disallow: /private
+
+User-agent: BadBot
+Robot-version: two point oh
+Visit-time: 2500-2600
+Request-rate: 15686
+Comment:
+Noindex:

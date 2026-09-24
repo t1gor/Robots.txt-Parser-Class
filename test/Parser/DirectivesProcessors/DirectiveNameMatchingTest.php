@@ -69,9 +69,9 @@ class DirectiveNameMatchingTest extends TestCase {
 		];
 	}
 
-	/** Kept by the unsupported-directives filter, but no processor handles them. */
-	public function testDirectivesWithoutProcessorAreIgnored() {
-		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nRequest-rate: 1/5\nVisit-time: 0600-0845\nDisallow: /a\n");
+	/** A line the filter did not recognise never reaches a processor. */
+	public function testUnknownDirectivesAreIgnored() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nNofollow: /a\nAcap-crawler: *\nDisallow: /a\n");
 
 		$this->assertSame(['*' => ['disallow' => ['/a']]], $parser->getRules());
 	}

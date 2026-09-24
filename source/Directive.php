@@ -43,6 +43,15 @@ enum Directive: string {
 	 */
 	case REQUEST_RATE = 'request-rate';
 	case VISIT_TIME = 'visit-time';
+	case ROBOT_VERSION = 'robot-version';
+	case COMMENT = 'comment';
+
+	/**
+	 * Keeps a path out of the index without keeping the crawler out of it.
+	 *
+	 * @link https://yandex.com/support/webmaster/controlling-robot/html.html
+	 */
+	case NOINDEX = 'noindex';
 
 	/**
 	 * Names a file may actually carry, so CACHE is excluded - it is only an argument alias, and
@@ -55,6 +64,15 @@ enum Directive: string {
 			fn (self $directive): string => $directive->value,
 			array_filter(self::cases(), fn (self $directive): bool => self::CACHE !== $directive)
 		);
+	}
+
+	/** Whether a user-agent may carry several of these, rather than the last one winning. */
+	public function isRepeatable(): bool {
+		return match ($this) {
+			self::ALLOW, self::DISALLOW, self::NOINDEX,
+			self::SITEMAP, self::REQUEST_RATE, self::COMMENT => true,
+			default                                          => false,
+		};
 	}
 
 	/** How the directive is written into a robots.txt: "User-agent", "Clean-param". */
