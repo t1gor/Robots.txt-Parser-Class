@@ -77,4 +77,27 @@ class RobotsTxtParserTest extends TestCase {
 
 		$this->assertCount(1, $treeCreateRecords);
 	}
+
+	public function testAnImpossibleHttpStatusCodeIsRefusedRatherThanStored() {
+		$this->assertFalse($this->parser->setHttpStatusCode(999));
+		$this->assertTrue($this->parser->setHttpStatusCode(503));
+	}
+
+	public function testRulesForAnUnlistedUserAgentFallBackToTheWildcard() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /admin\n");
+
+		$this->assertSame(['disallow' => ['/admin']], $parser->getRules('SomeUnlistedBot'));
+	}
+
+	public function testRulesComeBackEmptyWhenThereIsNoWildcardEither() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: googlebot\nDisallow: /admin\n");
+
+		$this->assertSame([], $parser->getRules('SomeUnlistedBot'));
+	}
+
+	public function testHostIsNullForAUserAgentThatDeclaresNone() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /admin\n");
+
+		$this->assertNull($parser->getHost('*'));
+	}
 }
