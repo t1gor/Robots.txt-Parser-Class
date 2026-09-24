@@ -60,8 +60,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	 * Only the matched group's rules ever land here, so in practice this tracks one group. The cap
 	 * is for the pathological document - one enormous group with the byte limit disabled - where
 	 * the patterns would otherwise rival the tree itself for memory.
+	 *
+	 * Read through static:: so a subclass can lower it, which is how the eviction path is tested
+	 * without building a document of a hundred thousand distinct rules.
 	 */
-	private const MAX_PATTERNS = 100000;
+	protected const MAX_PATTERNS = 100000;
 
 	private ?array $treeUserAgents = null;
 
@@ -301,7 +304,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		// checkRules() has no early exit - it needs the longest match, so it walks every rule in
 		// the group on every lookup. The pattern only depends on the rule text, so build it once.
 		if (!isset($this->patterns[$rule])) {
-			if (count($this->patterns) >= self::MAX_PATTERNS) {
+			if (count($this->patterns) >= static::MAX_PATTERNS) {
 				$this->patterns = [];
 			}
 

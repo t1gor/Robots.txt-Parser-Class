@@ -16,7 +16,6 @@
 		"php": ">=8.2",
 		"ext-mbstring": "*",
 		"ext-iconv": "*",
-		"ext-filter": "*",
 		"vipnytt/useragentparser": "^1.0",
 		"psr/log": "^1.1 || ^2.0 || ^3.0"
 	},
