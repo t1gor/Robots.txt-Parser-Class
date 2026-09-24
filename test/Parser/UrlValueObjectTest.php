@@ -12,7 +12,7 @@ use t1gor\RobotsTxtParser\Parser\Url;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
 /**
- * Url stopped being logger-aware when league/uri took over the parsing; the one log line it used
+ * Url stopped being logger-aware when it became a value object; the one log line it used
  * to emit now comes from the parser, which is the only thing that knows the URL was user input.
  *
  * @see https://github.com/t1gor/Robots.txt-Parser-Class/issues/139
