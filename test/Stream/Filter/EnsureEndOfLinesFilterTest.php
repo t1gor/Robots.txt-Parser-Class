@@ -23,9 +23,7 @@ class EnsureEndOfLinesFilterTest extends TestCase {
 	 * @dataProvider eolProvider
 	 */
 	public function testParsesRegardlessOfLineEnding(string $eol) {
-		$parser = new RobotsTxtParser(
-			implode($eol, ['User-agent: *', 'Disallow: /tech', 'Allow: /tech/public', ''])
-		);
+		$parser = (new RobotsTxtParser())->setContent(implode($eol, ['User-agent: *', 'Disallow: /tech', 'Allow: /tech/public', '']));
 
 		// a stray CR would end up inside the rule value
 		$this->assertSame(['*' => [
@@ -71,7 +69,7 @@ class EnsureEndOfLinesFilterTest extends TestCase {
 			$lines[] = 'Disallow: ' . $path;
 		}
 
-		$parser = new RobotsTxtParser(implode("\r", $lines) . "\r");
+		$parser = (new RobotsTxtParser())->setContent(implode("\r", $lines) . "\r");
 		$rules  = $parser->getRules();
 
 		$this->assertSame($paths, $rules['*']['disallow']);

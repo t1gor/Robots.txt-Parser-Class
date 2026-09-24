@@ -9,5 +9,6 @@ abstract class WarmingMessages {
 		. 'Google might be ignoring some parts of the file.'
 		. 'See https://developers.google.com/search/reference/robots_txt#file-format for more info.';
 
-	const SET_UA_DEPRECATED = 'Deprecated. Please check rules for exact user agent instead';
+	const BYTE_LIMIT_REACHED = 'robots.txt ran past the configured byte limit and was cut short. '
+		. 'Rules beyond the limit are ignored. See Configuration::DEFAULT_BYTE_LIMIT.';
 }

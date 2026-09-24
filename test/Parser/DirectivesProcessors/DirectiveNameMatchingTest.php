@@ -71,14 +71,14 @@ class DirectiveNameMatchingTest extends TestCase {
 
 	/** Kept by the unsupported-directives filter, but no processor handles them. */
 	public function testDirectivesWithoutProcessorAreIgnored() {
-		$parser = new RobotsTxtParser("User-agent: *\nRequest-rate: 1/5\nVisit-time: 0600-0845\nDisallow: /a\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nRequest-rate: 1/5\nVisit-time: 0600-0845\nDisallow: /a\n");
 
 		$this->assertSame(['*' => ['disallow' => ['/a']]], $parser->getRules());
 	}
 
 	/** matches() anchors at ^, so it depends on the trim filter having run. */
 	public function testIndentedDirective() {
-		$parser = new RobotsTxtParser("User-agent: *\n\t\tDisallow: /admin\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\n\t\tDisallow: /admin\n");
 
 		$this->assertTrue($parser->isDisallowed('/admin'));
 	}

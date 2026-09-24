@@ -13,7 +13,7 @@ class AllowTest extends TestCase {
 	private ?RobotsTxtParser $parser;
 
 	public function setUp(): void {
-		$this->parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
+		$this->parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/allow-spec.txt', 'r'));
 	}
 
 	public function tearDown(): void {

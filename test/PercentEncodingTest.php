@@ -32,7 +32,7 @@ class PercentEncodingTest extends TestCase {
 	 * @dataProvider pathProvider
 	 */
 	public function testRuleMatchesItsOwnPath(string $rule, string $matches, string $doesNotMatch) {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: {$rule}\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: {$rule}\n");
 
 		$this->assertTrue($parser->isDisallowed($matches), "{$rule} should match {$matches}");
 		$this->assertFalse($parser->isDisallowed($doesNotMatch), "{$rule} should not match {$doesNotMatch}");
@@ -40,7 +40,7 @@ class PercentEncodingTest extends TestCase {
 
 	/** An already-encoded path matches the readable rule, and vice versa. */
 	public function testEncodedAndDecodedFormsAreEquivalent() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /café\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /café\n");
 
 		$this->assertTrue($parser->isDisallowed('/café'));
 		$this->assertTrue($parser->isDisallowed('/caf%C3%A9'));
@@ -48,14 +48,14 @@ class PercentEncodingTest extends TestCase {
 
 	/** Encoding happens at match time, so the tree stays readable. */
 	public function testRulesAreStoredUnencoded() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /café\nDisallow: /x|y\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /café\nDisallow: /x|y\n");
 
 		$this->assertSame(['/café', '/x|y'], $parser->getRules()['*']['disallow']);
 	}
 
 	/** Wildcards and anchors still work on encoded rules. */
 	public function testWildcardAndAnchorWithNonAscii() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /café/*/photo\nDisallow: /menü$\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /café/*/photo\nDisallow: /menü$\n");
 
 		$this->assertTrue($parser->isDisallowed('/café/2024/photo'));
 		$this->assertFalse($parser->isDisallowed('/café/photo'));

@@ -19,20 +19,20 @@ class MalformedInputTest extends TestCase {
 	 * @group known-issues
 	 */
 	public function testBomBeforeFirstDirective() {
-		$parser = new RobotsTxtParser(self::BOM . "User-agent: googlebot\nDisallow: /admin\n");
+		$parser = (new RobotsTxtParser())->setContent(self::BOM . "User-agent: googlebot\nDisallow: /admin\n");
 
 		$this->assertSame(['googlebot' => ['disallow' => ['/admin']]], $parser->getRules());
 	}
 
 	public function testWithoutBomTheAgentIsScopedCorrectly() {
-		$parser = new RobotsTxtParser("User-agent: googlebot\nDisallow: /admin\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: googlebot\nDisallow: /admin\n");
 
 		$this->assertSame(['googlebot' => ['disallow' => ['/admin']]], $parser->getRules());
 	}
 
 	/** One bad byte must not blank the whole bucket. */
 	public function testInvalidUtf8ByteDoesNotDiscardTheWholeFile() {
-		$parser = new RobotsTxtParser("User-agent: googlebot\nDisallow: /a\nDisallow: /caf\xE9\nDisallow: /b\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: googlebot\nDisallow: /a\nDisallow: /caf\xE9\nDisallow: /b\n");
 
 		$this->assertTrue($parser->isDisallowed('/a', 'googlebot'), 'rule before the bad byte');
 		$this->assertTrue($parser->isDisallowed('/b', 'googlebot'), 'rule after the bad byte');
@@ -44,13 +44,13 @@ class MalformedInputTest extends TestCase {
 	 * @group known-issues
 	 */
 	public function testNonBreakingSpaceAfterColon() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow:" . self::NBSP . "/admin\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow:" . self::NBSP . "/admin\n");
 
 		$this->assertTrue($parser->isDisallowed('/admin'));
 	}
 
 	public function testRegularSpaceAfterColon() {
-		$parser = new RobotsTxtParser("User-agent: *\nDisallow: /admin\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /admin\n");
 
 		$this->assertTrue($parser->isDisallowed('/admin'));
 	}

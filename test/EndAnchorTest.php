@@ -18,7 +18,7 @@ class EndAnchorTest extends TestCase {
 	 */
 	public function testEndAnchor(string $path, string $robotsTxtContent, bool $assertAllowed) {
 		// init parser
-		$parser = new RobotsTxtParser($robotsTxtContent);
+		$parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 
 		if ($assertAllowed) {
 			$this->assertTrue($parser->isAllowed($path));

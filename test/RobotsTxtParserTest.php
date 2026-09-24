@@ -15,7 +15,7 @@ class RobotsTxtParserTest extends TestCase {
 		$log = new Logger(static::class);
 		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
 
-		$this->parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/wikipedia-org.txt', 'r'));
+		$this->parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/wikipedia-org.txt', 'r'));
 		$this->parser->setLogger($log);
 	}
 
@@ -76,5 +76,28 @@ class RobotsTxtParserTest extends TestCase {
 		});
 
 		$this->assertCount(1, $treeCreateRecords);
+	}
+
+	public function testAnImpossibleHttpStatusCodeIsRefusedRatherThanStored() {
+		$this->assertFalse($this->parser->setHttpStatusCode(999));
+		$this->assertTrue($this->parser->setHttpStatusCode(503));
+	}
+
+	public function testRulesForAnUnlistedUserAgentFallBackToTheWildcard() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /admin\n");
+
+		$this->assertSame(['disallow' => ['/admin']], $parser->getRules('SomeUnlistedBot'));
+	}
+
+	public function testRulesComeBackEmptyWhenThereIsNoWildcardEither() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: googlebot\nDisallow: /admin\n");
+
+		$this->assertSame([], $parser->getRules('SomeUnlistedBot'));
+	}
+
+	public function testHostIsNullForAUserAgentThatDeclaresNone() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /admin\n");
+
+		$this->assertNull($parser->getHost('*'));
 	}
 }

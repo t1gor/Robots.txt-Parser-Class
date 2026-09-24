@@ -18,7 +18,7 @@ class RulePrecedenceTest extends TestCase {
 	 * The example from the Yandex docs quoted in the issue.
 	 */
 	public function testYandexSortingExample() {
-		$parser = new RobotsTxtParser(implode("\n", [
+		$parser = (new RobotsTxtParser())->setContent(implode("\n", [
 			'User-agent: *',
 			'Allow: /',
 			'Allow: /catalog/auto',
@@ -45,7 +45,7 @@ class RulePrecedenceTest extends TestCase {
 
 		foreach ([[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] as $order) {
 			$body   = array_map(function (int $idx) use ($rules): string { return $rules[$idx]; }, $order);
-			$parser = new RobotsTxtParser("User-agent: *\n" . implode("\n", $body) . "\n");
+			$parser = (new RobotsTxtParser())->setContent("User-agent: *\n" . implode("\n", $body) . "\n");
 			$as     = implode(', ', $body);
 
 			$this->assertTrue($parser->isDisallowed('/catalog/'), "/catalog/ with {$as}");
@@ -58,7 +58,7 @@ class RulePrecedenceTest extends TestCase {
 	 * @dataProvider precedenceProvider
 	 */
 	public function testMostSpecificRuleWins(string $robots, string $path, bool $expectedAllowed) {
-		$parser = new RobotsTxtParser("User-agent: *\n{$robots}\n");
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\n{$robots}\n");
 
 		$this->assertSame($expectedAllowed, $parser->isAllowed($path));
 		$this->assertSame(!$expectedAllowed, $parser->isDisallowed($path));

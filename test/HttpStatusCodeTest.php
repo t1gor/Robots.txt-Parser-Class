@@ -15,7 +15,7 @@ class HttpStatusCodeTest extends TestCase {
 		$log = new Logger(static::class);
 		$log->pushHandler(new TestHandler(LogLevel::DEBUG));
 
-		$this->parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/allow-all.txt', 'r'));
+		$this->parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/allow-all.txt', 'r'));
 		$this->parser->setLogger($log);
 	}
 

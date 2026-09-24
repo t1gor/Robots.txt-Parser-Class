@@ -15,7 +15,7 @@ class CommentsTest extends TestCase
 		 */
 		public function testRemoveComments($robotsTxtContent)
 		{
-			$parser = new RobotsTxtParser($robotsTxtContent);
+			$parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 			$rules = $parser->getRules('*');
 			$this->assertEmpty($rules, 'expected remove comments');
 		}
@@ -27,7 +27,7 @@ class CommentsTest extends TestCase
 		 */
 		public function testRemoveCommentsFromValue($robotsTxtContent, $expectedDisallowValue)
 		{
-			$parser = new RobotsTxtParser($robotsTxtContent);
+			$parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 			$this->assertNotEmpty($parser->getRules('*'), 'expected data');
 			$this->assertArrayHasKey(Directive::DISALLOW, $parser->getRules('*'));
 			$this->assertNotEmpty($parser->getRules('*')[Directive::DISALLOW], 'disallow expected');

@@ -17,7 +17,7 @@ class DisallowUppercasePathTest extends TestCase
     public function testDisallowUppercasePath(string $robotsTxtContent)
     {
         // init parser
-        $parser = new RobotsTxtParser($robotsTxtContent);
+        $parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
         $this->assertTrue($parser->isDisallowed("/Admin"));
 		$this->assertFalse($parser->isAllowed("/Admin"));
     }

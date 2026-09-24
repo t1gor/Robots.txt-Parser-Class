@@ -14,7 +14,7 @@ class RenderTest extends TestCase
     {
 	    $this->markTestSkipped('@TODO');
 
-        $parser = new RobotsTxtParser($robotsTxtContent);
+        $parser = (new RobotsTxtParser())->setContent($robotsTxtContent);
 
         $this->assertEquals($rendered, $parser->render("\n"));
     }
@@ -25,7 +25,7 @@ class RenderTest extends TestCase
      */
     public function testRenderSortsShorterPathsLaterAndStaysQuiet()
     {
-        $parser = new RobotsTxtParser("User-agent: *\nDisallow: /temp\nDisallow: /admin/test/\nDisallow: /forum\n");
+        $parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /temp\nDisallow: /admin/test/\nDisallow: /forum\n");
 
         $raised = [];
         set_error_handler(function (int $no, string $str) use (&$raised) {

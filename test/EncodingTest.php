@@ -19,7 +19,7 @@ class EncodingTest extends TestCase {
 	}
 
 	public function testLogsNonStandardEncoding() {
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
 		$parser->setLogger($this->logger);
 		$parser->getRules();
 
@@ -38,7 +38,7 @@ class EncodingTest extends TestCase {
 	}
 
 	public function testWindows1251Readable() {
-		$parser = new RobotsTxtParser(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
+		$parser = (new RobotsTxtParser())->setContent(fopen(__DIR__ . '/Fixtures/market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
 		$parser->setLogger($this->logger);
 
 		$allRules = $parser->getRules();
@@ -47,7 +47,7 @@ class EncodingTest extends TestCase {
 
 	public function testShouldNotChangeInternalEncoding() {
 		$this->assertEquals('UTF-8', mb_internal_encoding());
-		$parser = new RobotsTxtParser('', 'iso-8859-1');
+		$parser = (new RobotsTxtParser())->setContent('', 'iso-8859-1');
 		$this->assertEquals('UTF-8', mb_internal_encoding());
 	}
 }

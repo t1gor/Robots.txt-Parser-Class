@@ -10,13 +10,13 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
 class DisallowAllTest extends TestCase {
 
 	public function testDisallowWildcard() {
-		$parser = new RobotsTxtParser(file_get_contents(__DIR__ . '/Fixtures/disallow-all.txt'));
+		$parser = (new RobotsTxtParser())->setContent(file_get_contents(__DIR__ . '/Fixtures/disallow-all.txt'));
 		$this->assertTrue($parser->isDisallowed("/index"));
 		$this->assertFalse($parser->isAllowed("/index"));
 	}
 
 	public function testAllowWildcard() {
-		$parser = new RobotsTxtParser(file_get_contents(__DIR__ . '/Fixtures/allow-all.txt'));
+		$parser = (new RobotsTxtParser())->setContent(file_get_contents(__DIR__ . '/Fixtures/allow-all.txt'));
 		$this->assertFalse($parser->isDisallowed("/index"));
 		$this->assertFalse($parser->isDisallowed("/"));
 		$this->assertTrue($parser->isAllowed("/index"));

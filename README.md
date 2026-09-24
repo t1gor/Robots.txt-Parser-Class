@@ -36,16 +36,25 @@ You can find out more about Composer here: https://getcomposer.org/
 ```php
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
+$parser = new RobotsTxtParser();
+
 # from string
-$parser = new RobotsTxtParser("User-agent: * \nDisallow: /");
+$parser->setContent("User-agent: * \nDisallow: /");
 
 # from local file
-$parser = new RobotsTxtParser(fopen('some/robots.txt'));
+$parser->setContent(fopen('some/robots.txt', 'r'));
 
 # or a remote one (make sure it's allowed in your php.ini)
 # even FTP should work (but this is not confirmed)
-$parser = new RobotsTxtParser(fopen('http://example.com/robots.txt'));
+$parser->setContent(fopen('http://example.com/robots.txt', 'r'));
+
+# non UTF-8 input - the encoding describes the document, so it travels with it
+$parser->setContent(fopen('market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
 ```
+
+The constructor takes only dependencies, all optional, so a DI container can resolve the parser
+once and hand it round; `setContent()` is what you call per document, and it clears everything the
+previous one left behind.
 
 ###### Logging parsing process
 
@@ -61,20 +70,12 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
 $monologLogger = new Logger('robot.txt-parser');
 $monologLogger->setHandler(new TelegramBotHandler('api-key', 'channel'));
 
-$parser = new RobotsTxtParser(fopen('some/robots.txt'));
+$parser = new RobotsTxtParser();
 $parser->setLogger($monologLogger);
+$parser->setContent(fopen('some/robots.txt', 'r'));
 ```
 
 Most log entries we have are of `LogLevel::DEBUG`, but there might also be some `LogLevel::WARNINGS` where it is appropriate.
-
-###### Parsing non UTF-8 encoded files
-
-```php
-use t1gor\RobotsTxtParser\RobotsTxtParser;
-
-/** @see EncodingTest for more details */
-$parser = new RobotsTxtParser(fopen('market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
-```
 
 ###### Inspecting the applied stream filters
 
@@ -83,13 +84,80 @@ Input runs through a chain of stream filters before any directive is read. `filt
 ```php
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 
-$parser = new RobotsTxtParser(fopen('robots.txt', 'r'));
+$parser = (new RobotsTxtParser())->setContent(fopen('robots.txt', 'r'));
 
-print_r($parser->filters());
+print_r($parser->getReader()->filters());
 // RTP_ensure_end_of_lines, RTP_skip_commented_lines, RTP_skip_end_of_commented_line, RTP_trim_spaces_left, RTP_skip_unsupported_directives, RTP_skip_directives_invalid_value, RTP_skip_empty_lines
 ```
 
 A missing filter means it failed to apply - attach a logger to see why. A non UTF-8 encoding adds `convert.iconv.*` at the front.
+
+###### Limiting how much gets parsed
+
+An endless or hostile robots.txt will happily burn your crawler's CPU and memory, so the parser reads
+at most 500 KiB by default - the size [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.5)
+and Google both settle on. The cap counts *fetched* bytes, before any decoding, and anything past it
+is ignored. A rule cut in half by the limit is dropped rather than shortened, so `Disallow: /admin/secret`
+can never silently widen into `Disallow: /admin`.
+
+```php
+use t1gor\RobotsTxtParser\Configuration;
+use t1gor\RobotsTxtParser\RobotsTxtParser;
+
+$parser = new RobotsTxtParser(new Configuration(100 * 1024));
+$parser->setContent(fopen('robots.txt', 'r'));
+
+$parser->getReader()->wasTruncated(); // did the limit actually cut anything off?
+```
+
+Pass `null` to switch the limit off. That is logged as a warning, and so is any limit below
+`Configuration::RECOMMENDED_MIN_BYTE_LIMIT` (24 KiB), where robots.txt risks truncating to nothing -
+and unmatched paths then default to allowed. `0` and negative values throw a `ConfigurationException`.
+
+Warnings go through the PSR-3 logger. Attaching one after construction is fine: anything decided
+earlier is replayed as soon as a logger turns up.
+
+###### Bootstrapping the configuration from a framework
+
+`ConfigurationFactory` turns whatever shape your framework keeps settings in into a `Configuration`.
+Unknown keys are rejected with a suggestion, and strings are accepted wherever an integer is - config
+layers hand those over constantly.
+
+**Laravel** - `config/robots.php`, then bind it in a service provider:
+
+```php
+// config/robots.php
+return ['byte_limit' => env('RTP_BYTE_LIMIT', 512000)];
+
+// app/Providers/AppServiceProvider.php
+use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
+use t1gor\RobotsTxtParser\Configuration;
+
+$this->app->singleton(Configuration::class, fn () => ConfigurationFactory::fromArray(config('robots')));
+```
+
+**Symfony** - `config/services.yaml`:
+
+```yaml
+t1gor\RobotsTxtParser\Configuration:
+    factory: ['t1gor\RobotsTxtParser\Config\ConfigurationFactory', 'fromArray']
+    arguments:
+        - { byte_limit: '%env(int:RTP_BYTE_LIMIT)%' }
+```
+
+**WordPress** - no container and no environment convention, so `fromEnvironment()` falls back to a
+constant of the same name:
+
+```php
+// wp-config.php
+define('RTP_BYTE_LIMIT', 512000);
+
+// anywhere in the plugin
+$config = ConfigurationFactory::fromEnvironment();
+```
+
+**Anything else** - `ConfigurationFactory::fromArray()` takes a plain array, which every PHP config
+layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefixed variables.
 
 ### Public API
 
@@ -105,10 +173,10 @@ A missing filter means it failed to apply - attach a logger to see why. A non UT
 | `getRules` | `?string $userAgent` | `array` | Get the rules the parser read in a tree-line structure |
 | `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
 | `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
-| `filters` | `-` | `string[]` | Stream filters applied to the input, in the order they run |
-| `getContent` | `-` | `string` | The content that was parsed. |
-| `getLog` | `-` | `[]` | **Deprecated.** Please use PSR logger as described above. |
-| `render` | `-` | `string` | **Deprecated.** Please `getContent` |
+| `setContent` | `resource\|string $content, ?string $encoding` | `self` | The document to parse; resets anything left from the previous one |
+| `getReader` | `-` | `ReaderInterface` | The reader holding the current document - filters, raw content, truncation |
+| `getConfiguration` | `-` | `Configuration` | The options the parser was built with |
+| `render` | `-` | `string` | **Deprecated.** Please `getReader()->getContentRaw()` |
 
 Even more code samples could be found in the [tests folder](https://github.com/t1gor/Robots.txt-Parser-Class/tree/master/test).
 

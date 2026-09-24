@@ -5,6 +5,8 @@ namespace t1gor\RobotsTxtParser;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
+use t1gor\RobotsTxtParser\Exception\NoContentException;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessorsFactory;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
 use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
@@ -47,38 +49,26 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	protected $host = null;
 
 	// robots.txt http status code
-	protected ?int $httpStatusCode;
+	protected ?int $httpStatusCode = null;
 
 	// UserAgent
 	private $userAgent      = '*';
 
-	// robots.txt file content
-	private        $content  = '';
-	private string $encoding = '';
-
 	private array                      $tree = [];
-	private ?ReaderInterface           $reader;
-	private ?TreeBuilderInterface      $treeBuilder;
-	private ?UserAgentMatcherInterface $userAgentMatcher;
 
+	/** Dependencies only, so a container can resolve this once and hand it round. */
 	public function __construct(
-		$content,
-		string $encoding = self::DEFAULT_ENCODING,
-		?TreeBuilderInterface $treeBuilder = null,
-		?ReaderInterface $reader = null,
-		?UserAgentMatcherInterface $userAgentMatcher = null
+		protected readonly ?Configuration $config = new Configuration(),
+		protected ?TreeBuilderInterface $treeBuilder = null,
+		protected ?ReaderInterface $reader = null,
+		protected ?UserAgentMatcherInterface $userAgentMatcher = null
 	) {
-		$this->treeBuilder      = $treeBuilder;
-		$this->reader           = $reader;
-		$this->encoding         = $encoding;
-		$this->userAgentMatcher = $userAgentMatcher;
+		// a hand-built Configuration has been through no checks; warnings buffer until a logger lands
+		ConfigurationFactory::validate($this->config, $this->logger());
 
-		if (is_null($this->reader)) {
-			$this->log('Reader is not passed, using a default one...');
-
-			$this->reader = is_resource($content)
-				? GeneratorBasedReader::fromStream($content)
-				: GeneratorBasedReader::fromString($content);
+		if (!is_null($reader) && !is_null($config)) {
+			// an injected reader was built with a limit of its own
+			$this->log('Both a reader and a configuration were passed; the configuration is not applied to the reader.');
 		}
 
 		if (is_null($this->userAgentMatcher)) {
@@ -88,13 +78,48 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		}
 	}
 
-	private function buildTree() {
-		if (!empty($this->tree)) {
-			return;
+	/**
+	 * Content is not a dependency, so it arrives separately - that is what lets the parser be
+	 * resolved from a container and reused. Encoding travels with it, since it describes the
+	 * document rather than the parser.
+	 *
+	 * @param resource|string $content
+	 */
+	public function setContent($content, ?string $encoding = null): self {
+		$this->reader = is_resource($content)
+			? GeneratorBasedReader::fromStream($content, $this->config)
+			: GeneratorBasedReader::fromString((string) $content, $this->config);
+
+		$this->reader->setLogger($this->logger());
+
+		if (!is_null($encoding) && $encoding !== static::DEFAULT_ENCODING) {
+			$this->reader->setEncoding($encoding);
 		}
 
-		if ($this->encoding !== static::DEFAULT_ENCODING) {
-			$this->reader->setEncoding($this->encoding);
+		// a new document: nothing from the last one still holds
+		$this->tree           = [];
+		$this->httpStatusCode = null;
+
+		return $this;
+	}
+
+	/** @throws NoContentException */
+	public function getReader(): ReaderInterface {
+		return $this->reader();
+	}
+
+	/** @throws NoContentException */
+	private function reader(): ReaderInterface {
+		if (is_null($this->reader)) {
+			throw new NoContentException('Nothing to parse yet - call setContent() first.');
+		}
+
+		return $this->reader;
+	}
+
+	private function buildTree(): void {
+		if (!empty($this->tree)) {
+			return;
 		}
 
 		// construct a tree builder if not passed
@@ -102,28 +127,30 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			$this->log('Creating a default tree builder as none passed...');
 
 			$this->treeBuilder = new TreeBuilder(
-				DirectiveProcessorsFactory::getDefault($this->logger),
-				$this->logger
+				DirectiveProcessorsFactory::getDefault($this->logger()),
+				$this->logger()
 			);
 		}
 
-		$this->treeBuilder->setContent($this->reader->getContentIterated());
+		$this->treeBuilder->setContent($this->reader()->getContentIterated());
 		$this->tree = $this->treeBuilder->build();
 	}
 
-	public function getLogger(): ?LoggerInterface {
-		return $this->logger;
+	public function getConfiguration(): Configuration {
+		return $this->config;
 	}
 
-	public function setLogger(LoggerInterface $logger): void {
-		$this->logger = $logger;
+	public function getLogger(): LoggerInterface {
+		return $this->logger();
+	}
 
+	protected function onLoggerSet(LoggerInterface $logger): void {
 		if ($this->reader instanceof LoggerAwareInterface) {
-			$this->reader->setLogger($this->logger);
+			$this->reader->setLogger($logger);
 		}
 
 		if ($this->userAgentMatcher instanceof LoggerAwareInterface) {
-			$this->userAgentMatcher->setLogger($this->logger);
+			$this->userAgentMatcher->setLogger($logger);
 		}
 	}
 
@@ -149,21 +176,9 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->buildTree();
 
 		$url = new Url($url);
-		!is_null($this->logger) && $url->setLogger($this->logger);
+		$url->setLogger($this->logger());
 
 		return $this->checkRules(Directive::ALLOW, $url->getPath(), $userAgent);
-	}
-
-	/**
-	 * Set UserAgent
-	 *
-	 * @param string $userAgent
-	 *
-	 * @return void
-	 * @deprecated please check rules for exact user agent instead
-	 */
-	public function setUserAgent(string $userAgent) {
-		throw new \RuntimeException(WarmingMessages::SET_UA_DEPRECATED);
 	}
 
 	/**
@@ -284,7 +299,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		$this->buildTree();
 
 		$url = new Url($url);
-		!is_null($this->logger) && $url->setLogger($this->logger);
+		$url->setLogger($this->logger());
 
 		return $this->checkRules(Directive::DISALLOW, $url->getPath(), $userAgent);
 	}
@@ -319,31 +334,6 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		}
 
 		return $this->tree[Directive::CLEAN_PARAM];
-	}
-
-	/**
-	 * Applied stream filters, in the order they run.
-	 *
-	 * @return string[]
-	 */
-	public function filters(): array {
-		return $this->reader->filters();
-	}
-
-	/**
-	 * @deprecated
-	 */
-	public function getContent(): string {
-		return $this->reader->getContentRaw();
-	}
-
-	/**
-	 * @return array
-	 * @deprecated
-	 * @see RobotsTxtParser::getLogger()
-	 */
-	public function getLog(): array {
-		return [];
 	}
 
 	/**
