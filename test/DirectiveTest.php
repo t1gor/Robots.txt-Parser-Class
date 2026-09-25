@@ -39,6 +39,11 @@ class DirectiveTest extends TestCase {
 			[Directive::CLEAN_PARAM, 'Clean-param'],
 			[Directive::CRAWL_DELAY, 'Crawl-delay'],
 			[Directive::CACHE_DELAY, 'Cache-delay'],
+			[Directive::REQUEST_RATE, 'Request-rate'],
+			[Directive::VISIT_TIME, 'Visit-time'],
+			[Directive::ROBOT_VERSION, 'Robot-version'],
+			[Directive::COMMENT, 'Comment'],
+			[Directive::NOINDEX, 'Noindex'],
 		];
 	}
 
@@ -54,10 +59,13 @@ class DirectiveTest extends TestCase {
 			'allow',
 			'cache-delay',
 			'clean-param',
+			'comment',
 			'crawl-delay',
 			'disallow',
 			'host',
+			'noindex',
 			'request-rate',
+			'robot-version',
 			'sitemap',
 			'user-agent',
 			'visit-time',
@@ -67,6 +75,24 @@ class DirectiveTest extends TestCase {
 		sort($actual);
 
 		$this->assertSame($expected, $actual);
+	}
+
+	/** What a group may carry several of - the rest keep the last value seen. */
+	public function testRepeatableDirectives() {
+		$this->assertTrue(Directive::DISALLOW->isRepeatable());
+		$this->assertTrue(Directive::REQUEST_RATE->isRepeatable());
+		$this->assertTrue(Directive::COMMENT->isRepeatable());
+		$this->assertFalse(Directive::VISIT_TIME->isRepeatable());
+		$this->assertFalse(Directive::ROBOT_VERSION->isRepeatable());
+		$this->assertFalse(Directive::CRAWL_DELAY->isRepeatable());
+	}
+
+	/** The lookahead used to be dodged by backtracking, which dropped every Request-rate line. */
+	public function testRequestRateRegexOnlyMatchesInvalidValues() {
+		$this->assertSame(0, preg_match(Directive::getRequestRateRegex(), 'Request-rate: 1/5m 0600-0845'));
+		$this->assertSame(0, preg_match(Directive::getRequestRateRegex(), 'Request-rate:1/5'));
+		$this->assertSame(1, preg_match(Directive::getRequestRateRegex(), 'Request-rate: 15686'));
+		$this->assertSame(1, preg_match(Directive::getRequestRateRegex(), 'Request-rate: ngdndganda'));
 	}
 
 	public function testUnsupportedDirectiveRegexStillSkipsCacheLines() {

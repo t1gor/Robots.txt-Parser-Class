@@ -331,10 +331,10 @@ class StringWriterTest extends TestCase {
 	}
 
 	public function testDropsAndLogsAnUnknownDirective() {
-		$rendered = $this->render(['*' => ['disallow' => ['/'], 'request-rate' => '1/10s']]);
+		$rendered = $this->render(['*' => ['disallow' => ['/'], 'nofollow' => '/x']]);
 
 		$this->assertSame("User-agent: *\nDisallow: /\n", $rendered);
-		$this->assertLogged('request-rate is not a directive this library writes, dropped for *.');
+		$this->assertLogged('nofollow is not a directive this library writes, dropped for *.');
 	}
 
 	/**
@@ -528,6 +528,92 @@ class StringWriterTest extends TestCase {
 		$this->assertSame("User-agent: *\r\nDisallow: /\r\n", stream_get_contents($out));
 
 		fclose($out);
+	}
+
+	/** Group metadata first, then the rules, whatever order the tree happened to be keyed in. */
+	public function testRendersTheExtendedStandardDirectivesInAFixedOrder() {
+		$rendered = $this->render(['*' => [
+			'comment'       => ['be gentle'],
+			'noindex'       => ['/drafts'],
+			'disallow'      => ['/admin'],
+			'request-rate'  => ['1/5m 0600-0845'],
+			'visit-time'    => '0600-0845',
+			'crawl-delay'   => 2,
+			'robot-version' => '2.0',
+		]]);
+
+		$this->assertSame(<<<RENDERED
+			User-agent: *
+			Robot-version: 2.0
+			Visit-time: 0600-0845
+			Request-rate: 1/5m 0600-0845
+			Comment: be gentle
+			Disallow: /admin
+			Noindex: /drafts
+			Crawl-delay: 2
+
+			RENDERED, $rendered);
+	}
+
+	/** Two spellings of the same rate are one line, since both are written the same way. */
+	public function testRequestRatesAreWrittenCanonicallyAndDeduplicated() {
+		$rendered = $this->render(['*' => ['disallow' => ['/'], 'request-rate' => ['1/300', '1/5m', '2/1h']]]);
+
+		$this->assertStringContainsString("Request-rate: 1/5m\nRequest-rate: 2/1h\n", $rendered);
+	}
+
+	/**
+	 * @dataProvider provideInvalidExtendedValues
+	 */
+	public function testDropsAndLogsAnUnwritableValue(string $directive, mixed $value, string $label) {
+		$rendered = $this->render(['*' => ['disallow' => ['/'], $directive => $value]]);
+
+		$this->assertSame("User-agent: *\nDisallow: /\n", $rendered);
+		$this->assertLogged("{$label} dropped for * as invalid.");
+	}
+
+	public function provideInvalidExtendedValues(): array {
+		return [
+			'rate without a period' => ['request-rate', '15686', 'Request-rate "15686"'],
+			'impossible hours'      => ['visit-time', '2500-2600', 'Visit-time "2500-2600"'],
+			'version in words'      => ['robot-version', 'two point oh', 'Robot-version "two point oh"'],
+			'comment with a hash'   => ['comment', 'half # of it', 'Comment "half # of it"'],
+			'empty comment'         => ['comment', '', 'Comment ""'],
+		];
+	}
+
+	/** The parser keeps the last of these, so writing more than one would never settle. */
+	public function testOnlyTheLastValueOfASingleDirectiveIsWritten() {
+		$rendered = $this->render(['*' => ['disallow' => ['/'], 'visit-time' => ['0600-0845', '0100-0200']]]);
+
+		$this->assertStringContainsString("Visit-time: 0100-0200\n", $rendered);
+		$this->assertStringNotContainsString('0600-0845', $rendered);
+	}
+
+	/** array_unique() kept the first of a repeated value, which is not the one the parser holds. */
+	public function testTheLastValueWinsEvenWhenAnEarlierOneRepeats() {
+		$rendered = $this->render(['*' => [
+			'disallow'   => ['/'],
+			'visit-time' => ['0100-0200', '0600-0845', '0100-0200'],
+		]]);
+
+		$this->assertStringContainsString("Visit-time: 0100-0200\n", $rendered);
+		$this->assertStringNotContainsString('0600-0845', $rendered);
+	}
+
+	/** The parser drops an invalid line and keeps what it had, so the last usable value wins. */
+	public function testAnUnusableLastValueFallsBackToTheOneBeforeIt() {
+		$rendered = $this->render(['*' => ['disallow' => ['/'], 'visit-time' => ['0600-0845', '2500-2600']]]);
+
+		$this->assertStringContainsString("Visit-time: 0600-0845\n", $rendered);
+		$this->assertLogged('Visit-time "2500-2600" dropped for * as invalid.');
+	}
+
+	public function testNoIndexTakesPathsOnly() {
+		$rendered = $this->render(['*' => ['noindex' => ['/drafts', 'drafts']]]);
+
+		$this->assertSame("User-agent: *\nNoindex: /drafts\n", $rendered);
+		$this->assertLogged('noindex "drafts" dropped for *: a rule has to be a path.');
 	}
 }
 

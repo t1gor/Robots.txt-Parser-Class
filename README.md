@@ -17,8 +17,11 @@ Full list of supported specifications (and what's not supported, yet) are availa
 - Cache-delay
 - Clean-param
 - Crawl-delay
-- Request-rate (in progress)
-- Visit-time (in progress)
+- Comment
+- Noindex
+- Request-rate
+- Robot-version
+- Visit-time
 
 ### Installation
 The library is available for install via Composer package. To install via Composer, please add the requirement to your `composer.json` file, like this:
@@ -117,6 +120,54 @@ and unmatched paths then default to allowed. `0` and negative values throw a `Co
 Warnings go through the PSR-3 logger. Attaching one after construction is fine: anything decided
 earlier is replayed as soon as a logger turns up.
 
+###### The extended standard
+
+`Robot-version`, `Visit-time`, `Request-rate` and `Comment` describe the group rather than a path, and each has an accessor of its own. `Request-rate` and `Comment` may repeat; the other two keep the last value seen. Anything that cannot be read as the directive is dropped and logged.
+
+```php
+$parser->getRobotVersion('GoogleBot');   // '2.0', or null when the group does not say
+$parser->getComments();                  // ['regenerated nightly by the CMS']
+$parser->getVisitTime()?->covers(new DateTimeImmutable('now'));   // is the crawler welcome right now?
+
+foreach ($parser->getRequestRates() as $rate) {
+    $rate->getSecondsPerRequest();       // 300.0 for "Request-rate: 1/5m"
+    $rate->appliesAt(new DateTimeImmutable('now'));
+}
+```
+
+`Visit-time` comes back as a `TimeWindow` and `Request-rate` as a `RequestRate` - value objects, so "0600-0845" is parsed once rather than by every caller. Times are UTC, as the [extended standard](http://www.conman.org/people/spc/robots2.html) has them, and a window that ends before it starts runs over midnight.
+
+Both answer the scheduling questions directly, so a crawl loop is the two calls and nothing of your own:
+
+```php
+$now = new DateTimeImmutable('now');
+
+# when may I start? - the moment you asked about, if the window is already open
+$startAt = $parser->getVisitTime()?->nextOpening($now) ?? $now;
+
+# how long between two requests? - as seconds, or as something to do date arithmetic with
+foreach ($parser->getRequestRates('MyBot') as $rate) {
+    if ($rate->appliesAt($startAt)) {
+        $nextRequestAt = $startAt->add($rate->getPeriod());   // DateInterval, e.g. PT5M
+        usleep((int) ($rate->getSecondsPerRequest() * 1_000_000));
+    }
+}
+```
+
+`nextOpening()` answers in UTC whatever zone you hand it, and hands back the moment you gave it when the window is already open - so you can sleep until whatever comes back without testing first. Over midnight that means `2300-0200` answers 01:00 at 01:00, and 23:00 tonight at 02:30.
+
+`getPeriod()` counts in hours rather than days: added to a zoned date, `P1D` keeps the clock time over a DST change, while `PT24H` stays the 86400 seconds `Request-rate: 3/1d` means. A period longer than a year is not a crawl rate and is dropped.
+
+A group without a `Robot-version` reads as 1.0.0 by the spec, but `getRobotVersion()` returns `null` rather than inventing it - write `?? '1.0'` where you want the default, and "did not say" stays apart from "said 1.0".
+
+`Noindex` is a path, like `Disallow`, but answers a different question - keep this page out of the index, rather than stay away from it. So it has its own check and does not affect `isAllowed()`:
+
+```php
+$parser->isIndexable('/drafts/post-1');  // false for "Noindex: /drafts"
+$parser->isAllowed('/drafts/post-1');    // ... still true, nothing disallows it
+$parser->getNoIndex();                   // ['/drafts']
+```
+
 ###### Writing it back out
 
 The writers are separate from the parser - it parses, they write, and nothing that only reads a
@@ -135,6 +186,8 @@ $bytes = (new StringWriter($logger))
 It normalises rather than echoes: anything that cannot be valid is dropped, duplicates go, directive
 names get their canonical casing, `Host`, `Clean-param` and `Sitemap` are collected into one block at
 the end since they apply to the whole file, and user-agents carrying the same rules share a group.
+Each group opens with what describes it - `Robot-version`, `Visit-time`, `Request-rate`, `Comment` -
+and rates are written in the largest unit that fits them, so `1/300` and `1/5m` are one line.
 Rules are written longest first, with `Allow` ahead of an equally long `Disallow` - the order
 [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2) resolves them in, so a reader that
 stops at the first match still gets the same answer. Everything dropped is logged, so a file that
@@ -260,6 +313,12 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `getRules` | `?string $userAgent` | `array` | Get the rules the parser read in a tree-line structure |
 | `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
 | `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
+| `getRequestRates` | `string $userAgent` | `RequestRate[]` | How often the crawler may ask, and when. `getSecondsPerRequest()`, `getPeriod()` as a `DateInterval`, `appliesAt()` |
+| `getVisitTime` | `string $userAgent` | `TimeWindow` or `null` | When the crawler is welcome, UTC. `covers()`, `nextOpening()` |
+| `getRobotVersion` | `string $userAgent` | `string` or `null` | The revision of the extended standard the group is written to; `null` when it does not say, whose spec default is `1.0` |
+| `getComments` | `string $userAgent` | `string[]` | What the file has to say to whoever runs the crawler |
+| `getNoIndex` | `string $userAgent` | `string[]` | Paths to keep out of the index |
+| `isIndexable` | `string $url, string $userAgent` | `bool` | Whether `Noindex` leaves the url indexable |
 | `setContent` | `resource\|string $content, ?string $encoding` | `self` | The document to parse; resets anything left from the previous one |
 | `getReader` | `-` | `ReaderInterface` | The reader holding the current document - filters, raw content, truncation |
 | `getConfiguration` | `-` | `Configuration` | The options the parser was built with |

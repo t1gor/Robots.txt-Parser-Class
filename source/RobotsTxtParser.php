@@ -8,6 +8,8 @@ use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
 use t1gor\RobotsTxtParser\Exception\NoContentException;
 use t1gor\RobotsTxtParser\Parser\DirectiveProcessorsFactory;
+use t1gor\RobotsTxtParser\Parser\RequestRate;
+use t1gor\RobotsTxtParser\Parser\TimeWindow;
 use t1gor\RobotsTxtParser\Parser\TreeBuilder;
 use t1gor\RobotsTxtParser\Parser\TreeBuilderInterface;
 use t1gor\RobotsTxtParser\Parser\Url;
@@ -436,6 +438,71 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		}
 
 		return !empty($hosts) ? $hosts : null;
+	}
+
+	/**
+	 * How often the crawler may ask, and when - "Request-rate: 1/5m 0600-0845". Several are
+	 * allowed, one per time window.
+	 *
+	 * @link http://www.conman.org/people/spc/robots2.html
+	 *
+	 * @return RequestRate[]
+	 */
+	public function getRequestRates(string $userAgent = '*'): array {
+		return array_values(array_filter(array_map(
+			RequestRate::tryParse(...),
+			(array) $this->forUserAgent(Directive::REQUEST_RATE, $userAgent)
+		)));
+	}
+
+	/** When the crawler is welcome - "Visit-time: 0600-0845", UTC. */
+	public function getVisitTime(string $userAgent = '*'): ?TimeWindow {
+		$window = $this->forUserAgent(Directive::VISIT_TIME, $userAgent);
+
+		return is_string($window) ? TimeWindow::tryParse($window) : null;
+	}
+
+	/**
+	 * Which version of the extended standard the group was written to, e.g. "2.0", or null when it
+	 * does not say. The spec reads that as 1.0.0 - left to the caller as `?? '1.0'`, since we do
+	 * not enforce the other half of the rule, that it has to immediately follow its User-agent.
+	 *
+	 * @link http://www.conman.org/people/spc/robots2.html
+	 */
+	public function getRobotVersion(string $userAgent = '*'): ?string {
+		$version = $this->forUserAgent(Directive::ROBOT_VERSION, $userAgent);
+
+		return is_string($version) ? $version : null;
+	}
+
+	/** @return string[] whatever the file has to say to whoever runs the crawler */
+	public function getComments(string $userAgent = '*'): array {
+		return (array) $this->forUserAgent(Directive::COMMENT, $userAgent);
+	}
+
+	/** @return string[] paths to keep out of the index; crawling them is still down to Allow/Disallow */
+	public function getNoIndex(string $userAgent = '*'): array {
+		return (array) $this->forUserAgent(Directive::NOINDEX, $userAgent);
+	}
+
+	/** Whether the url may be indexed - Noindex keeps a page out of the index, not the crawler out of it. */
+	public function isIndexable(string $url, string $userAgent = '*'): bool {
+		$path = $this->pathToMatch($url);
+
+		foreach ((array) $this->forUserAgent(Directive::NOINDEX, $userAgent) as $rule) {
+			if ($this->checkRuleSwitch($rule, $path)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/** What the group serving this user-agent holds for the directive, if anything. */
+	private function forUserAgent(Directive $directive, string $userAgent): mixed {
+		$this->buildTree();
+
+		return $this->tree[$this->matchUserAgent($userAgent)][$directive->value] ?? null;
 	}
 
 	public function getSitemaps(?string $userAgent = null): array {

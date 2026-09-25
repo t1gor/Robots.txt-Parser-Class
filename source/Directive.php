@@ -43,6 +43,15 @@ enum Directive: string {
 	 */
 	case REQUEST_RATE = 'request-rate';
 	case VISIT_TIME = 'visit-time';
+	case ROBOT_VERSION = 'robot-version';
+	case COMMENT = 'comment';
+
+	/**
+	 * Keeps a path out of the index without keeping the crawler out of it.
+	 *
+	 * @link https://yandex.com/support/webmaster/controlling-robot/html.html
+	 */
+	case NOINDEX = 'noindex';
 
 	/**
 	 * Names a file may actually carry, so CACHE is excluded - it is only an argument alias, and
@@ -57,6 +66,15 @@ enum Directive: string {
 		);
 	}
 
+	/** Whether a user-agent may carry several of these, rather than the last one winning. */
+	public function isRepeatable(): bool {
+		return match ($this) {
+			self::ALLOW, self::DISALLOW, self::NOINDEX,
+			self::SITEMAP, self::REQUEST_RATE, self::COMMENT => true,
+			default                                          => false,
+		};
+	}
+
 	/** How the directive is written into a robots.txt: "User-agent", "Clean-param". */
 	public function label(): string {
 		// no case carries a multibyte name
@@ -67,8 +85,12 @@ enum Directive: string {
 		return "/^(?!(" . implode('|', self::getAll()) . ")\s*:+).+/mui";
 	}
 
+	/**
+	 * Whitespace sits inside the lookahead: outside it the engine could match none of it and the
+	 * lookahead would always succeed, which dropped every Request-rate line there is.
+	 */
 	public static function getRequestRateRegex(): string {
-		return "/^" . self::REQUEST_RATE->value . ":+\s*(?![0-9]+\/[0-9]+).*/mui";
+		return "/^" . self::REQUEST_RATE->value . ":+(?![^\S\r\n]*[0-9]+\/[0-9]+).*/mui";
 	}
 
 	public static function getCrawlDelayRegex(): string {
@@ -82,7 +104,8 @@ enum Directive: string {
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	public static function getAllowDisallowRegex(): string {
-		return "/^(" . self::ALLOW->value . "|" . self::DISALLOW->value . "):+[^\S\\r\\n]*(?![\/\s])\S.*$/mui";
+		// possessive: giving a colon back read "Disallow::/x" as a value of ":/x", so it was dropped
+		return "/^(" . self::ALLOW->value . "|" . self::DISALLOW->value . "):++[^\S\\r\\n]*+(?![\/\s])\S.*$/mui";
 	}
 
 	public static function attemptGetInline(string $rule): string|false {

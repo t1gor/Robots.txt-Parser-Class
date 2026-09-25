@@ -10,6 +10,8 @@ use t1gor\RobotsTxtParser\Exception\NoOutputException;
 use t1gor\RobotsTxtParser\Exception\WriteFailedException;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 use t1gor\RobotsTxtParser\Parser\HostName;
+use t1gor\RobotsTxtParser\Parser\RequestRate;
+use t1gor\RobotsTxtParser\Parser\TimeWindow;
 use t1gor\RobotsTxtParser\Parser\Url;
 use t1gor\RobotsTxtParser\RobotsTxtParser;
 use t1gor\RobotsTxtParser\RunsQuietlyTrait;
@@ -43,6 +45,9 @@ abstract class AbstractWriter implements WriterInterface {
 
 	/** @link https://yandex.com/support/webmaster/robot-workings/clean-param.html */
 	private const PARAM_NAME = '/^[A-Za-z0-9._~-]+$/';
+
+	/** Which revision of the extended standard a group is written to. */
+	private const VERSION = '/^\d+(\.\d+)*$/';
 
 	/** File-wide directives, collected while walking the groups and written once. */
 	private array $hosts = [];
@@ -200,7 +205,15 @@ abstract class AbstractWriter implements WriterInterface {
 				$separator = '';
 			}
 
+			foreach ($group['rules']['extras'] as $extra) {
+				yield $extra . $this->eol;
+			}
+
 			yield from $this->ordered($group['rules']['allow'], $group['rules']['disallow']);
+
+			foreach ($group['rules']['noindex'] as $path) {
+				yield Directive::NOINDEX->label() . ': ' . $path . $this->eol;
+			}
 
 			foreach ($group['rules']['delays'] as $delay) {
 				yield $delay . $this->eol;
@@ -284,11 +297,12 @@ abstract class AbstractWriter implements WriterInterface {
 	 * concatenated. Formatting here would be a second copy of every path; {@see ordered()} builds
 	 * each line as it is written instead. Host and sitemap are taken out as they are file-wide.
 	 *
-	 * @return array{allow: string[], disallow: string[], delays: string[]}
+	 * @return array{extras: string[], allow: string[], disallow: string[], noindex: string[], delays: string[]}
 	 */
 	private function rules(array $rules, string $agent): array {
-		$paths  = [Directive::ALLOW->value => [], Directive::DISALLOW->value => []];
+		$paths  = [Directive::ALLOW->value => [], Directive::DISALLOW->value => [], Directive::NOINDEX->value => []];
 		$delays = [];
+		$extras = [];
 
 		foreach ($rules as $directive => $value) {
 			// tryFrom() rather than a string compare: anything the enum does not know falls through
@@ -296,9 +310,14 @@ abstract class AbstractWriter implements WriterInterface {
 
 			match ($case) {
 				Directive::ALLOW,
-				Directive::DISALLOW    => $paths[$case->value] = $this->paths($case, $value, $agent),
+				Directive::DISALLOW,
+				Directive::NOINDEX     => $paths[$case->value] = $this->paths($case, $value, $agent),
 				Directive::CRAWL_DELAY,
 				Directive::CACHE_DELAY => $delays = array_merge($delays, $this->delay($case, $value, $agent)),
+				Directive::ROBOT_VERSION,
+				Directive::VISIT_TIME,
+				Directive::REQUEST_RATE,
+				Directive::COMMENT     => $extras[$case->value] = $this->extras($case, $value, $agent),
 				Directive::HOST        => $this->collectHosts($value, $agent),
 				Directive::SITEMAP     => $this->collectSitemaps($value, $agent),
 				default                => $this->log(strtr('{directive} is not a directive this library writes, dropped for {agent}.', [
@@ -309,10 +328,68 @@ abstract class AbstractWriter implements WriterInterface {
 		}
 
 		return [
+			'extras'   => $this->inWrittenOrder($extras),
 			'allow'    => $this->sorted($paths[Directive::ALLOW->value]),
 			'disallow' => $this->sorted($paths[Directive::DISALLOW->value]),
+			'noindex'  => $this->sorted($paths[Directive::NOINDEX->value]),
 			'delays'   => $delays,
 		];
+	}
+
+	/**
+	 * The group's own metadata, in a fixed order rather than the tree's, so two trees with the same
+	 * rules render the same.
+	 *
+	 * @return string[]
+	 */
+	private function inWrittenOrder(array $extras): array {
+		$lines = [];
+
+		foreach ([Directive::ROBOT_VERSION, Directive::VISIT_TIME, Directive::REQUEST_RATE, Directive::COMMENT] as $directive) {
+			$lines = array_merge($lines, $extras[$directive->value] ?? []);
+		}
+
+		return $lines;
+	}
+
+	/** @return string[] the directive's lines, dropping whatever could not be read back */
+	private function extras(Directive $directive, mixed $values, string $agent): array {
+		$kept = [];
+
+		// in the order given, duplicates and all - which one survives below depends on it
+		foreach ($this->listed($values) as $entry) {
+			$value = $this->normalised($directive, $entry);
+
+			if (is_null($value)) {
+				$this->log(strtr('{directive} "{value}" dropped for {agent} as invalid.', [
+					'{directive}' => $directive->label(),
+					'{value}'     => $entry,
+					'{agent}'     => $agent,
+				]), [], LogLevel::WARNING);
+
+				continue;
+			}
+
+			$kept[] = $directive->label() . ': ' . $value;
+		}
+
+		// what the parser would hold: the last usable value, or one line per distinct value - the
+		// canonical form deduplicating what the raw ones would not, e.g. "1/300" and "1/5m"
+		return $directive->isRepeatable()
+			? array_values(array_unique($kept))
+			: array_slice($kept, -1);
+	}
+
+	/** One value in the form it is written out in, or null when it cannot be written at all. */
+	private function normalised(Directive $directive, string $entry): ?string {
+		$value = match ($directive) {
+			Directive::REQUEST_RATE  => RequestRate::tryParse($entry),
+			Directive::VISIT_TIME    => TimeWindow::tryParse($entry),
+			Directive::ROBOT_VERSION => 1 === preg_match(self::VERSION, $entry) ? $entry : null,
+			default                  => '' === $entry || $this->isUnsafe($entry) ? null : $entry,
+		};
+
+		return is_null($value) ? null : (string) $value;
 	}
 
 	/** @return string[] the tree's own strings, so the list costs a pointer per rule and no copies */

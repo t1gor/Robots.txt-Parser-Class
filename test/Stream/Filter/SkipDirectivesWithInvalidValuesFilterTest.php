@@ -46,7 +46,40 @@ class SkipDirectivesWithInvalidValuesFilterTest  extends TestCase {
 		$this->assertStringNotContainsString('Request-rate: 15686 # invalid', $contents);
 		$this->assertStringNotContainsString('Request-rate: ngdndganda # invalid', $contents);
 
+		// the lookahead used to be dodged by backtracking, so this went with them
+		$this->assertStringContainsString('Request-rate: 100/854000', $contents);
+
 		fclose($stream);
+	}
+
+	public function requestRateProvider(): array {
+		// line, kept?
+		return [
+			'documents over seconds' => ['Request-rate: 1/5', true],
+			'with a unit'            => ['Request-rate: 1/5m', true],
+			'with a time window'     => ['Request-rate: 1/5m 0600-0845', true],
+			'no space after colon'   => ['Request-rate:1/5m', true],
+			'no period'              => ['Request-rate: 15686', false],
+			'period not a number'    => ['Request-rate: 100/bgdndgnd', false],
+			'not a rate at all'      => ['Request-rate: ngdndganda', false],
+		];
+	}
+
+	/**
+	 * @dataProvider requestRateProvider
+	 */
+	public function testRequestRateValues(string $line, bool $kept) {
+		$stream = fopen('php://memory', 'r+');
+		fwrite($stream, "User-agent: *\n{$line}\n");
+		rewind($stream);
+		stream_filter_append($stream, SkipDirectivesWithInvalidValuesFilter::NAME, STREAM_FILTER_READ);
+
+		$contents = stream_get_contents($stream);
+		fclose($stream);
+
+		$kept
+			? $this->assertStringContainsString($line, $contents)
+			: $this->assertStringNotContainsString($line, $contents);
 	}
 
 	/** What it drops is reported through the logger, when one is passed. */
