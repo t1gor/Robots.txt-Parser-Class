@@ -590,6 +590,25 @@ class StringWriterTest extends TestCase {
 		$this->assertStringNotContainsString('0600-0845', $rendered);
 	}
 
+	/** array_unique() kept the first of a repeated value, which is not the one the parser holds. */
+	public function testTheLastValueWinsEvenWhenAnEarlierOneRepeats() {
+		$rendered = $this->render(['*' => [
+			'disallow'   => ['/'],
+			'visit-time' => ['0100-0200', '0600-0845', '0100-0200'],
+		]]);
+
+		$this->assertStringContainsString("Visit-time: 0100-0200\n", $rendered);
+		$this->assertStringNotContainsString('0600-0845', $rendered);
+	}
+
+	/** The parser drops an invalid line and keeps what it had, so the last usable value wins. */
+	public function testAnUnusableLastValueFallsBackToTheOneBeforeIt() {
+		$rendered = $this->render(['*' => ['disallow' => ['/'], 'visit-time' => ['0600-0845', '2500-2600']]]);
+
+		$this->assertStringContainsString("Visit-time: 0600-0845\n", $rendered);
+		$this->assertLogged('Visit-time "2500-2600" dropped for * as invalid.');
+	}
+
 	public function testNoIndexTakesPathsOnly() {
 		$rendered = $this->render(['*' => ['noindex' => ['/drafts', 'drafts']]]);
 

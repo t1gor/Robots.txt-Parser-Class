@@ -337,8 +337,8 @@ abstract class AbstractWriter implements WriterInterface {
 	}
 
 	/**
-	 * The group's own metadata, ready to write. A fixed order rather than the tree's, so two trees
-	 * carrying the same rules render the same however they were keyed.
+	 * The group's own metadata, in a fixed order rather than the tree's, so two trees with the same
+	 * rules render the same.
 	 *
 	 * @return string[]
 	 */
@@ -356,7 +356,8 @@ abstract class AbstractWriter implements WriterInterface {
 	private function extras(Directive $directive, mixed $values, string $agent): array {
 		$kept = [];
 
-		foreach (array_unique($this->listed($values)) as $entry) {
+		// in the order given, duplicates and all - which one survives below depends on it
+		foreach ($this->listed($values) as $entry) {
 			$value = $this->normalised($directive, $entry);
 
 			if (is_null($value)) {
@@ -369,14 +370,14 @@ abstract class AbstractWriter implements WriterInterface {
 				continue;
 			}
 
-			// the canonical form deduplicates what the raw values would not, e.g. "1/300" and "1/5m"
-			$kept[$directive->label() . ': ' . $value] = true;
+			$kept[] = $directive->label() . ': ' . $value;
 		}
 
-		$lines = array_keys($kept);
-
-		// the parser keeps the last of a directive that cannot repeat, so writing more would not settle
-		return $directive->isRepeatable() ? $lines : array_slice($lines, -1);
+		// what the parser would hold: the last usable value, or one line per distinct value - the
+		// canonical form deduplicating what the raw ones would not, e.g. "1/300" and "1/5m"
+		return $directive->isRepeatable()
+			? array_values(array_unique($kept))
+			: array_slice($kept, -1);
 	}
 
 	/** One value in the form it is written out in, or null when it cannot be written at all. */
