@@ -7,7 +7,7 @@ use t1gor\RobotsTxtParser\Directive;
 /** A note to whoever runs the crawler - free text, kept verbatim. */
 class CommentProcessor extends AbstractValidatedValueProcessor implements DirectiveProcessorInterface {
 
-	/** Anything that would not survive being written back out on one line; the writer checks its own. */
+	/** Anything that would not survive being written back on one line. */
 	private const UNSAFE = '/[\x00-\x1F\x7F#]/';
 
 	public function getDirectiveName(): string {

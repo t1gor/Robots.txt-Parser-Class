@@ -441,8 +441,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
-	 * How often the crawler may ask for a document, and when - "Request-rate: 1/5m 0600-0845".
-	 * Several are allowed, one per time window.
+	 * How often the crawler may ask, and when - "Request-rate: 1/5m 0600-0845". Several are
+	 * allowed, one per time window.
 	 *
 	 * @link http://www.conman.org/people/spc/robots2.html
 	 *
@@ -463,12 +463,9 @@ class RobotsTxtParser implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Which version of the extended standard the group was written to, e.g. "2.0".
-	 *
-	 * Null when the group does not say. The spec's default for that is 1.0.0, left to the caller
-	 * as `?? '1.0'` rather than returned here, so "did not say" stays apart from "said 1.0" - and
-	 * because the same sentence also defaults a version that does not immediately follow its
-	 * User-agent, which this does not yet enforce.
+	 * Which version of the extended standard the group was written to, e.g. "2.0", or null when it
+	 * does not say. The spec reads that as 1.0.0 - left to the caller as `?? '1.0'`, since we do
+	 * not enforce the other half of the rule, that it has to immediately follow its User-agent.
 	 *
 	 * @link http://www.conman.org/people/spc/robots2.html
 	 */
@@ -488,10 +485,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return (array) $this->forUserAgent(Directive::NOINDEX, $userAgent);
 	}
 
-	/**
-	 * Whether the url may be indexed. Independent of {@see isAllowed()}: Noindex asks a crawler
-	 * that fetched the page to keep it out of the index, not to stay away.
-	 */
+	/** Whether the url may be indexed - Noindex keeps a page out of the index, not the crawler out of it. */
 	public function isIndexable(string $url, string $userAgent = '*'): bool {
 		$path = $this->pathToMatch($url);
 

@@ -19,10 +19,7 @@ use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\VisitTimeProcessor;
 
 abstract class DirectiveProcessorsFactory {
 
-	/**
-	 * Every line is offered to these in order until one matches, so the common directives come
-	 * first and the rare ones cost nothing to the lines that never reach them.
-	 */
+	/** Tried in order until one matches, so the common directives come first and the rare ones cost nothing. */
 	public static function getDefault(?LoggerInterface $logger = null): array {
 		return [
 			new UserAgentProcessor($logger),

@@ -154,9 +154,9 @@ foreach ($parser->getRequestRates('MyBot') as $rate) {
 }
 ```
 
-`nextOpening()` returns UTC whatever zone you hand it, and hands back the moment you gave it when the window is open then - so you can sleep until whatever comes back without testing first. It is also what makes the midnight case painless: for `2300-0200` at 01:00 the answer is 01:00, and at 02:30 it is 23:00 tonight.
+`nextOpening()` answers in UTC whatever zone you hand it, and hands back the moment you gave it when the window is already open - so you can sleep until whatever comes back without testing first. Over midnight that means `2300-0200` answers 01:00 at 01:00, and 23:00 tonight at 02:30.
 
-`getPeriod()` counts in hours rather than days on purpose. Added to a zoned date, `P1D` keeps the clock time and so moves by 23 or 25 hours over a DST change, while `PT24H` stays the 86400 seconds `Request-rate: 3/1d` actually means.
+`getPeriod()` counts in hours rather than days: added to a zoned date, `P1D` keeps the clock time over a DST change, while `PT24H` stays the 86400 seconds `Request-rate: 3/1d` means. A period longer than a year is not a crawl rate and is dropped.
 
 A group without a `Robot-version` reads as 1.0.0 by the spec, but `getRobotVersion()` returns `null` rather than inventing it - write `?? '1.0'` where you want the default, and "did not say" stays apart from "said 1.0".
 
