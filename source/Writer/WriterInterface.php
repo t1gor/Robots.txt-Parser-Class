@@ -22,7 +22,10 @@ interface WriterInterface extends LoggerAwareInterface {
 
 	public function setEol(string $eol): static;
 
-	/** @param ?string $encoding what to write out as; null keeps the UTF-8 the spec asks for */
+	/**
+	 * @param ?string $encoding what to write out as; null keeps the UTF-8 the spec asks for.
+	 *                          Overrides whatever the Configuration the writer was built with says.
+	 */
 	public function setEncoding(?string $encoding): static;
 
 	/**

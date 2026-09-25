@@ -20,6 +20,9 @@ class StreamWriterTest extends TestCase {
 
 	private const TREE = ['*' => ['disallow' => ['/admin'], 'allow' => ['/admin/public']]];
 
+	/** What TREE renders to, with \n endings. */
+	private const DOCUMENT = "User-agent: *\nAllow: /admin/public\nDisallow: /admin\n";
+
 	private ?StreamWriter $writer;
 	private ?TestHandler $handler;
 
@@ -183,6 +186,76 @@ class StreamWriterTest extends TestCase {
 			"Disallow: /bb\n",
 			"Disallow: /a\n",
 		], LineRecorder::$chunks);
+	}
+
+	/**
+	 * iconv restarts per line here, and UTF-16 opens every conversion with a byte order mark - so
+	 * without stripping it the document carries one per line and does not read back.
+	 *
+	 * @dataProvider markedCharsets
+	 */
+	public function testAMarkedCharsetIsNotRepeatedPerLine(string $encoding) {
+		$streamed = $this->renderWith(new StreamWriter(), $encoding);
+		$built    = $this->renderWith(new StringWriter(), $encoding);
+
+		$this->assertSame(bin2hex($built), bin2hex($streamed), 'both writers must emit the same bytes');
+		$this->assertSame(self::DOCUMENT, iconv($encoding, 'UTF-8', $streamed));
+	}
+
+	public function markedCharsets(): array {
+		return [
+			// a mark each conversion, so the naive per-line render repeats it
+			'UTF-16'       => ['UTF-16'],
+			'UTF-32'       => ['UTF-32'],
+			// no mark - these must be left exactly as they were
+			'UTF-16BE'     => ['UTF-16BE'],
+			'Windows-1251' => ['Windows-1251'],
+			'KOI8-R'       => ['KOI8-R'],
+		];
+	}
+
+	/**
+	 * One mark, at the front, and nowhere else. Asserted through the decoding rather than against
+	 * the bytes: which way round the mark goes is the platform's business, not ours - glibc writes
+	 * UTF-16 little-endian and Windows big-endian.
+	 */
+	public function testTheMarkIsStillWrittenOnce() {
+		$decoded = iconv('UTF-16', 'UTF-8', $this->renderWith(new StreamWriter(), 'UTF-16'));
+
+		// the leading one is consumed by the decode; a repeated one survives as a zero-width space
+		$this->assertStringNotContainsString("\u{FEFF}", $decoded);
+		$this->assertSame(self::DOCUMENT, $decoded);
+	}
+
+	/** The mark is worked out once per charset, so a reused writer keeps emitting the same bytes. */
+	public function testAReusedWriterRendersTheSameTwice() {
+		$writer = new StreamWriter();
+
+		$this->assertSame(
+			bin2hex($this->renderWith($writer, 'UTF-16')),
+			bin2hex($this->renderWith($writer, 'UTF-16'))
+		);
+	}
+
+	/** And switching charset works it out again rather than reusing the last one's. */
+	public function testSwitchingCharsetRecomputesIt() {
+		$writer = new StreamWriter();
+
+		$utf16 = $this->renderWith($writer, 'UTF-16');
+		$cp    = $this->renderWith($writer, 'Windows-1251');
+
+		$this->assertSame(self::DOCUMENT, iconv('UTF-16', 'UTF-8', $utf16));
+		// single-byte and unmarked, so the document is its own bytes
+		$this->assertSame(self::DOCUMENT, $cp);
+	}
+
+	private function renderWith(StreamWriter|StringWriter $writer, string $encoding): string {
+		$out = fopen('php://memory', 'r+');
+
+		$writer->setTree(self::TREE)->setEol("\n")->setEncoding($encoding)->setOutput($out)->render();
+		rewind($out);
+
+		return (string) stream_get_contents($out);
 	}
 }
 

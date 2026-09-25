@@ -4,6 +4,7 @@ namespace t1gor\RobotsTxtParser\Writer;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\Configuration;
 use t1gor\RobotsTxtParser\Directive;
 use t1gor\RobotsTxtParser\Exception\EncodingFailedException;
 use t1gor\RobotsTxtParser\Exception\NoOutputException;
@@ -61,8 +62,12 @@ abstract class AbstractWriter implements WriterInterface {
 	/** @var resource|null */
 	private $output = null;
 
-	public function __construct(?LoggerInterface $logger = null) {
+	/** @param ?Configuration $config where the encoding comes from unless setEncoding() overrides it */
+	public function __construct(?LoggerInterface $logger = null, ?Configuration $config = null) {
 		$this->logger = $logger;
+
+		// not setEncoding(): a subclass override of it would run before its own constructor body
+		$this->applyEncoding($config?->encodingForWriting());
 	}
 
 	public function setTree(array $tree): static {
@@ -78,6 +83,12 @@ abstract class AbstractWriter implements WriterInterface {
 	}
 
 	public function setEncoding(?string $encoding): static {
+		$this->applyEncoding($encoding);
+
+		return $this;
+	}
+
+	private function applyEncoding(?string $encoding): void {
 		// null once it is settled, so the hot path is a null check rather than this test per line
 		$this->encoding = $this->isUtf8($encoding) ? null : $encoding;
 
@@ -85,8 +96,6 @@ abstract class AbstractWriter implements WriterInterface {
 		if (!is_null($this->encoding)) {
 			$this->log(WarningMessages::ENCODING_NOT_UTF8, [], LogLevel::WARNING);
 		}
-
-		return $this;
 	}
 
 	public function setOutput($output): static {
@@ -138,6 +147,26 @@ abstract class AbstractWriter implements WriterInterface {
 		}
 
 		return $converted;
+	}
+
+	/**
+	 * What iconv puts ahead of the content every time it starts - the byte order mark, for UTF-16
+	 * and UTF-32. {@see StreamWriter} converts a line at a time, so without this it would repeat
+	 * the mark on every line and the document would not read back.
+	 *
+	 * Derived rather than tabulated: converting one copy emits the mark once and two copies emit it
+	 * once as well, so the difference is its length. An empty string tells us nothing - iconv emits
+	 * nothing at all for it.
+	 */
+	protected function preamble(): string {
+		if (is_null($this->encoding)) {
+			return '';
+		}
+
+		$once   = $this->convert('a');
+		$length = 2 * strlen($once) - strlen($this->convert('aa'));
+
+		return $length > 0 ? substr($once, 0, $length) : '';
 	}
 
 	/**

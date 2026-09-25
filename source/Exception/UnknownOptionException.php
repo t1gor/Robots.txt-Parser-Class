@@ -2,6 +2,6 @@
 
 namespace t1gor\RobotsTxtParser\Exception;
 
-/** An option name that is not one of KNOWN_OPTIONS - usually a config typo. */
+/** An option name that is not a {@see \t1gor\RobotsTxtParser\Config\Option} - usually a config typo. */
 class UnknownOptionException extends ConfigurationException {
 }
