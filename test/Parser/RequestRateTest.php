@@ -29,7 +29,8 @@ class RequestRateTest extends TestCase {
 			'days'               => ['3/86400', '3/1d'],
 			'uppercase unit'     => ['1/5M', '1/5m'],
 			'with a window'      => ['1/5m 0600-0845', '1/5m 0600-0845'],
-			'spaced'             => [' 10 / 1 h ', '10/1h'],
+			'surrounding space'  => [' 1/5m ', '1/5m'],
+			'the longest period' => ['1/365d', '1/365d'],
 		];
 	}
 
@@ -50,6 +51,13 @@ class RequestRateTest extends TestCase {
 			'unreadable window'=> ['1/5m 0600'],
 			'nonsense'         => ['ngdndganda'],
 			'empty'            => [''],
+			// the filter drops these, so accepting them here only made this test disagree with the library
+			'space by the slash' => ['1 / 5m'],
+			'space by the unit'  => ['1/5 m'],
+			// no crawl means these, and they do not survive becoming a DateInterval
+			'longer than a year' => ['1/366d'],
+			'more digits than a rate has' => ['1/9999999999'],
+			'documents past the cast'     => ['99999999999999999999/5'],
 		];
 	}
 
@@ -90,16 +98,39 @@ class RequestRateTest extends TestCase {
 		);
 	}
 
-	/**
-	 * P1D would land on the same clock time and so move by 25 hours over the autumn change; the
-	 * rate means 86400 seconds, which is what PT24H stays.
-	 */
+	/** P1D would move by 25 hours over the autumn change; the rate means 86400 seconds. */
 	public function testThePeriodDoesNotDriftAcrossADstChange() {
 		$berlin = new \DateTimeImmutable('2026-10-24 12:00:00', new \DateTimeZone('Europe/Berlin'));
 		$rate   = RequestRate::tryParse('3/1d');
 
 		$this->assertSame('2026-10-25 11:00 CET', $berlin->add($rate->getPeriod())->format('Y-m-d H:i T'));
 		$this->assertSame(86400, $berlin->add($rate->getPeriod())->getTimestamp() - $berlin->getTimestamp());
+	}
+
+	/**
+	 * These used to parse, then throw out of getPeriod() or schedule the next request for the year
+	 * 27 million.
+	 *
+	 * @dataProvider provideOutOfRange
+	 */
+	public function testAPeriodTooBigToScheduleOnIsNotARate(string $given) {
+		$this->assertNull(RequestRate::tryParse($given));
+	}
+
+	public function provideOutOfRange(): array {
+		return [
+			'saturates the cast'  => ['1/99999999999999999999'],
+			'overflows DateInterval' => ['1/9999999999d'],
+			'just over a year'    => ['1/31536001'],
+		];
+	}
+
+	/** The bound is a bound, not a wall: a year still parses and still schedules. */
+	public function testTheLongestPeriodStillSchedules() {
+		$rate = RequestRate::tryParse('1/31536000');
+
+		$this->assertSame(31536000, $rate->getSeconds());
+		$this->assertSame('8760h 0m 0s', $rate->getPeriod()->format('%hh %im %ss'));
 	}
 
 	public function testARateWithoutAWindowAlwaysApplies() {

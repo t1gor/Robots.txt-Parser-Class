@@ -10,9 +10,16 @@ namespace t1gor\RobotsTxtParser\Parser;
  */
 final class RequestRate implements \Stringable {
 
-	private const FORMAT = '/^(\d+)\s*\/\s*(\d+)\s*([smhd])?(?:\s+(\S+))?$/i';
+	/** No spacing inside the rate - the filter only keeps a contiguous "documents/period" anyway. */
+	private const FORMAT = '/^(\d+)\/(\d+)([smhd])?(?:\s+(\S+))?$/i';
 
 	private const UNITS = ['s' => 1, 'm' => 60, 'h' => 3600, 'd' => 86400];
+
+	/** A year. Past that it is not a crawl rate, and the period stops fitting a DateInterval. */
+	private const MAX_SECONDS = 31536000;
+
+	/** Enough for any real rate, few enough that (int) cannot saturate. */
+	private const MAX_DIGITS = 9;
 
 	private function __construct(
 		private readonly int $documents,
@@ -26,12 +33,21 @@ final class RequestRate implements \Stringable {
 			return null;
 		}
 
+		// before the cast: (int) saturates at PHP_INT_MAX rather than failing
+		if (strlen($parts[1]) > self::MAX_DIGITS || strlen($parts[2]) > self::MAX_DIGITS) {
+			return null;
+		}
+
 		$documents = (int) $parts[1];
 		$seconds   = (int) $parts[2] * self::UNITS[strtolower(($parts[3] ?? '') ?: 's')];
 		$window    = isset($parts[4]) ? TimeWindow::tryParse($parts[4]) : null;
 
 		// neither half of a rate can be zero, and a window given but unreadable is not this rate
 		if (0 === $documents || 0 === $seconds || (isset($parts[4]) && is_null($window))) {
+			return null;
+		}
+
+		if ($seconds > self::MAX_SECONDS) {
 			return null;
 		}
 
@@ -48,9 +64,8 @@ final class RequestRate implements \Stringable {
 	}
 
 	/**
-	 * The same period as something to do date arithmetic with. Hours rather than days: added to a
-	 * zoned date, P1D lands on the same clock time and so moves by 23 or 25 hours over a DST
-	 * change, while PT24H is always the 86400 seconds the rate actually means.
+	 * The same period, to do date arithmetic with. Hours rather than days: P1D keeps the clock time
+	 * over a DST change, while PT24H stays the 86400 seconds the rate means.
 	 */
 	public function getPeriod(): \DateInterval {
 		return new \DateInterval(sprintf(
