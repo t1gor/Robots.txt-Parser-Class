@@ -49,9 +49,10 @@ $parser->setContent(fopen('some/robots.txt', 'r'));
 
 # or a remote one (make sure it's allowed in your php.ini)
 # even FTP should work (but this is not confirmed)
+# a stream that cannot seek is fine - it is read once, whatever the encoding
 $parser->setContent(fopen('http://example.com/robots.txt', 'r'));
 
-# non UTF-8 input - the encoding describes the document, so it travels with it
+# non UTF-8 input - for one document only; set it on the Configuration to cover every one
 $parser->setContent(fopen('market-yandex-Windows-1251.txt', 'r'), 'Windows-1251');
 ```
 
@@ -113,12 +114,43 @@ $parser->setContent(fopen('robots.txt', 'r'));
 $parser->getReader()->wasTruncated(); // did the limit actually cut anything off?
 ```
 
-Pass `null` to switch the limit off. That is logged as a warning, and so is any limit below
-`Configuration::RECOMMENDED_MIN_BYTE_LIMIT` (24 KiB), where robots.txt risks truncating to nothing -
-and unmatched paths then default to allowed. `0` and negative values throw a `ConfigurationException`.
+Pass `null` to switch the limit off. That is logged as a warning, and so is any limit below `Configuration::RECOMMENDED_MIN_BYTE_LIMIT` (24 KiB), where robots.txt risks truncating to nothing - and unmatched paths then default to allowed. `0` and negative values throw a `ConfigurationException`.
 
-Warnings go through the PSR-3 logger. Attaching one after construction is fine: anything decided
-earlier is replayed as soon as a logger turns up.
+Warnings go through the PSR-3 logger. Attaching one after construction is fine: anything decided earlier is replayed as soon as a logger turns up.
+
+###### Choosing an encoding
+
+Everything is UTF-8 unless you say otherwise - the rules tree always is, whatever the document was. Reading and writing are separate settings because they are separate decisions: a file served as Windows-1251 can be republished as UTF-8. Either falls back to `defaultEncoding`, which is what to set when you only have one charset in mind.
+
+```php
+use t1gor\RobotsTxtParser\Configuration;
+use t1gor\RobotsTxtParser\RobotsTxtParser;
+use t1gor\RobotsTxtParser\Writer\StringWriter;
+
+$config = new Configuration(parseEncoding: 'Windows-1251', writeEncoding: 'UTF-8');
+
+$parser = new RobotsTxtParser($config);
+$parser->setContent(fopen('robots.txt', 'r'));
+
+(new StringWriter(null, $config))
+    ->setTree($parser->getRules())
+    ->setOutput(fopen('robots.utf8.txt', 'w'))
+    ->render();
+```
+
+| setting | falls back to | used by |
+| --- | --- | --- |
+| `defaultEncoding` | `'UTF-8'` | whichever of the two below is not set |
+| `parseEncoding` | `defaultEncoding` | the reader - what the document being parsed is in |
+| `writeEncoding` | `defaultEncoding` | the writers - what to write out as |
+
+`setContent()` still takes an encoding, and it overrides the configured one for that one document - handy when the parser is a container singleton and the charset comes off a `Content-Type` header. It lasts only as long as that document; the next `setContent()` is back on the configuration.
+
+```php
+$parser->setContent($body, $charsetFromTheResponseHeader);
+```
+
+A charset `iconv` does not know is warned about rather than thrown: reading falls back to the bytes as they are, and a caller that only ever parses should not be stopped by a write setting it never reaches. It still throws where it cannot work - see [Choosing a writer](#choosing-a-writer). The warning needs somewhere to go: `new RobotsTxtParser($config)` reports it, and so does the factory if you hand it a logger - `ConfigurationFactory::fromArray($options, $logger)`, same for `fromEnvironment()` and `validate()`.
 
 ###### The extended standard
 
@@ -183,15 +215,7 @@ $bytes = (new StringWriter($logger))
     ->render();
 ```
 
-It normalises rather than echoes: anything that cannot be valid is dropped, duplicates go, directive
-names get their canonical casing, `Host`, `Clean-param` and `Sitemap` are collected into one block at
-the end since they apply to the whole file, and user-agents carrying the same rules share a group.
-Each group opens with what describes it - `Robot-version`, `Visit-time`, `Request-rate`, `Comment` -
-and rates are written in the largest unit that fits them, so `1/300` and `1/5m` are one line.
-Rules are written longest first, with `Allow` ahead of an equally long `Disallow` - the order
-[RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2) resolves them in, so a reader that
-stops at the first match still gets the same answer. Everything dropped is logged, so a file that
-comes back shorter says why. Pass the parser's own logger and both halves report to one place.
+It normalises rather than echoes: anything that cannot be valid is dropped, duplicates go, directive names get their canonical casing, `Host`, `Clean-param` and `Sitemap` are collected into one block at the end since they apply to the whole file, and user-agents carrying the same rules share a group. Each group opens with what describes it - `Robot-version`, `Visit-time`, `Request-rate`, `Comment` - and rates are written in the largest unit that fits them, so `1/300` and `1/5m` are one line. Rules are written longest first, with `Allow` ahead of an equally long `Disallow` - the order [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2) resolves them in, so a reader that stops at the first match still gets the same answer. Everything dropped is logged, so a file that  comes back shorter says why. Pass the parser's own logger and both halves report to one place.
 
 The output is settled: parsing what comes out and writing it again gives the same bytes.
 
@@ -210,17 +234,13 @@ $bytes = (new StreamWriter())
     ->render();
 ```
 
-`StringWriter` builds the document, converts it and writes it in one go; `StreamWriter` converts and
-writes each line as it is produced. They emit the same bytes and neither holds anything once
-`render()` returns, so the choice is only ever about peak memory:
+Both take an optional logger and `Configuration`, so the encoding can come from the same place everything else does - `new StreamWriter($logger, $config)`. `setEncoding()` overrides it either way.
 
-**Use `StringWriter`** unless you have a reason not to. A real robots.txt is kilobytes, where both
-finish in well under a millisecond, and it is the simpler and slightly quicker of the two.
+`StringWriter` builds the document, converts it and writes it in one go; `StreamWriter` converts and writes each line as it is produced. They emit the same bytes - including for UTF-16 and UTF-32, where iconv opens every conversion with a byte order mark and `StreamWriter` drops all but the first - and neither holds anything once `render()` returns, so the choice is only ever about peak memory:
 
-**Use `StreamWriter`** when the document is large or you do not control its size - it peaks at about
-half the document rather than one and a half times it, and that gap widens as the file grows. You
-only reach that territory deliberately: the parser reads 500 KiB by default, so a tree big enough to
-matter here means you passed `byteLimit: null`.
+**Use `StringWriter`** unless you have a reason not to. A real robots.txt is kilobytes, where both finish in well under a millisecond, and it is the simpler and slightly quicker of the two.
+
+**Use `StreamWriter`** when the document is large or you do not control its size - it peaks at about half the document rather than one and a half times it, and that gap widens as the file grows. You only reach that territory deliberately: the parser reads 500 KiB by default, so a tree big enough to  matter here means you passed `byteLimit: null`.
 
 Measured on PHP 8.3, best of five, output to `/dev/null`:
 
@@ -231,12 +251,9 @@ Measured on PHP 8.3, best of five, output to `/dev/null`:
 | 250k | 12.7 MB | 0.3615 s, 19.1 MB | 0.4051 s, 7.27 MB |
 | 1M | 51.5 MB | 1.5061 s, 76.8 MB | 1.6858 s, 27.0 MB |
 
-So streaming costs 10-17% more time - a write per line instead of one for the lot - and saves
-roughly two thirds of the peak. Below 10k rules there is nothing in it either way.
-`bin/benchmark-writers.php` runs this on your own hardware.
+So streaming costs 10-17% more time - a write per line instead of one for the lot - and saves roughly two thirds of the peak. Below 10k rules there is nothing in it either way. `bin/benchmark-writers.php` runs this on your own hardware.
 
-Want the document as a string rather than in a file? Give it a `php://temp` - it spills to disk on
-its own, so it costs no more than it has to:
+Want the document as a string rather than in a file? Give it a `php://temp` - it spills to disk on its own, so it costs no more than it has to:
 
 ```php
 $buffer = fopen('php://temp', 'r+');
@@ -246,28 +263,22 @@ rewind($buffer);
 echo stream_get_contents($buffer);
 ```
 
-The rules tree is UTF-8 whatever the document was, so `setEncoding()` is a conversion on the way out
-- warned about, since the spec asks for UTF-8. A conversion that cannot work throws
-`EncodingFailedException` rather than quietly writing UTF-8: bytes served under a charset they are
-not in, or a rule missing from a policy file, are both worse than a render that fails. A write the
-output will not take throws `WriteFailedException` for the same reason.
+The rules tree is UTF-8 whatever the document was, so `setEncoding()` is a conversion on the way out - warned about, since the spec asks for UTF-8. A conversion that cannot work throws `EncodingFailedException` rather than quietly writing UTF-8: bytes served under a charset they are not in, or a rule missing from a policy file, are both worse than a render that fails. A write the  output will not take throws `WriteFailedException` for the same reason.
 
-Groups are assembled before the first line goes out - merging the user-agents that share a rule set,
-and putting the catch-all last, cannot be decided until every group has been seen. What is held is
-the tree's own path strings in sorted order, a pointer each; the `Disallow: ` line is built as it is
-written, so neither writer keeps a second copy of the rules.
+Groups are assembled before the first line goes out - merging the user-agents that share a rule set, and putting the catch-all last, cannot be decided until every group has been seen. What is held is the tree's own path strings in sorted order, a pointer each; the `Disallow: ` line is built as it is written, so neither writer keeps a second copy of the rules. 
 
 ###### Bootstrapping the configuration from a framework
 
-`ConfigurationFactory` turns whatever shape your framework keeps settings in into a `Configuration`.
-Unknown keys are rejected with a suggestion, and strings are accepted wherever an integer is - config
-layers hand those over constantly.
+`ConfigurationFactory` turns whatever shape your framework keeps settings in into a `Configuration`. Unknown keys are rejected with a suggestion, and strings are accepted wherever an integer is - config layers hand those over constantly.
 
 **Laravel** - `config/robots.php`, then bind it in a service provider:
 
 ```php
 // config/robots.php
-return ['byte_limit' => env('RTP_BYTE_LIMIT', 512000)];
+return [
+    'byte_limit'     => env('RTP_BYTE_LIMIT', 512000),
+    'parse_encoding' => env('RTP_PARSE_ENCODING'),
+];
 
 // app/Providers/AppServiceProvider.php
 use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
@@ -282,7 +293,7 @@ $this->app->singleton(Configuration::class, fn () => ConfigurationFactory::fromA
 t1gor\RobotsTxtParser\Configuration:
     factory: ['t1gor\RobotsTxtParser\Config\ConfigurationFactory', 'fromArray']
     arguments:
-        - { byte_limit: '%env(int:RTP_BYTE_LIMIT)%' }
+        - { byte_limit: '%env(int:RTP_BYTE_LIMIT)%', parse_encoding: '%env(default::RTP_PARSE_ENCODING)%' }
 ```
 
 **WordPress** - no container and no environment convention, so `fromEnvironment()` falls back to a
@@ -291,13 +302,15 @@ constant of the same name:
 ```php
 // wp-config.php
 define('RTP_BYTE_LIMIT', 512000);
+define('RTP_PARSE_ENCODING', 'Windows-1251');
 
 // anywhere in the plugin
 $config = ConfigurationFactory::fromEnvironment();
 ```
 
-**Anything else** - `ConfigurationFactory::fromArray()` takes a plain array, which every PHP config
-layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefixed variables.
+**Anything else** - `ConfigurationFactory::fromArray()` takes a plain array, which every PHP config layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefixed variables. The names themselves are the `Config\Option` enum - `Option::PARSE_ENCODING->value` for the array key, `->envName()` for the variable.
+
+The keys are `byte_limit`, `default_encoding`, `parse_encoding` and `write_encoding`; the matching variables are `RTP_BYTE_LIMIT`, `RTP_DEFAULT_ENCODING`, `RTP_PARSE_ENCODING` and `RTP_WRITE_ENCODING`. A missing or blank one is not a decision and keeps the default, and an unknown key is rejected with the list of the known ones. `fromArray()` throws an `InvalidEncodingException` for anything that is not a string; environment variables and constants are always read as strings, so that check never fires there.
 
 ### Public API
 
@@ -319,15 +332,13 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `getComments` | `string $userAgent` | `string[]` | What the file has to say to whoever runs the crawler |
 | `getNoIndex` | `string $userAgent` | `string[]` | Paths to keep out of the index |
 | `isIndexable` | `string $url, string $userAgent` | `bool` | Whether `Noindex` leaves the url indexable |
-| `setContent` | `resource\|string $content, ?string $encoding` | `self` | The document to parse; resets anything left from the previous one |
+| `setContent` | `resource\|string $content, ?string $encoding` | `self` | The document to parse; resets anything left from the previous one. `$encoding` overrides `Configuration::encodingForParsing()` for this document alone |
 | `getReader` | `-` | `ReaderInterface` | The reader holding the current document - filters, raw content, truncation |
 | `getConfiguration` | `-` | `Configuration` | The options the parser was built with |
 
 #### `Directive` is an enum
 
-`Directive` is a string-backed enum, so a directive is a case rather than a bare string. Pass the
-case where one is expected, and use `->value` wherever a string is - notably the keys of the tree
-`getRules()` returns:
+`Directive` is a string-backed enum, so a directive is a case rather than a bare string. Pass the case where one is expected, and use `->value` wherever a string is - notably the keys of the tree `getRules()` returns:
 
 ```php
 use t1gor\RobotsTxtParser\Directive;

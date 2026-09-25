@@ -3,6 +3,7 @@
 namespace t1gor\RobotsTxtParser\Stream;
 
 use Psr\Log\LogLevel;
+use t1gor\RobotsTxtParser\Config\Option;
 use t1gor\RobotsTxtParser\Configuration;
 use t1gor\RobotsTxtParser\LogsIfAvailableTrait;
 use t1gor\RobotsTxtParser\RunsQuietlyTrait;
@@ -146,7 +147,7 @@ class GeneratorBasedReader implements ReaderInterface {
 		if ($this->truncated) {
 			$this->trimToLastLine($bounded, $limit);
 			$this->log(WarningMessages::BYTE_LIMIT_REACHED, [
-				Configuration::OPTION_BYTE_LIMIT => $limit,
+				Option::BYTE_LIMIT->value => $limit,
 			], LogLevel::WARNING);
 		}
 
@@ -296,11 +297,27 @@ class GeneratorBasedReader implements ReaderInterface {
 	 * @return string[] empty when the content converts cleanly
 	 */
 	private function conversionErrors(string $encoding): array {
-		rewind($this->stream);
+		// the name on its own, which needs no bytes: iconv answers false for a charset it doesn't know
+		[$known, $raised] = $this->quietly(function () use ($encoding) {
+			return iconv($encoding, 'UTF-8', '');
+		});
+
+		if (false === $known) {
+			$raised[] = sprintf('unknown charset %s', $encoding);
+
+			return $raised;
+		}
+
+		// reading the sample consumes the document, so only where it can be put back
+		if (!$this->rewindIfPossible()) {
+			return [];
+		}
+
 		[$sample] = $this->quietly(function () {
 			return stream_get_contents($this->stream);
 		});
-		rewind($this->stream);
+
+		$this->rewindIfPossible();
 
 		if (!is_string($sample) || '' === $sample) {
 			return [];
@@ -315,6 +332,20 @@ class GeneratorBasedReader implements ReaderInterface {
 		}
 
 		return $raised;
+	}
+
+	/**
+	 * A non-seekable stream (http, a pipe) cannot be replayed, and asking warns - so whatever
+	 * reads it has to cope with reading on from where it stands.
+	 */
+	private function rewindIfPossible(): bool {
+		if (true !== (stream_get_meta_data($this->stream)['seekable'] ?? false)) {
+			return false;
+		}
+
+		rewind($this->stream);
+
+		return true;
 	}
 
 	/**
@@ -340,7 +371,7 @@ class GeneratorBasedReader implements ReaderInterface {
 	}
 
 	public function getContentIterated(): \Generator {
-		rewind($this->stream);
+		$this->rewindIfPossible();
 
 		while (!feof($this->stream)) {
 			$line = fgets($this->stream);
@@ -352,7 +383,7 @@ class GeneratorBasedReader implements ReaderInterface {
 	}
 
 	public function getContentRaw(): string {
-		rewind($this->stream);
+		$this->rewindIfPossible();
 
 		return stream_get_contents($this->stream);
 	}

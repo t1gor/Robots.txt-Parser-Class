@@ -41,8 +41,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 	use LogsIfAvailableTrait;
 
-	// default encoding
-	const DEFAULT_ENCODING = 'UTF-8';
+	/** @deprecated use {@see Configuration::DEFAULT_ENCODING}, where every encoding setting lives. */
+	const DEFAULT_ENCODING = Configuration::DEFAULT_ENCODING;
 
 	// robots.txt http status code
 	protected ?int $httpStatusCode = null;
@@ -87,10 +87,11 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 	/**
 	 * Content is not a dependency, so it arrives separately - that is what lets the parser be
-	 * resolved from a container and reused. Encoding travels with it, since it describes the
-	 * document rather than the parser.
+	 * resolved from a container and reused.
 	 *
 	 * @param resource|string $content
+	 * @param ?string         $encoding what this one document is in, overriding
+	 *                                  {@see Configuration::encodingForParsing()} for it alone
 	 */
 	public function setContent($content, ?string $encoding = null): self {
 		$this->reader = is_resource($content)
@@ -99,9 +100,8 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		$this->reader->setLogger($this->logger());
 
-		if (!is_null($encoding) && $encoding !== static::DEFAULT_ENCODING) {
-			$this->reader->setEncoding($encoding);
-		}
+		// any spelling of UTF-8 is a no-op there, so the common case costs one call and no filter
+		$this->reader->setEncoding($encoding ?? $this->config->encodingForParsing());
 
 		// a new document: nothing from the last one still holds
 		$this->tree           = [];

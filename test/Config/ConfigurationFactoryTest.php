@@ -5,6 +5,7 @@ namespace Config;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LogLevel;
 use t1gor\RobotsTxtParser\Config\ConfigurationFactory;
+use t1gor\RobotsTxtParser\Config\Option;
 use t1gor\RobotsTxtParser\Configuration;
 use t1gor\RobotsTxtParser\Logger\BufferedLogger;
 use t1gor\RobotsTxtParser\Exception\ByteCountOutOfRangeException;
@@ -70,7 +71,7 @@ class ConfigurationFactoryTest extends TestCase {
 
 	public function testUnknownOptionListsTheKnownOnes() {
 		$this->expectException(UnknownOptionException::class);
-		$this->expectExceptionMessage('Known options: byte_limit.');
+		$this->expectExceptionMessage('Known options: byte_limit, default_encoding, parse_encoding, write_encoding.');
 
 		ConfigurationFactory::fromArray(['something_entirely_different' => 1]);
 	}
@@ -187,7 +188,7 @@ class ConfigurationFactoryTest extends TestCase {
 		$this->assertCount(1, $warnings);
 		$this->assertSame(LogLevel::WARNING, $warnings[0]['level']);
 		$this->assertStringContainsString('exhaustion', $warnings[0]['message']);
-		$this->assertSame([Configuration::OPTION_BYTE_LIMIT => null], $warnings[0]['context']);
+		$this->assertSame([Option::BYTE_LIMIT->value => null], $warnings[0]['context']);
 	}
 
 	public function testALowLimitIsKeptButWarnedAbout() {
@@ -195,7 +196,7 @@ class ConfigurationFactoryTest extends TestCase {
 
 		$this->assertCount(1, $warnings);
 		$this->assertStringContainsString('below the recommended minimum', $warnings[0]['message']);
-		$this->assertSame(1024, $warnings[0]['context'][Configuration::OPTION_BYTE_LIMIT]);
+		$this->assertSame(1024, $warnings[0]['context'][Option::BYTE_LIMIT->value]);
 	}
 
 	public function testValidateWithoutALoggerStillRefusesTheUnusable() {

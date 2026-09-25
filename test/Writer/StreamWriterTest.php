@@ -184,6 +184,74 @@ class StreamWriterTest extends TestCase {
 			"Disallow: /a\n",
 		], LineRecorder::$chunks);
 	}
+
+	/**
+	 * iconv restarts per line here, and UTF-16 opens every conversion with a byte order mark - so
+	 * without stripping it the document carries one per line and does not read back.
+	 *
+	 * @dataProvider markedCharsets
+	 */
+	public function testAMarkedCharsetIsNotRepeatedPerLine(string $encoding) {
+		$streamed = $this->renderWith(new StreamWriter(), $encoding);
+		$built    = $this->renderWith(new StringWriter(), $encoding);
+
+		$this->assertSame(bin2hex($built), bin2hex($streamed), 'both writers must emit the same bytes');
+		$this->assertSame(
+			"User-agent: *\nAllow: /admin/public\nDisallow: /admin\n",
+			iconv($encoding, 'UTF-8', $streamed)
+		);
+	}
+
+	public function markedCharsets(): array {
+		return [
+			// a mark each conversion, so the naive per-line render repeats it
+			'UTF-16'       => ['UTF-16'],
+			'UTF-32'       => ['UTF-32'],
+			// no mark - these must be left exactly as they were
+			'UTF-16BE'     => ['UTF-16BE'],
+			'Windows-1251' => ['Windows-1251'],
+			'KOI8-R'       => ['KOI8-R'],
+		];
+	}
+
+	/** One mark, at the front, and nowhere else. */
+	public function testTheMarkIsStillWrittenOnce() {
+		$streamed = $this->renderWith(new StreamWriter(), 'UTF-16');
+
+		$this->assertStringStartsWith("\xFF\xFE", $streamed);
+		$this->assertSame(1, substr_count($streamed, "\xFF\xFE"));
+	}
+
+	/** The mark is worked out once per charset, so a reused writer keeps emitting the same bytes. */
+	public function testAReusedWriterRendersTheSameTwice() {
+		$writer = new StreamWriter();
+
+		$this->assertSame(
+			bin2hex($this->renderWith($writer, 'UTF-16')),
+			bin2hex($this->renderWith($writer, 'UTF-16'))
+		);
+	}
+
+	/** And switching charset works it out again rather than reusing the last one's. */
+	public function testSwitchingCharsetRecomputesIt() {
+		$writer = new StreamWriter();
+
+		$utf16 = $this->renderWith($writer, 'UTF-16');
+		$cp    = $this->renderWith($writer, 'Windows-1251');
+
+		$this->assertStringStartsWith("\xFF\xFE", $utf16);
+		$this->assertStringStartsNotWith("\xFF\xFE", $cp);
+		$this->assertSame("User-agent: *\nAllow: /admin/public\nDisallow: /admin\n", $cp);
+	}
+
+	private function renderWith(StreamWriter|StringWriter $writer, string $encoding): string {
+		$out = fopen('php://memory', 'r+');
+
+		$writer->setTree(self::TREE)->setEol("\n")->setEncoding($encoding)->setOutput($out)->render();
+		rewind($out);
+
+		return (string) stream_get_contents($out);
+	}
 }
 
 /** Records every write the stream is handed, so a test can see how the document arrived. */
