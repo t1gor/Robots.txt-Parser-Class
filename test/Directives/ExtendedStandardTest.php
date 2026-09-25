@@ -116,6 +116,14 @@ class ExtendedStandardTest extends TestCase {
 		);
 	}
 
+	/** The spec reads a group without one as 1.0.0 - that default is the caller's `?? '1.0'`, not ours. */
+	public function testAGroupWithoutAVersionSaysNothingRatherThanOnePointZero() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /admin\n");
+
+		$this->assertNull($parser->getRobotVersion());
+		$this->assertArrayNotHasKey(Directive::ROBOT_VERSION->value, $parser->getRules('*'));
+	}
+
 	/** A value that cannot repeat keeps the last one seen, like the delays do. */
 	public function testASecondValueOfASingleDirectiveWins() {
 		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nVisit-time: 0600-0845\nVisit-time: 0100-0200\n");

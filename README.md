@@ -125,7 +125,7 @@ earlier is replayed as soon as a logger turns up.
 `Robot-version`, `Visit-time`, `Request-rate` and `Comment` describe the group rather than a path, and each has an accessor of its own. `Request-rate` and `Comment` may repeat; the other two keep the last value seen. Anything that cannot be read as the directive is dropped and logged.
 
 ```php
-$parser->getRobotVersion('GoogleBot');   // '2.0'
+$parser->getRobotVersion('GoogleBot');   // '2.0', or null when the group does not say
 $parser->getComments();                  // ['regenerated nightly by the CMS']
 $parser->getVisitTime()?->covers(new DateTimeImmutable('now'));   // is the crawler welcome right now?
 
@@ -157,6 +157,8 @@ foreach ($parser->getRequestRates('MyBot') as $rate) {
 `nextOpening()` returns UTC whatever zone you hand it, and hands back the moment you gave it when the window is open then - so you can sleep until whatever comes back without testing first. It is also what makes the midnight case painless: for `2300-0200` at 01:00 the answer is 01:00, and at 02:30 it is 23:00 tonight.
 
 `getPeriod()` counts in hours rather than days on purpose. Added to a zoned date, `P1D` keeps the clock time and so moves by 23 or 25 hours over a DST change, while `PT24H` stays the 86400 seconds `Request-rate: 3/1d` actually means.
+
+A group without a `Robot-version` reads as 1.0.0 by the spec, but `getRobotVersion()` returns `null` rather than inventing it - write `?? '1.0'` where you want the default, and "did not say" stays apart from "said 1.0".
 
 `Noindex` is a path, like `Disallow`, but answers a different question - keep this page out of the index, rather than stay away from it. So it has its own check and does not affect `isAllowed()`:
 
@@ -313,7 +315,7 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
 | `getRequestRates` | `string $userAgent` | `RequestRate[]` | How often the crawler may ask, and when. `getSecondsPerRequest()`, `getPeriod()` as a `DateInterval`, `appliesAt()` |
 | `getVisitTime` | `string $userAgent` | `TimeWindow` or `null` | When the crawler is welcome, UTC. `covers()`, `nextOpening()` |
-| `getRobotVersion` | `string $userAgent` | `string` or `null` | The revision of the extended standard the group is written to |
+| `getRobotVersion` | `string $userAgent` | `string` or `null` | The revision of the extended standard the group is written to; `null` when it does not say, whose spec default is `1.0` |
 | `getComments` | `string $userAgent` | `string[]` | What the file has to say to whoever runs the crawler |
 | `getNoIndex` | `string $userAgent` | `string[]` | Paths to keep out of the index |
 | `isIndexable` | `string $url, string $userAgent` | `bool` | Whether `Noindex` leaves the url indexable |

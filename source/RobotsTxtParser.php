@@ -462,7 +462,16 @@ class RobotsTxtParser implements LoggerAwareInterface {
 		return is_string($window) ? TimeWindow::tryParse($window) : null;
 	}
 
-	/** Which version of the extended standard the group was written to, e.g. "2.0". */
+	/**
+	 * Which version of the extended standard the group was written to, e.g. "2.0".
+	 *
+	 * Null when the group does not say. The spec's default for that is 1.0.0, left to the caller
+	 * as `?? '1.0'` rather than returned here, so "did not say" stays apart from "said 1.0" - and
+	 * because the same sentence also defaults a version that does not immediately follow its
+	 * User-agent, which this does not yet enforce.
+	 *
+	 * @link http://www.conman.org/people/spc/robots2.html
+	 */
 	public function getRobotVersion(string $userAgent = '*'): ?string {
 		$version = $this->forUserAgent(Directive::ROBOT_VERSION, $userAgent);
 
