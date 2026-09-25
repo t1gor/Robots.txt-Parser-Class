@@ -62,6 +62,46 @@ class RequestRateTest extends TestCase {
 		$this->assertSame('0600-0845', (string) $rate->getWindow());
 	}
 
+	/**
+	 * @dataProvider providePeriods
+	 */
+	public function testThePeriodAsAnInterval(string $given, string $expected) {
+		$this->assertSame($expected, RequestRate::tryParse($given)->getPeriod()->format('%hh %im %ss'));
+	}
+
+	public function providePeriods(): array {
+		return [
+			'seconds'        => ['1/45', '0h 0m 45s'],
+			'minutes'        => ['1/5m', '0h 5m 0s'],
+			'hours'          => ['2/1h', '1h 0m 0s'],
+			'a day is hours' => ['3/1d', '24h 0m 0s'],
+			'mixed'          => ['1/3661', '1h 1m 1s'],
+		];
+	}
+
+	/** Whatever it is added to, the period has to stay the seconds the rate was written with. */
+	public function testThePeriodIsAlwaysTheSameLength() {
+		$moment = new \DateTimeImmutable('2026-09-25 12:00:00', new \DateTimeZone('UTC'));
+		$rate   = RequestRate::tryParse('3/1d');
+
+		$this->assertSame(
+			$rate->getSeconds(),
+			$moment->add($rate->getPeriod())->getTimestamp() - $moment->getTimestamp()
+		);
+	}
+
+	/**
+	 * P1D would land on the same clock time and so move by 25 hours over the autumn change; the
+	 * rate means 86400 seconds, which is what PT24H stays.
+	 */
+	public function testThePeriodDoesNotDriftAcrossADstChange() {
+		$berlin = new \DateTimeImmutable('2026-10-24 12:00:00', new \DateTimeZone('Europe/Berlin'));
+		$rate   = RequestRate::tryParse('3/1d');
+
+		$this->assertSame('2026-10-25 11:00 CET', $berlin->add($rate->getPeriod())->format('Y-m-d H:i T'));
+		$this->assertSame(86400, $berlin->add($rate->getPeriod())->getTimestamp() - $berlin->getTimestamp());
+	}
+
 	public function testARateWithoutAWindowAlwaysApplies() {
 		$rate = RequestRate::tryParse('1/5m');
 

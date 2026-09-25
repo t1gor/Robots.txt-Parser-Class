@@ -47,6 +47,24 @@ final class TimeWindow implements \Stringable {
 			: $minutes >= $this->from || $minutes <= $this->to;
 	}
 
+	/**
+	 * The earliest moment from $after that the window is open - $after itself when it already is,
+	 * so a scheduler can sleep until whatever comes back without checking first. UTC, like the rest
+	 * of this, which is also what makes "+1 day" exactly 24 hours here.
+	 */
+	public function nextOpening(\DateTimeInterface $after): \DateTimeImmutable {
+		$utc = \DateTimeImmutable::createFromInterface($after)->setTimezone(new \DateTimeZone('UTC'));
+
+		if ($this->covers($utc)) {
+			return $utc;
+		}
+
+		$opening = $utc->setTime(intdiv($this->from, 60), $this->from % 60);
+
+		// today's opening, unless it has already gone by - which is also the answer over midnight
+		return $opening > $utc ? $opening : $opening->modify('+1 day');
+	}
+
 	public function __toString(): string {
 		return $this->getFrom() . '-' . $this->getTo();
 	}

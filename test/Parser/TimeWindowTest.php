@@ -75,6 +75,48 @@ class TimeWindowTest extends TestCase {
 		];
 	}
 
+	/**
+	 * @dataProvider provideOpenings
+	 */
+	public function testNextOpening(string $window, string $after, string $expected) {
+		$opening = TimeWindow::tryParse($window)->nextOpening(new \DateTimeImmutable($after, new \DateTimeZone('UTC')));
+
+		$this->assertSame($expected, $opening->format('Y-m-d H:i:s T'));
+	}
+
+	public function provideOpenings(): array {
+		return [
+			// a window that is open is open now, so there is nothing to wait for
+			'already open'          => ['0600-0845', '2026-09-25 07:00:00', '2026-09-25 07:00:00 UTC'],
+			'opens later today'     => ['0600-0845', '2026-09-25 05:00:00', '2026-09-25 06:00:00 UTC'],
+			'gone for today'        => ['0600-0845', '2026-09-25 09:00:00', '2026-09-26 06:00:00 UTC'],
+			'on the opening edge'   => ['0600-0845', '2026-09-25 06:00:00', '2026-09-25 06:00:00 UTC'],
+			'just shut'             => ['0600-0845', '2026-09-25 08:46:00', '2026-09-26 06:00:00 UTC'],
+			// over midnight: still open in the small hours, and tonight's opening is what follows
+			'over midnight, before' => ['2300-0200', '2026-09-25 12:00:00', '2026-09-25 23:00:00 UTC'],
+			'over midnight, late'   => ['2300-0200', '2026-09-25 23:30:00', '2026-09-25 23:30:00 UTC'],
+			'over midnight, early'  => ['2300-0200', '2026-09-25 01:00:00', '2026-09-25 01:00:00 UTC'],
+			'over midnight, shut'   => ['2300-0200', '2026-09-25 02:30:00', '2026-09-25 23:00:00 UTC'],
+		];
+	}
+
+	/** Whatever zone the caller keeps time in, the answer comes back in the one the spec uses. */
+	public function testNextOpeningAnswersInUtc() {
+		$berlin  = new \DateTimeImmutable('2026-09-25 12:00:00', new \DateTimeZone('Europe/Berlin'));
+		$opening = TimeWindow::tryParse('0600-0845')->nextOpening($berlin);
+
+		// 12:00 Berlin is 10:00 UTC, so today's window has gone
+		$this->assertSame('2026-09-26 06:00:00 UTC', $opening->format('Y-m-d H:i:s T'));
+	}
+
+	/** A window opens on the minute, so nothing of the moment asked about carries over. */
+	public function testAnOpeningHasNoSecondsLeftOnIt() {
+		$opening = TimeWindow::tryParse('0600-0845')
+			->nextOpening(new \DateTimeImmutable('2026-09-25 05:30:45.123456', new \DateTimeZone('UTC')));
+
+		$this->assertSame('2026-09-25 06:00:00.000000', $opening->format('Y-m-d H:i:s.u'));
+	}
+
 	/** The spec says UTC, so a moment in another zone is compared as the UTC time it is. */
 	public function testMomentsAreComparedInUtc() {
 		$window = TimeWindow::tryParse('0600-0845');

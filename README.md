@@ -137,6 +137,27 @@ foreach ($parser->getRequestRates() as $rate) {
 
 `Visit-time` comes back as a `TimeWindow` and `Request-rate` as a `RequestRate` - value objects, so "0600-0845" is parsed once rather than by every caller. Times are UTC, as the [extended standard](http://www.conman.org/people/spc/robots2.html) has them, and a window that ends before it starts runs over midnight.
 
+Both answer the scheduling questions directly, so a crawl loop is the two calls and nothing of your own:
+
+```php
+$now = new DateTimeImmutable('now');
+
+# when may I start? - the moment you asked about, if the window is already open
+$startAt = $parser->getVisitTime()?->nextOpening($now) ?? $now;
+
+# how long between two requests? - as seconds, or as something to do date arithmetic with
+foreach ($parser->getRequestRates('MyBot') as $rate) {
+    if ($rate->appliesAt($startAt)) {
+        $nextRequestAt = $startAt->add($rate->getPeriod());   // DateInterval, e.g. PT5M
+        usleep((int) ($rate->getSecondsPerRequest() * 1_000_000));
+    }
+}
+```
+
+`nextOpening()` returns UTC whatever zone you hand it, and hands back the moment you gave it when the window is open then - so you can sleep until whatever comes back without testing first. It is also what makes the midnight case painless: for `2300-0200` at 01:00 the answer is 01:00, and at 02:30 it is 23:00 tonight.
+
+`getPeriod()` counts in hours rather than days on purpose. Added to a zoned date, `P1D` keeps the clock time and so moves by 23 or 25 hours over a DST change, while `PT24H` stays the 86400 seconds `Request-rate: 3/1d` actually means.
+
 `Noindex` is a path, like `Disallow`, but answers a different question - keep this page out of the index, rather than stay away from it. So it has its own check and does not affect `isAllowed()`:
 
 ```php
@@ -290,8 +311,8 @@ layer produces, and `ConfigurationFactory::fromEnvironment()` reads `RTP_`-prefi
 | `getRules` | `?string $userAgent` | `array` | Get the rules the parser read in a tree-line structure |
 | `getHost` | `?string $userAgent` | `string[]` or `string` or `null` | If no `$userAgent` is passed, will return all |
 | `getSitemaps` | `?string $userAgent` | `string[]` | If no `$userAgent` is passed, will return all |
-| `getRequestRates` | `string $userAgent` | `RequestRate[]` | How often the crawler may ask, and when |
-| `getVisitTime` | `string $userAgent` | `TimeWindow` or `null` | When the crawler is welcome, UTC |
+| `getRequestRates` | `string $userAgent` | `RequestRate[]` | How often the crawler may ask, and when. `getSecondsPerRequest()`, `getPeriod()` as a `DateInterval`, `appliesAt()` |
+| `getVisitTime` | `string $userAgent` | `TimeWindow` or `null` | When the crawler is welcome, UTC. `covers()`, `nextOpening()` |
 | `getRobotVersion` | `string $userAgent` | `string` or `null` | The revision of the extended standard the group is written to |
 | `getComments` | `string $userAgent` | `string[]` | What the file has to say to whoever runs the crawler |
 | `getNoIndex` | `string $userAgent` | `string[]` | Paths to keep out of the index |

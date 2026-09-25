@@ -47,6 +47,20 @@ final class RequestRate implements \Stringable {
 		return $this->seconds;
 	}
 
+	/**
+	 * The same period as something to do date arithmetic with. Hours rather than days: added to a
+	 * zoned date, P1D lands on the same clock time and so moves by 23 or 25 hours over a DST
+	 * change, while PT24H is always the 86400 seconds the rate actually means.
+	 */
+	public function getPeriod(): \DateInterval {
+		return new \DateInterval(sprintf(
+			'PT%dH%dM%dS',
+			intdiv($this->seconds, 3600),
+			intdiv($this->seconds % 3600, 60),
+			$this->seconds % 60
+		));
+	}
+
 	public function getWindow(): ?TimeWindow {
 		return $this->window;
 	}
