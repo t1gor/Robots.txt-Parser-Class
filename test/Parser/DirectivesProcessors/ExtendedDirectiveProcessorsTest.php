@@ -20,6 +20,7 @@ use t1gor\RobotsTxtParser\Parser\DirectiveProcessors\VisitTimeProcessor;
  * The processors on their own, without a document around them.
  *
  * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\AbstractDirectiveProcessor
+ * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\AbstractAllowanceProcessor
  * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\AbstractValidatedValueProcessor
  * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\CommentProcessor
  * @covers \t1gor\RobotsTxtParser\Parser\DirectiveProcessors\NoIndexProcessor
@@ -79,6 +80,7 @@ class ExtendedDirectiveProcessorsTest extends TestCase {
 			'comment with a hash'  => [CommentProcessor::class, 'Comment: half # of it'],
 			'empty comment'        => [CommentProcessor::class, 'Comment:'],
 			'relative noindex'     => [NoIndexProcessor::class, 'Noindex: drafts'],
+			'empty noindex'        => [NoIndexProcessor::class, 'Noindex:'],
 			'rate without period'  => [RequestRateProcessor::class, 'Request-rate: 15686'],
 			'version in words'     => [RobotVersionProcessor::class, 'Robot-version: two point oh'],
 			'hours that cannot be' => [VisitTimeProcessor::class, 'Visit-time: 2500-2600'],
@@ -141,6 +143,21 @@ class ExtendedDirectiveProcessorsTest extends TestCase {
 
 		$this->assertSame($log, (new CommentProcessor($log))->getLogger());
 		$this->assertNull((new CommentProcessor())->getLogger());
+	}
+
+	/** The base class is public, so a directive the enum never heard of must not kill it. */
+	public function testAProcessorOfSomeoneElsesDirective() {
+		$processor = new class(null) extends AbstractValidatedValueProcessor {
+			public function getDirectiveName(): string {
+				return 'x-custom';
+			}
+
+			protected function normalise(string $value): ?string {
+				return $value;
+			}
+		};
+
+		$this->assertSame(['*' => ['x-custom' => 'hi']], $this->process($processor, 'X-custom: hi'));
 	}
 
 	public function testEveryNewProcessorIsAValidatedValueOne() {

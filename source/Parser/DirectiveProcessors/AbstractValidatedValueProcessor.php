@@ -15,9 +15,9 @@ abstract class AbstractValidatedValueProcessor extends AbstractDirectiveProcesso
 	/** The canonical form to store, or null when the value cannot be read as this directive. */
 	abstract protected function normalise(string $value): ?string;
 
-	/** Whether a user-agent may carry several, e.g. a Request-rate per time window. */
+	/** Several per user-agent, e.g. a Request-rate per window. Someone else's directive is not in the enum. */
 	protected function isRepeatable(): bool {
-		return $this->repeatable ??= Directive::from($this->getDirectiveName())->isRepeatable();
+		return $this->repeatable ??= (Directive::tryFrom($this->getDirectiveName())?->isRepeatable() ?? false);
 	}
 
 	private ?bool $repeatable = null;
