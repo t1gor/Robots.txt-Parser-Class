@@ -21,6 +21,7 @@ use t1gor\RobotsTxtParser\RobotsTxtParser;
  * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getComments
  * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::getNoIndex
  * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::isIndexable
+ * @covers \t1gor\RobotsTxtParser\RobotsTxtParser::forUserAgent
  */
 class ExtendedStandardTest extends TestCase {
 
