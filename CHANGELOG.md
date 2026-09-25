@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- changelog-insert: bin/changelog.sh puts generated sections here; 0.3.0 and older are hand-written and frozen. -->
 
+## [1.0.0](https://github.com/t1gor/Robots.txt-Parser-Class/compare/v0.3.0...v1.0.0) - 2026-09-25
+
+### Breaking
+
+- Move encoding into Configuration ([#148](https://github.com/t1gor/Robots.txt-Parser-Class/pull/148), closes [#136](https://github.com/t1gor/Robots.txt-Parser-Class/issues/136))
+
+### Added
+
+- Support the extended standard directives ([#147](https://github.com/t1gor/Robots.txt-Parser-Class/pull/147))
+
+### Changed
+
+- Feature/php hardening ([#145](https://github.com/t1gor/Robots.txt-Parser-Class/pull/145))
+- Rewrite Url encoding and rule compilation, without league/uri ([#143](https://github.com/t1gor/Robots.txt-Parser-Class/pull/143), closes [#139](https://github.com/t1gor/Robots.txt-Parser-Class/issues/139))
+- Feature/67 writer ([#146](https://github.com/t1gor/Robots.txt-Parser-Class/pull/146))
+
+### Internal
+
+- Automate the changelog ([#144](https://github.com/t1gor/Robots.txt-Parser-Class/pull/144), closes [#142](https://github.com/t1gor/Robots.txt-Parser-Class/issues/142))
+
 ## [0.3.0] - 2026-09-24
 
 First release since `v0.2.5` (2020). The parser was rewritten on top of
