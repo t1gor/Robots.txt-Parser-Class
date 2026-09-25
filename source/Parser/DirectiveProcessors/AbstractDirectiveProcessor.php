@@ -20,11 +20,15 @@ abstract class AbstractDirectiveProcessor implements DirectiveProcessorInterface
 	/** The directive name never changes, so neither does the pattern built from it. */
 	private ?string $pattern = null;
 
-	/** Everything past the first colon: a value may hold colons of its own. */
+	/**
+	 * Everything past the directive name - a sitemap URL or a path may hold colons of its own. A
+	 * run of them is one separator, as the filters read it, so "Disallow::/x" disallows "/x".
+	 */
 	protected function value(string $line): string {
 		$colon = strpos($line, ':');
 
-		return false === $colon ? '' : trim(substr($line, $colon + 1));
+		// strspn walks the run without copying it; every rule line goes through here
+		return false === $colon ? '' : trim(substr($line, $colon + strspn($line, ':', $colon)));
 	}
 
 	public function matches(string $line): bool {

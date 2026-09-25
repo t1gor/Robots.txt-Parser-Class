@@ -7,8 +7,8 @@ abstract class AbstractAllowanceProcessor extends AbstractDirectiveProcessor imp
 	use DeduplicatesEntriesTrait;
 
 	public function process(string $line, array &$root, string &$currentUserAgent = '*', string $prevLine = ''): void {
-		$parts     = explode(':', $line);
-		$entry     = trim($parts[1]);
+		// not explode(':')[1]: cutting at the first colon widened "/path:with:colon" to "/path"
+		$entry     = $this->value($line);
 		$directive = $this->getDirectiveName();
 
 		if (empty($entry)) {

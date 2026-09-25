@@ -86,9 +86,8 @@ enum Directive: string {
 	}
 
 	/**
-	 * The value has to open with "documents/period". The space before it sits inside the lookahead
-	 * on purpose: left outside, the engine could match none of it and the lookahead would then
-	 * always succeed, which dropped every Request-rate line there is.
+	 * Whitespace sits inside the lookahead: outside it the engine could match none of it and the
+	 * lookahead would always succeed, which dropped every Request-rate line there is.
 	 */
 	public static function getRequestRateRegex(): string {
 		return "/^" . self::REQUEST_RATE->value . ":+(?![^\S\r\n]*[0-9]+\/[0-9]+).*/mui";
@@ -105,7 +104,8 @@ enum Directive: string {
 	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
 	 */
 	public static function getAllowDisallowRegex(): string {
-		return "/^(" . self::ALLOW->value . "|" . self::DISALLOW->value . "):+[^\S\\r\\n]*(?![\/\s])\S.*$/mui";
+		// possessive: giving a colon back read "Disallow::/x" as a value of ":/x", so it was dropped
+		return "/^(" . self::ALLOW->value . "|" . self::DISALLOW->value . "):++[^\S\\r\\n]*+(?![\/\s])\S.*$/mui";
 	}
 
 	public static function attemptGetInline(string $rule): string|false {

@@ -131,6 +131,15 @@ class ExtendedStandardTest extends TestCase {
 		$this->assertSame('0100-0200', (string) $parser->getVisitTime());
 	}
 
+	/** A path may hold colons; cutting at the first one widened the rule onto unrelated paths. */
+	public function testANoIndexPathKeepsItsColons() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nNoindex: /a:b/c\n");
+
+		$this->assertSame(['/a:b/c'], $parser->getNoIndex());
+		$this->assertFalse($parser->isIndexable('/a:b/c'));
+		$this->assertTrue($parser->isIndexable('/a-other'));
+	}
+
 	public function testAValueMayHoldColons() {
 		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nComment: see https://example.com/robots for why\n");
 
