@@ -337,15 +337,20 @@ class GeneratorBasedReader implements ReaderInterface {
 	/**
 	 * A non-seekable stream (http, a pipe) cannot be replayed, and asking warns - so whatever
 	 * reads it has to cope with reading on from where it stands.
+	 *
+	 * The metadata is only the cheap first answer: a userland wrapper without stream_seek() is
+	 * still advertised as seekable, so the rewind itself has the last word.
 	 */
 	private function rewindIfPossible(): bool {
 		if (true !== (stream_get_meta_data($this->stream)['seekable'] ?? false)) {
 			return false;
 		}
 
-		rewind($this->stream);
+		[$rewound] = $this->quietly(function () {
+			return rewind($this->stream);
+		});
 
-		return true;
+		return true === $rewound;
 	}
 
 	/**

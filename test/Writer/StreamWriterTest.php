@@ -20,6 +20,9 @@ class StreamWriterTest extends TestCase {
 
 	private const TREE = ['*' => ['disallow' => ['/admin'], 'allow' => ['/admin/public']]];
 
+	/** What TREE renders to, with \n endings. */
+	private const DOCUMENT = "User-agent: *\nAllow: /admin/public\nDisallow: /admin\n";
+
 	private ?StreamWriter $writer;
 	private ?TestHandler $handler;
 
@@ -196,10 +199,7 @@ class StreamWriterTest extends TestCase {
 		$built    = $this->renderWith(new StringWriter(), $encoding);
 
 		$this->assertSame(bin2hex($built), bin2hex($streamed), 'both writers must emit the same bytes');
-		$this->assertSame(
-			"User-agent: *\nAllow: /admin/public\nDisallow: /admin\n",
-			iconv($encoding, 'UTF-8', $streamed)
-		);
+		$this->assertSame(self::DOCUMENT, iconv($encoding, 'UTF-8', $streamed));
 	}
 
 	public function markedCharsets(): array {
@@ -214,12 +214,17 @@ class StreamWriterTest extends TestCase {
 		];
 	}
 
-	/** One mark, at the front, and nowhere else. */
+	/**
+	 * One mark, at the front, and nowhere else. Asserted through the decoding rather than against
+	 * the bytes: which way round the mark goes is the platform's business, not ours - glibc writes
+	 * UTF-16 little-endian and Windows big-endian.
+	 */
 	public function testTheMarkIsStillWrittenOnce() {
-		$streamed = $this->renderWith(new StreamWriter(), 'UTF-16');
+		$decoded = iconv('UTF-16', 'UTF-8', $this->renderWith(new StreamWriter(), 'UTF-16'));
 
-		$this->assertStringStartsWith("\xFF\xFE", $streamed);
-		$this->assertSame(1, substr_count($streamed, "\xFF\xFE"));
+		// the leading one is consumed by the decode; a repeated one survives as a zero-width space
+		$this->assertStringNotContainsString("\u{FEFF}", $decoded);
+		$this->assertSame(self::DOCUMENT, $decoded);
 	}
 
 	/** The mark is worked out once per charset, so a reused writer keeps emitting the same bytes. */
@@ -239,9 +244,9 @@ class StreamWriterTest extends TestCase {
 		$utf16 = $this->renderWith($writer, 'UTF-16');
 		$cp    = $this->renderWith($writer, 'Windows-1251');
 
-		$this->assertStringStartsWith("\xFF\xFE", $utf16);
-		$this->assertStringStartsNotWith("\xFF\xFE", $cp);
-		$this->assertSame("User-agent: *\nAllow: /admin/public\nDisallow: /admin\n", $cp);
+		$this->assertSame(self::DOCUMENT, iconv('UTF-16', 'UTF-8', $utf16));
+		// single-byte and unmarked, so the document is its own bytes
+		$this->assertSame(self::DOCUMENT, $cp);
 	}
 
 	private function renderWith(StreamWriter|StringWriter $writer, string $encoding): string {
