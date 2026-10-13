@@ -62,4 +62,18 @@ class PercentEncodingTest extends TestCase {
 		$this->assertTrue($parser->isDisallowed('/menü'));
 		$this->assertFalse($parser->isDisallowed('/menü/extra'));
 	}
+
+	/**
+	 * RFC 9309 2.2.2 example: "/a%3cd.html" matches "/a%3Cd.html" and "/a<d.html".
+	 * The hex digits of a percent-encoded octet are case-insensitive.
+	 */
+	public function testPercentEncodedHexCaseIsIgnored() {
+		$parser = (new RobotsTxtParser())->setContent("User-agent: *\nDisallow: /a%3cd.html\nDisallow: /B%2Fc\n");
+
+		$this->assertTrue($parser->isDisallowed('/a%3Cd.html'));
+		$this->assertTrue($parser->isDisallowed('/a%3cd.html'));
+		$this->assertTrue($parser->isDisallowed('/a<d.html'));
+		$this->assertTrue($parser->isDisallowed('/B%2fc'));
+		$this->assertFalse($parser->isDisallowed('/a%3Dd.html'));
+	}
 }
