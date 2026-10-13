@@ -40,6 +40,20 @@ class Url {
 		);
 	}
 
+	/**
+	 * Uppercases the hex digits of percent-encoded octets, which RFC 3986 treats as equivalent,
+	 * so '%3c' and '%3C' compare equal. Kept out of encode(), which leaves '%' sequences as written.
+	 *
+	 * @link https://www.rfc-editor.org/rfc/rfc9309#section-2.2.2
+	 */
+	public static function normalizePercentCase(string $url): string {
+		return preg_replace_callback(
+			'/%[0-9A-Fa-f]{2}/',
+			fn (array $matched): string => strtoupper($matched[0]),
+			$url
+		);
+	}
+
 	public static function isValidScheme(string $scheme): bool {
 		return isset(self::DEFAULT_PORTS[$scheme]);
 	}
