@@ -11,3 +11,5 @@ build/logs/*
 
 # Agent worktrees
 .claude/worktrees/
+config.bat
+node_modules

@@ -220,7 +220,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 			$this->log("Could not extract a path from {$url}, matching rules against it whole");
 		}
 
-		return $parsed->getPath();
+		return Url::normalizePercentCase($parsed->getPath());
 	}
 
 	/**
@@ -328,7 +328,7 @@ class RobotsTxtParser implements LoggerAwareInterface {
 
 		// both sides of the comparison must be percent-encoded, and getPath() already encodes the path
 		$quoted = implode('.*', array_map(function (string $literal): string {
-			return preg_quote(Url::encode($literal), '@');
+			return preg_quote(Url::normalizePercentCase(Url::encode($literal)), '@');
 		}, explode('*', $value)));
 
 		// no end anchor means prefix matching, which '^' alone already gives us
