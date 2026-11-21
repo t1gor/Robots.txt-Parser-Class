@@ -29,12 +29,14 @@ class UserAgentProcessor extends AbstractDirectiveProcessor implements Directive
 			$root[$currentUserAgent] = [];
 		}
 
-		// if one user-agent is followed by another one - just link them
+		// if one user-agent is followed by another one - the new one joins the group of the previous one.
+		// Linking the other way round re-bound the previous user-agent, so with three or more user-agent
+		// lines the first one was cut off from the group and got none of its rules.
 		if ($this->matches($prevLine)) {
 			$prevParts = explode(':', $prevLine);
 			$pervLineUserAgent = trim($prevParts[1]);
 
-			$root[$pervLineUserAgent] = & $root[$currentUserAgent];
+			$root[$currentUserAgent] = & $root[$pervLineUserAgent];
 		}
 	}
 }
